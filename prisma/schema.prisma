@@ -10,12 +10,45 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
-}
-model User {
-  id        Int       @id @default(autoincrement())
-  createdAt DateTime  @default(now())
-  email     String    @unique
-  name      String?
 }
 
+enum Role {
+  STUDENT // who will browse the platform
+  ADMIN // teacher who will upload the content 
+  OWNER // who has all privalges
+}
+
+model User {
+  id       Int     @id @default(autoincrement())
+  name     String?
+  email    String  @unique
+  password String
+  role     Role    @default(STUDENT)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  studentProfile Student?
+  teacherProfile Teacher?
+}
+
+model Student {
+  id         Int       @id @default(autoincrement())
+  academicId String    @unique
+  grade      String? // الصف الدراسي
+  birthDate  DateTime?
+  address    String?
+
+  userId Int  @unique
+  user   User @relation(fields: [userId], references: [id])
+}
+
+model Teacher {
+  id             Int     @id @default(autoincrement())
+  specialization String 
+  bio            String? @db.Text 
+  experience     Int     @default(0) // سنوات الخبرة
+
+  userId Int  @unique
+  user   User @relation(fields: [userId], references: [id])
+}
