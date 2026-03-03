@@ -7,12 +7,12 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   app.setGlobalPrefix('api/v1');
 
-  // Cors setup ================
+
   app.enableCors({
     origin: "http://localhost:5000"
   })
 
-  // Swagger setup ==============
+  
   const documentaion = SwaggerModule.createDocument(app, swaggerConfig)
   SwaggerModule.setup("swagger", app, documentaion)
   await app.listen(process.env.PORT ?? 3000);
