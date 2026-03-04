@@ -35,26 +35,32 @@ $ npm install
 
 This project includes a `docker-compose.yml` file to facilitate easy setup and running of the application and its PostgreSQL database using Docker.
 
-1.  **Start the services (Application and Database):**
+1.  **Setup Environment Variables:**
+    Copy the `.env.example` file to `.env` and update the database credentials if needed:
     ```bash
-    docker-compose up -d
+    $ cp .env.example .env
     ```
-    This command will build the application image (if not already built), create the necessary containers, and start them in detached mode.
 
-2.  **Run Prisma Migrations:**
+2.  **Start the services (Application and Database):**
+    ```bash
+    $ docker-compose up -d --build
+    ```
+    This command will build the application image, install dependencies, and start the containers.
+
+3.  **Run Prisma Migrations:**
     Once the services are up, you need to apply the database migrations to create the schema:
     ```bash
-    docker-compose exec api npx prisma migrate dev
+    $ docker-compose exec api npx prisma migrate dev
     ```
-    Follow any prompts from Prisma to name the migration.
 
-3.  **Access the Application:**
-    Your NestJS application will be accessible at `http://localhost:3000`.
+4.  **Access the Application:**
+    - **API Base URL:** `http://localhost:3000/api/v1`
+    - **Swagger Documentation:** `http://localhost:3000/swagger`
 
-4.  **Stop the services:**
-    To stop and remove the containers, networks, and volumes created by `docker-compose up`:
+5.  **Stop the services:**
+    To stop and remove the containers, networks, and volumes:
     ```bash
-    docker-compose down
+    $ docker-compose down
     ```
 
 ## Compile and run the project

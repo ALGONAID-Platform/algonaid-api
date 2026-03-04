@@ -1,5 +1,3 @@
-
-
 FROM node:20-alpine AS development
 
 WORKDIR /usr/src/app
@@ -9,4 +7,5 @@ RUN npm install
 
 COPY . .
 
-CMD ["npm" , "run" , "start:dev"]
+# Run generate and then start the dev server
+CMD npx prisma generate && npm run start:dev

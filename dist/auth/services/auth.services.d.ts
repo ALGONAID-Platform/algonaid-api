@@ -2,6 +2,7 @@ import { UserRegisterDto } from "../dtos/user-register.dto";
 import { UserLoginDto } from "../dtos/user-login.dto";
 import { PrismaService } from "src/prisma/prisma.service";
 import { JwtService } from "@nestjs/jwt";
+import { Role } from "../../prisma/client/enums";
 export declare class AuthService {
     private readonly prisma;
     private readonly jwtService;
@@ -12,7 +13,7 @@ export declare class AuthService {
             id: number;
             email: string;
             name: string;
-            role: import(".prisma/client").$Enums.Role;
+            role: Role;
         };
         access_token: string;
     }>;
@@ -22,7 +23,7 @@ export declare class AuthService {
             id: number;
             email: string;
             name: string;
-            role: import(".prisma/client").$Enums.Role;
+            role: Role;
         };
         access_token: string;
     }>;

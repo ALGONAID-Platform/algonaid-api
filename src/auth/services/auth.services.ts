@@ -5,7 +5,7 @@ import { PrismaService } from "src/prisma/prisma.service";
 import { JwtService } from "@nestjs/jwt";
 import * as bcrypt from 'bcrypt';
 import { UserRole } from "../enums/userRole";
-import { Role } from "@prisma/client";
+import { Role } from "../../prisma/client/enums";
 
 
 @Injectable()

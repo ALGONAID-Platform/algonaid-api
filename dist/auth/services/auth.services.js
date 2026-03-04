@@ -48,7 +48,7 @@ const prisma_service_1 = require("../../prisma/prisma.service");
 const jwt_1 = require("@nestjs/jwt");
 const bcrypt = __importStar(require("bcrypt"));
 const userRole_1 = require("../enums/userRole");
-const client_1 = require("@prisma/client");
+const enums_1 = require("../../prisma/client/enums");
 let AuthService = class AuthService {
     prisma;
     jwtService;
@@ -65,24 +65,24 @@ let AuthService = class AuthService {
             throw new common_1.ConflictException('Email already registered');
         }
         const hashedPassword = await bcrypt.hash(password, 10);
-        let prismaRole = client_1.Role.STUDENT;
+        let prismaRole = enums_1.Role.STUDENT;
         if (role === userRole_1.UserRole.ADMIN)
-            prismaRole = client_1.Role.ADMIN;
+            prismaRole = enums_1.Role.ADMIN;
         if (role === userRole_1.UserRole.OWNER)
-            prismaRole = client_1.Role.OWNER;
+            prismaRole = enums_1.Role.OWNER;
         const user = await this.prisma.user.create({
             data: {
                 email,
                 name,
                 password: hashedPassword,
                 role: prismaRole,
-                ...(prismaRole === client_1.Role.STUDENT ? {
+                ...(prismaRole === enums_1.Role.STUDENT ? {
                     studentProfile: {
                         create: {
                             academicId: `STU-${Date.now()}`
                         }
                     }
-                } : prismaRole === client_1.Role.ADMIN ? {
+                } : prismaRole === enums_1.Role.ADMIN ? {
                     teacherProfile: {
                         create: {
                             specialization: 'General'
@@ -129,9 +129,9 @@ let AuthService = class AuthService {
     }
     async generateToken(userId, email, role) {
         let userRole = userRole_1.UserRole.STUDENT;
-        if (role === client_1.Role.ADMIN)
+        if (role === enums_1.Role.ADMIN)
             userRole = userRole_1.UserRole.ADMIN;
-        if (role === client_1.Role.OWNER)
+        if (role === enums_1.Role.OWNER)
             userRole = userRole_1.UserRole.OWNER;
         const payload = { id: userId, email, role: userRole };
         return await this.jwtService.signAsync(payload);
