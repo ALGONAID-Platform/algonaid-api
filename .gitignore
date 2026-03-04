@@ -4,3 +4,10 @@ node_modules
 
 /generated/prisma
 dist 
+# Docker
+.dockerignore
+
+# OS files
+.DS_Store
+Thumbs.db
+
