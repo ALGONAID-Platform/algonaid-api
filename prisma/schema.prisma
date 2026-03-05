@@ -67,7 +67,6 @@ model Enrollment {
   courseId Int
   course   Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
 
-  // حالة التسجيل (اختياري)
   status  EnrollmentStatus @default(ACTIVE)
 
   @@unique([studentId, courseId]) // لمنع المستخدم من التسجيل في نفس الكورس مرتين
