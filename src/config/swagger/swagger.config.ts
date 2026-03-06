@@ -3,7 +3,7 @@ import { DocumentBuilder } from '@nestjs/swagger';
 
 
 export const swaggerConfig = new DocumentBuilder()
-  .setTitle('API منصة الجنيد التعليمية') 
+  .setTitle('API منصة الجنيد التعليمية')
   .setDescription(
     'توثيق الواجهة البرمجية لمنصة الجنيد التعليمية. ' +
     'يتيح هذا النظام إدارة المستخدمين (طلاب ومعلمين)، ' +
@@ -26,7 +26,7 @@ export const swaggerConfig = new DocumentBuilder()
       description: 'أدخل رمز الوصول (Token) هنا لتتمكن من الوصول للروابط المحمية',
       in: 'header',
     },
-    'JWT-auth', 
+    'JWT-auth',
   )
 
 
