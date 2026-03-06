@@ -22,10 +22,9 @@ enum Role {
 model User {
   id       Int    @id @default(autoincrement())
   name     String
-  email    String @unique
+  email    String @unique 
   password String
   role     Role   @default(STUDENT)
-
   createdAt      DateTime     @default(now())
   updatedAt      DateTime     @updatedAt
   studentProfile Student?
@@ -38,10 +37,8 @@ model Student {
   grade      String? // الصف الدراسي
   birthDate  DateTime?
   address    String?
-
   userId Int  @unique
   user   User @relation(fields: [userId], references: [id])
-
   enrollments Enrollment[] // one user can have many courses  
 }
 
@@ -50,7 +47,6 @@ model Teacher {
   specialization String
   bio            String? @db.Text
   experience     Int     @default(0) // سنوات الخبرة
-
   userId  Int      @unique
   user    User     @relation(fields: [userId], references: [id])
   courses Course[]
@@ -90,5 +86,5 @@ model Course {
   enrollments Enrollment[]
 
   instructorId Int
-  teacher      Teacher @relation(fields: [instructorId], references: [id])
+  teacher Teacher @relation(fields: [instructorId], references: [id])
 }

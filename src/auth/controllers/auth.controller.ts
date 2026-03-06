@@ -1,4 +1,4 @@
-import { Body, Controller, HttpCode, HttpStatus, Post } from "@nestjs/common";
+import { Body, Controller, Get, HttpCode, HttpStatus, Param, ParseIntPipe, Post } from "@nestjs/common";
 import { UserRegisterDto } from "../dtos/user-register.dto";
 import { AuthService } from "../services/auth.services";
 import { UserLoginDto } from "../dtos/user-login.dto";
@@ -15,7 +15,7 @@ export class AuthController {
 
     }
 
-   
+
     @SwaggerRegister()
     @Post('signup')
     async register(@Body() userDto: UserRegisterDto) {
@@ -23,12 +23,17 @@ export class AuthController {
 
     }
 
-  
-    @HttpCode(HttpStatus.OK) 
+
+    @HttpCode(HttpStatus.OK)
     @Post('signin')
     @SwaggerLogin()
     async signin(@Body() userDto: UserLoginDto) {
         return await this.authService.login(userDto);
+    }
+
+    @Get(":id")
+    async getCureentUser(@Param("id", ParseIntPipe) id: number) {
+        return await this.authService.getCurrentUser(id);
     }
 
 }

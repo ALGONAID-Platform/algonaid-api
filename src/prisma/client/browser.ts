@@ -32,3 +32,13 @@ export type Student = Prisma.StudentModel
  * 
  */
 export type Teacher = Prisma.TeacherModel
+/**
+ * Model Enrollment
+ * 
+ */
+export type Enrollment = Prisma.EnrollmentModel
+/**
+ * Model Course
+ * 
+ */
+export type Course = Prisma.CourseModel
