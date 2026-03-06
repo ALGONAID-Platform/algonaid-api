@@ -24,4 +24,12 @@ export declare class AuthController {
         };
         access_token: string;
     }>;
+    getCureentUser(id: number): Promise<{
+        user: {
+            id: number;
+            email: string;
+            name: string;
+            role: import("./client").Role;
+        };
+    }>;
 }

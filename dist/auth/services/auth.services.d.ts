@@ -27,5 +27,13 @@ export declare class AuthService {
         };
         access_token: string;
     }>;
+    getCurrentUser(id: number): Promise<{
+        user: {
+            id: number;
+            email: string;
+            name: string;
+            role: Role;
+        };
+    }>;
     private generateToken;
 }

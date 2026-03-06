@@ -127,6 +127,22 @@ let AuthService = class AuthService {
             access_token: token
         };
     }
+    async getCurrentUser(id) {
+        const user = await this.prisma.user.findUnique({ where: { id } });
+        if (!user) {
+            throw new common_1.NotFoundException(`user with id ${id} is not exist`);
+        }
+        else {
+            return {
+                user: {
+                    id: user.id,
+                    email: user.email,
+                    name: user.name,
+                    role: user.role
+                },
+            };
+        }
+    }
     async generateToken(userId, email, role) {
         let userRole = userRole_1.UserRole.STUDENT;
         if (role === enums_1.Role.ADMIN)

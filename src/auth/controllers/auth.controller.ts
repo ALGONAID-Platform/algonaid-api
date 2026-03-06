@@ -32,7 +32,7 @@ export class AuthController {
     }
 
     @Get(":id")
-    async getCureentUser(@Param(":id", ParseIntPipe) id: number) {
+    async getCureentUser(@Param("id", ParseIntPipe) id: number) {
         return await this.authService.getCurrentUser(id);
     }
 

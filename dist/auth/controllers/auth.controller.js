@@ -29,6 +29,9 @@ let AuthController = class AuthController {
     async signin(userDto) {
         return await this.authService.login(userDto);
     }
+    async getCureentUser(id) {
+        return await this.authService.getCurrentUser(id);
+    }
 };
 exports.AuthController = AuthController;
 __decorate([
@@ -48,6 +51,13 @@ __decorate([
     __metadata("design:paramtypes", [user_login_dto_1.UserLoginDto]),
     __metadata("design:returntype", Promise)
 ], AuthController.prototype, "signin", null);
+__decorate([
+    (0, common_1.Get)(":id"),
+    __param(0, (0, common_1.Param)("id", common_1.ParseIntPipe)),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Number]),
+    __metadata("design:returntype", Promise)
+], AuthController.prototype, "getCureentUser", null);
 exports.AuthController = AuthController = __decorate([
     (0, common_1.Controller)("auth"),
     __metadata("design:paramtypes", [auth_services_1.AuthService])
