@@ -79,6 +79,7 @@ model Course {
   title       String
   description String? @db.Text
   thumbnail   String? // رابط صورة الغلاف
+  youtubeLink String? // رابط اليوتيوب
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

@@ -14,7 +14,6 @@
     "outDir": "./dist",
     "baseUrl": "./",
     "paths": {
-      "class-validator": ["node_modules/class-validator/types/index.d.ts"],
       "./client": ["src/prisma/client/client"]
     },
     "incremental": true,
