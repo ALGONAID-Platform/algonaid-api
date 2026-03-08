@@ -7,6 +7,7 @@ import { PrismaModule } from './prisma/prisma.module';
 import { EnrollmentModule } from './enrollment/enrollment.module';
 import { JwtModule } from '@nestjs/jwt';
 import { CoursesModule } from './courses/courses.module';
+import { ModulesModule } from './modules/modules.module';
 
 @Module({
   imports: [
@@ -19,6 +20,7 @@ import { CoursesModule } from './courses/courses.module';
       }),
     }),
     ConfigModule.forRoot({ isGlobal: true }),
+    ModulesModule,
     AuthModule,
     PrismaModule,
     EnrollmentModule,
