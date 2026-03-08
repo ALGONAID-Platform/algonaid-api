@@ -7,32 +7,29 @@ import { PrismaModule } from './prisma/prisma.module';
 import { EnrollmentModule } from './enrollment/enrollment.module';
 import { JwtModule } from '@nestjs/jwt';
 import { CoursesModule } from './courses/courses.module';
+import { LessonsModule } from './lessons/lessons.module';
 
 @Module({
   imports: [
+    ConfigModule.forRoot({
+      isGlobal: true,
+      envFilePath: `.env`
+    }),
     JwtModule.registerAsync({
       global: true,
       inject: [ConfigService],
       useFactory: (config: ConfigService) => ({
         secret: config.get<string>('JWT_SECRET') || 'defaultSecret',
-        signOptions: { expiresIn: config.get<string>('JWT_EXPIRES_SECRET') as any },
+        signOptions: { expiresIn: (config.get<string>('JWT_EXPIRES_SECRET') || '1d') as any },
       }),
     }),
-    ConfigModule.forRoot({ isGlobal: true }),
     AuthModule,
     PrismaModule,
     EnrollmentModule,
-    ConfigModule.forRoot({
-      isGlobal: true,
-      envFilePath: `.env`
-      // envFilePath: `.env.${process.env.NODE_ENV}`
-
-    }),
     CoursesModule,
- 
+    LessonsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
-
 })
 export class AppModule { }

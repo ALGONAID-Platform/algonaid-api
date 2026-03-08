@@ -73,7 +73,41 @@ async function main() {
     },
   });
 
-  // 5. تسجيل الطالب في أحد الكورسات (Enrollment)
+  // 5. إنشاء دروس للكورسات (Lessons)
+  await prisma.lesson.createMany({
+    data: [
+      {
+        title: 'مقدمة في النهايات',
+        description: 'فهم مفهوم النهاية رياضياً وبصرياً',
+        videoUrl: 'https://www.youtube.com/watch?v=example1',
+        order: 1,
+        courseId: course1.id,
+      },
+      {
+        title: 'نظريات النهايات الأساسية',
+        description: 'تطبيق النظريات لحل المسائل المعقدة',
+        videoUrl: 'https://www.youtube.com/watch?v=example2',
+        order: 2,
+        courseId: course1.id,
+      },
+      {
+        title: 'الاتصال والاشتقاق',
+        description: 'العلاقة بين اتصال الدالة وقابلية اشتقاقها',
+        videoUrl: 'https://www.youtube.com/watch?v=example3',
+        order: 3,
+        courseId: course1.id,
+      },
+      {
+        title: 'مبادئ المجموعات',
+        description: 'التعرف على المجموعات والعناصر والعمليات الأساسية',
+        videoUrl: 'https://www.youtube.com/watch?v=example4',
+        order: 1,
+        courseId: course2.id,
+      },
+    ],
+  });
+
+  // 6. تسجيل الطالب في أحد الكورسات (Enrollment)
   await prisma.enrollment.create({
     data: {
       studentId: studentUser.studentProfile!.id,

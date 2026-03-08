@@ -84,9 +84,25 @@ model Course {
   updatedAt DateTime @updatedAt
 
   enrollments Enrollment[]
+  lessons     Lesson[]
 
   instructorId Int
   teacher      Teacher @relation(fields: [instructorId], references: [id])
 }
+
+model Lesson {
+  id          Int     @id @default(autoincrement())
+  title       String
+  description String? @db.Text
+  videoUrl    String? // رابط الفيديو أو المحتوى
+  order       Int     @default(0) // ترتيب الدرس في الكورس
+
+  courseId Int
+  course   Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
 
 
