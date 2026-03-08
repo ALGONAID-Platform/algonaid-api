@@ -152,9 +152,12 @@ export type ModuleScalarFieldEnum = (typeof ModuleScalarFieldEnum)[keyof typeof 
 export const LessonScalarFieldEnum = {
   id: 'id',
   title: 'title',
-  description: 'description',
+  content: 'content',
+  videoUrl: 'videoUrl',
+  exam: 'exam',
   createdAt: 'createdAt',
-  updatedAt: 'updatedAt'
+  updatedAt: 'updatedAt',
+  moduleId: 'moduleId'
 } as const
 
 export type LessonScalarFieldEnum = (typeof LessonScalarFieldEnum)[keyof typeof LessonScalarFieldEnum]
