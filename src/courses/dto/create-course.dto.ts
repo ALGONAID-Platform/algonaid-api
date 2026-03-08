@@ -17,8 +17,6 @@ export class CreateCourseDto {
     @IsString()
     thumbnail?: string;
 
-    @ApiProperty({ example: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ' })
-    @IsOptional()
-    @IsString()
-    youtubeLink?: string;
+   
 }
+

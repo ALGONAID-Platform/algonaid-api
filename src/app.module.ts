@@ -28,7 +28,8 @@ import { CoursesModule } from './courses/courses.module';
       // envFilePath: `.env.${process.env.NODE_ENV}`
 
     }),
-    CoursesModule
+    CoursesModule,
+ 
   ],
   controllers: [AppController],
   providers: [AppService],

@@ -53,11 +53,17 @@ This project includes a `docker-compose.yml` file to facilitate easy setup and r
     $ docker-compose exec api npx prisma migrate dev
     ```
 
-4.  **Access the Application:**
+4. **Seed the Database (Experimental Data):**
+   To fill the database with initial test data (Admin, Students, Courses), run:
+   ```bash
+   $ docker-compose exec api npx prisma db seed
+   ```
+
+5.  **Access the Application:**
     - **API Base URL:** `http://localhost:3000/api/v1`
     - **Swagger Documentation:** `http://localhost:3000/swagger`
 
-5.  **Stop the services:**
+6.  **Stop the services:**
     To stop and remove the containers, networks, and volumes:
     ```bash
     $ docker-compose down

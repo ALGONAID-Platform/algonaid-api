@@ -43,6 +43,44 @@ export function SwaggerCreateCourse() {
     );
 }
 
+export function SwaggerGetAllCourses() {
+    return applyDecorators(
+        ApiOperation({
+            summary: 'عرض جميع الكورسات',
+            description: 'يجلب قائمة بجميع الكورسات المتاحة في المنصة'
+        }),
+        ApiResponse({
+            status: 200,
+            description: 'تم جلب قائمة الكورسات بنجاح',
+            schema: {
+                example: {
+                    statusCode: 200,
+                    data: [
+                        {
+                            id: 1,
+                            title: 'دورة NestJS للمبتدئين',
+                            description: 'تعلم كيفية بناء واجهات برمجة تطبيقات قابلة للتوسع باستخدام NestJS',
+                            thumbnail: 'https://example.com/thumbnail.jpg',
+                            authorId: 2,
+                            createdAt: '2026-03-08T10:00:00.000Z',
+                            updatedAt: '2026-03-08T10:00:00.000Z'
+                        },
+                        {
+                            id: 2,
+                            title: 'دورة ReactJS الشاملة',
+                            description: 'تعلم بناء واجهات المستخدم باستخدام React',
+                            thumbnail: 'https://example.com/react-thumbnail.jpg',
+                            authorId: 3,
+                            createdAt: '2026-03-09T10:00:00.000Z',
+                            updatedAt: '2026-03-09T10:00:00.000Z'
+                        }
+                    ]
+                }
+            }
+        })
+    );
+}
+
 export function SwaggerGetCourse() {
     return applyDecorators(
         ApiOperation({

@@ -42,3 +42,13 @@ export type Enrollment = Prisma.EnrollmentModel
  * 
  */
 export type Course = Prisma.CourseModel
+/**
+ * Model Module
+ * 
+ */
+export type Module = Prisma.ModuleModel
+/**
+ * Model Lesson
+ * 
+ */
+export type Lesson = Prisma.LessonModel

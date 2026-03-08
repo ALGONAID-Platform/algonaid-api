@@ -7,7 +7,6 @@ export class UserRegisterDto {
     @IsString({ message: 'Name must be a string' })
     @MinLength(2, { message: 'Name must be at least 2 characters long' })
     @MaxLength(50)
-    @IsOptional()
     //==================
     name: string;
     //==================

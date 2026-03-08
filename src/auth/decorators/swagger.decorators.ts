@@ -26,7 +26,7 @@ export function SwaggerRegister() {
       schema: {
         example: {
           statusCode: 201,
-          message: 'تم تسجيل المستخدم بنجاح',
+          message: 'User registered successfully',
           data: {
             user: {
               id: 1,
@@ -70,16 +70,15 @@ export function SwaggerLogin() {
       description: 'تم تسجيل الدخول بنجاح',
       schema: {
         example: {
-          statusCode: 200,
-          message: 'تم تسجيل الدخول بنجاح',
+          message: 'Logged in successfully',
           data: {
-            accessToken: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
             user: {
               id: 1,
               name: 'بشار محمد',
               email: 'bashar@example.com',
               role: 'STUDENT'
-            }
+            },
+            accessToken: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...'
           }
         }
       }

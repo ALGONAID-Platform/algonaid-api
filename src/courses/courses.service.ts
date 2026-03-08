@@ -1,7 +1,7 @@
 import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { CreateCourseDto } from './dto/create-course.dto';
-import { UpdateCourseDto } from './dto/update-course.dto';
 import { PrismaService } from 'src/prisma/prisma.service';
+import { UpdateCourseDto } from './dto/update-course.dto';
 
 @Injectable()
 export class CoursesService {
@@ -106,9 +106,12 @@ export class CoursesService {
     if (!isInstructor && !isOwner) {
       throw new ForbiddenException('You are not authorized to delete this course');
     }
-
-    return this.prisma.course.delete({
+    this.prisma.course.delete({
       where: { id },
     });
+
+    return {
+      message : "course deleted successfuly"
+    }
   }
 }

@@ -1,39 +1,43 @@
 import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards } from '@nestjs/common';
 import { CoursesService } from './courses.service';
 import { CreateCourseDto } from './dto/create-course.dto';
-import { UpdateCourseDto } from './dto/update-course.dto';
 import { AuthRollGuard } from 'src/auth/guards/auth-roll.guard';
 import { userRoles } from 'src/auth/decorators/user_roll.decorator';
 import { Role } from 'src/prisma/client/enums';
 import { CurrentUser } from 'src/auth/decorators/current-user.decorator';
 import { JwtPayloadType } from 'src/utils/types';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
+import { SwaggerCreateCourse, SwaggerDeleteCourse, SwaggerGetCourse, SwaggerUpdateCourse, SwaggerGetAllCourses } from './decorators/swagger.decorator';
+import { UpdateCourseDto } from './dto/update-course.dto';
 
 @ApiTags('courses')
 @Controller('courses')
 export class CoursesController {
-  constructor(private readonly coursesService: CoursesService) {}
+  constructor(private readonly coursesService: CoursesService) { }
 
   @Post()
-  @ApiBearerAuth()
+  @SwaggerCreateCourse()
   @UseGuards(AuthRollGuard)
   @userRoles(Role.ADMIN, Role.OWNER)
+  @userRoles(Role.STUDENT)
   create(@Body() createCourseDto: CreateCourseDto, @CurrentUser() user: JwtPayloadType) {
     return this.coursesService.create(createCourseDto, user.id);
   }
 
   @Get()
+  @SwaggerGetAllCourses()
   findAll() {
     return this.coursesService.findAll();
   }
 
   @Get(':id')
+  @SwaggerGetCourse()
   findOne(@Param('id') id: string) {
     return this.coursesService.findOne(+id);
   }
 
   @Patch(':id')
-  @ApiBearerAuth()
+  @SwaggerUpdateCourse()
   @UseGuards(AuthRollGuard)
   @userRoles(Role.ADMIN, Role.OWNER)
   update(@Param('id') id: string, @Body() updateCourseDto: UpdateCourseDto, @CurrentUser() user: JwtPayloadType) {
@@ -41,7 +45,7 @@ export class CoursesController {
   }
 
   @Delete(':id')
-  @ApiBearerAuth()
+  @SwaggerDeleteCourse()
   @UseGuards(AuthRollGuard)
   @userRoles(Role.ADMIN, Role.OWNER)
   remove(@Param('id') id: string, @CurrentUser() user: JwtPayloadType) {

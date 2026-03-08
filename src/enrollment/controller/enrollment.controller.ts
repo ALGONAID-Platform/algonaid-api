@@ -7,6 +7,7 @@ import { AuthRollGuard } from 'src/auth/guards/auth-roll.guard';
 import { UserRole } from 'src/auth/enums/userRole';
 import { Role } from 'src/prisma/client/enums';
 import { userRoles } from 'src/auth/decorators/user_roll.decorator';
+import { SwaggerEnrollInCourse } from '../decorators/enrollment.decorator';
 
 @Controller('enrollment')
 export class EnrollmentController {
@@ -19,6 +20,7 @@ export class EnrollmentController {
   @Post()
   @UseGuards(AuthRollGuard)
   @userRoles(Role.STUDENT)
+  @SwaggerEnrollInCourse()
   enroll(@Body() createDto: CreateEnrollmentDto, @CurrentUser() user: JwtPayloadType) {
     return this.enrollmentSevice.craete(user.id, createDto);
   }

@@ -33,7 +33,6 @@ export class AuthRollGuard implements CanActivate {
             try {
 
                 const payload = await this.jwtService.verifyAsync(token, { secret: this.config.get<string>('JWT_SECRET') }) as JwtPayloadType
-                console.log(this.config.get<string>('JWT_SECRET'))
                 const user = await this.authService.getCurrentUser(payload.id);
                 if (!user) return false;
                 if (rolls.includes(user.user.role)) {
