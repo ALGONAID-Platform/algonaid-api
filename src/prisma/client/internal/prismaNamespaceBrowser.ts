@@ -56,6 +56,7 @@ export const ModelName = {
   Teacher: 'Teacher',
   Enrollment: 'Enrollment',
   Course: 'Course',
+  Module: 'Module',
   Lesson: 'Lesson'
 } as const
 
@@ -136,15 +137,29 @@ export const CourseScalarFieldEnum = {
 export type CourseScalarFieldEnum = (typeof CourseScalarFieldEnum)[keyof typeof CourseScalarFieldEnum]
 
 
+export const ModuleScalarFieldEnum = {
+  id: 'id',
+  title: 'title',
+  description: 'description',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt',
+  courseId: 'courseId'
+} as const
+
+export type ModuleScalarFieldEnum = (typeof ModuleScalarFieldEnum)[keyof typeof ModuleScalarFieldEnum]
+
+
 export const LessonScalarFieldEnum = {
   id: 'id',
   title: 'title',
   description: 'description',
+  content: 'content',
   videoUrl: 'videoUrl',
+  exam: 'exam',
   order: 'order',
-  courseId: 'courseId',
   createdAt: 'createdAt',
-  updatedAt: 'updatedAt'
+  updatedAt: 'updatedAt',
+  moduleId: 'moduleId'
 } as const
 
 export type LessonScalarFieldEnum = (typeof LessonScalarFieldEnum)[keyof typeof LessonScalarFieldEnum]

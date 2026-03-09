@@ -84,25 +84,38 @@ model Course {
   updatedAt DateTime @updatedAt
 
   enrollments Enrollment[]
-  lessons     Lesson[]
 
   instructorId Int
-  teacher      Teacher @relation(fields: [instructorId], references: [id])
+  teacher      Teacher  @relation(fields: [instructorId], references: [id])
+  modules      Module[]
+}
+
+model Module {
+  id          Int     @id @default(autoincrement())
+  title       String
+  description String? @db.Text
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  courseId Int
+  course   Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  lessons Lesson[]
 }
 
 model Lesson {
   id          Int     @id @default(autoincrement())
   title       String
   description String? @db.Text
-  videoUrl    String? // رابط الفيديو أو المحتوى
-  order       Int     @default(0) // ترتيب الدرس في الكورس
-
-  courseId Int
-  course   Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  content     String? @db.Text
+  videoUrl    String?
+  exam        String? @db.Text
+  order       Int     @default(0)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  moduleId Int
+  module   Module @relation(fields: [moduleId], references: [id], onDelete: Cascade)
 }
-
-
-
