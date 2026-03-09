@@ -8,6 +8,7 @@ import { EnrollmentModule } from './enrollment/enrollment.module';
 import { JwtModule } from '@nestjs/jwt';
 import { CoursesModule } from './courses/courses.module';
 import { LessonsModule } from './lessons/lessons.module';
+import { ModulesModule } from './modules/modules.module';
 
 @Module({
   imports: [
@@ -28,6 +29,7 @@ import { LessonsModule } from './lessons/lessons.module';
     EnrollmentModule,
     CoursesModule,
     LessonsModule,
+    ModulesModule,
   ],
   controllers: [AppController],
   providers: [AppService],

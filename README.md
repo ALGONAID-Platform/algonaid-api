@@ -1,136 +1,160 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
-</p>
+# Algonaid API
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+Algonaid is a robust Learning Management System (LMS) backend built with NestJS. It provides a comprehensive platform for managing users (Students, Teachers, and Owners), courses, modules, lessons, and student enrollments.
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+## 🚀 Features
 
-## Description
+- **Authentication & Authorization**:
+  - Secure registration and login using JWT.
+  - Role-Based Access Control (RBAC) with three roles: `STUDENT`, `ADMIN` (Teacher), and `OWNER`.
+  - Automatic profile creation for Students and Teachers upon registration.
+- **Course Management**:
+  - CRUD operations for Courses.
+  - Organized structure: Courses contain Modules, and Modules contain Lessons.
+  - Teachers can manage their own content.
+- **Enrollment System**:
+  - Students can enroll in courses.
+  - Enrollment status tracking (`ACTIVE`, `COMPLETED`, `CANCELLED`).
+- **Content Delivery**:
+  - Support for video URLs, PDF links, and exam descriptions within lessons.
+  - Static file serving for uploads.
+- **API Documentation**:
+  - Fully documented with Swagger.
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+## 🛠 Tech Stack
 
-## Project setup
+- **Framework**: [NestJS](https://nestjs.com/)
+- **Language**: [TypeScript](https://www.typescriptlang.org/)
+- **Database**: [PostgreSQL](https://www.postgresql.org/)
+- **ORM**: [Prisma](https://www.prisma.io/)
+- **Security**: [Passport JWT](https://docs.nestjs.com/security/authentication), [bcrypt](https://github.com/kelektiv/node.bcrypt.js)
+- **Documentation**: [Swagger UI](https://swagger.io/)
+- **Validation**: [class-validator](https://github.com/typestack/class-validator)
 
-```bash
-$ npm install
+## 📋 Prerequisites
+
+- Node.js (v18 or higher)
+- Docker and Docker Compose (recommended)
+- PostgreSQL (if not using Docker)
+
+## ⚙️ Project Setup
+
+1.  **Clone the repository**:
+    ```bash
+    git clone <repository-url>
+    cd algonaid-api
+    ```
+
+2.  **Environment Variables**:
+    Copy `.env.example` to `.env` and fill in the required values:
+    ```bash
+    cp .env.example .env
+    ```
+    Ensure `DATABASE_URL` and `JWT_SECRET` are correctly set.
+
+3.  **Install Dependencies**:
+    ```bash
+    npm install
+    ```
+
+## 🐳 Running with Docker (Recommended)
+
+The easiest way to get started is using Docker Compose, which sets up the API and a PostgreSQL database.
+
+1.  **Environment Variables**:
+    Create a `.env` file from the example:
+    ```bash
+    cp .env.example .env
+    ```
+    For Docker, use these values in your `.env`:
+    ```env
+    POSTGRES_USER=postgres
+    POSTGRES_PASSWORD=postgres
+    POSTGRES_DB=algonaid
+    # Note: 'db' is the service name in docker-compose.yml
+    DATABASE_URL="postgresql://postgres:postgres@db:5432/algonaid?schema=public"
+    JWT_SECRET=your_jwt_secret
+    ```
+
+2.  **Start Services**:
+    ```bash
+    docker-compose up -d --build
+    ```
+
+3.  **Database Setup (Inside Container)**:
+    Run migrations to create the schema:
+    ```bash
+    docker-compose exec api npx prisma migrate dev --name init
+    ```
+    (Optional) Seed the database:
+    ```bash
+    docker-compose exec api npx prisma db seed
+    ```
+
+### 📡 Connection Details
+- **API**: `http://localhost:3000/api/v1`
+- **Swagger**: `http://localhost:3000/swagger`
+- **Database (External access)**: `localhost:5433` (mapped from 5432 inside container)
+
+## 🏃 Running Locally
+
+If you have a local PostgreSQL instance:
+
+1.  **Run Migrations**:
+    ```bash
+    npx prisma migrate dev
+    ```
+
+2.  **Start the Server**:
+    ```bash
+    # development
+    npm run start
+
+    # watch mode (development)
+    npm run start:dev
+
+    # production mode
+    npm run start:prod
+    ```
+
+## 📖 API Documentation
+
+Once the server is running, you can access the interactive Swagger documentation at:
+`http://localhost:3000/swagger`
+
+### Key Endpoints
+- `POST /api/v1/auth/register`: Register a new user.
+- `POST /api/v1/auth/login`: Login and receive a JWT.
+- `GET /api/v1/courses`: List all courses.
+- `POST /api/v1/enrollment`: Enroll in a course.
+
+## 🏗 Project Structure
+
+```text
+src/
+├── auth/           # Authentication, JWT, and RBAC guards
+├── courses/        # Course management logic
+├── modules/        # Course modules (units)
+├── lessons/        # Individual lessons with video/PDF content
+├── enrollment/     # Student enrollment logic
+├── prisma/         # Prisma client and service
+├── config/         # Global configurations (Swagger, etc.)
+└── uploads/        # Static assets (PDFs, Thumbnails)
 ```
 
-## Running with Docker Compose
-
-This project includes a `docker-compose.yml` file to facilitate easy setup and running of the application and its PostgreSQL database using Docker.
-
-1.  **Setup Environment Variables:**
-    Copy the `.env.example` file to `.env` and update the database credentials if needed:
-    ```bash
-    $ cp .env.example .env
-    ```
-
-2.  **Start the services (Application and Database):**
-    ```bash
-    $ docker-compose up -d --build
-    ```
-    This command will build the application image, install dependencies, and start the containers.
-
-3.  **Run Prisma Migrations:**
-    Once the services are up, you need to apply the database migrations to create the schema:
-    ```bash
-    $ docker-compose exec api npx prisma migrate dev
-    ```
-
-4. **Seed the Database (Experimental Data):**
-   To fill the database with initial test data (Admin, Students, Courses), run:
-   ```bash
-   $ docker-compose exec api npx prisma db seed
-   ```
-
-5.  **Access the Application:**
-    - **API Base URL:** `http://localhost:3000/api/v1`
-    - **Swagger Documentation:** `http://localhost:3000/swagger`
-
-6.  **Stop the services:**
-    To stop and remove the containers, networks, and volumes:
-    ```bash
-    $ docker-compose down
-    ```
-
-## Compile and run the project
-
-```bash
-# development
-$ npm run start
-
-# watch mode
-$ npm run start:dev
-
-# production mode
-$ npm run start:prod
-```
-
-## Run tests
+## 🧪 Testing
 
 ```bash
 # unit tests
-$ npm run test
+npm run test
 
 # e2e tests
-$ npm run test:e2e
+npm run test:e2e
 
 # test coverage
-$ npm run test:cov
+npm run test:cov
 ```
 
-## Deployment
+## 📜 License
 
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
-
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
-
-```bash
-$ npm install -g @nestjs/mau
-$ mau deploy
-```
-
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
-
-## Resources
-
-Check out a few resources that may come in handy when working with NestJS:
-
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
-
-## Support
-
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
-
-## Stay in touch
-
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
-
-## License
-
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+This project is UNLICENSED.

@@ -110,6 +110,7 @@ model Lesson {
   description String? @db.Text
   content     String? @db.Text
   videoUrl    String?
+  pdfUrl      String?
   exam        String? @db.Text
   order       Int     @default(0)
 

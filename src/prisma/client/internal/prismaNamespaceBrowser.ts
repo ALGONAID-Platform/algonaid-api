@@ -155,6 +155,7 @@ export const LessonScalarFieldEnum = {
   description: 'description',
   content: 'content',
   videoUrl: 'videoUrl',
+  pdfUrl: 'pdfUrl',
   exam: 'exam',
   order: 'order',
   createdAt: 'createdAt',
