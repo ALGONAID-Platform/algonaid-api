@@ -1,6 +1,6 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, ParseIntPipe, UseInterceptors, UploadedFile, BadRequestException } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, ParseIntPipe, UseInterceptors, UploadedFile, BadRequestException, ParseFilePipe, MaxFileSizeValidator, FileTypeValidator } from '@nestjs/common';
 import { LessonsService } from './lessons.service';
-import { ApiBearerAuth, ApiOperation, ApiTags, ApiResponse, ApiConsumes, ApiBody } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { AuthRollGuard } from 'src/auth/guards/auth-roll.guard';
 import { userRoles } from 'src/auth/decorators/user_roll.decorator';
 import { Role } from 'src/prisma/client/enums';
@@ -11,72 +11,46 @@ import { UpdateLessonDto } from './dto/update-lesson.dto';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 import { extname } from 'path';
+import { allowedFileTypes, pdfFileSizeLimit, uploadsFolder } from 'src/utils/conistants';
+import { SwaggerCreateLesson, SwaggerGetAllLessonsByModule, SwaggerGetLesson, SwaggerUpdateLesson, SwaggerDeleteLesson } from './decorators/swagger.decorator';
 
 @ApiTags('lessons')
 @ApiBearerAuth()
 @Controller('lessons')
 export class LessonsController {
-  constructor(private readonly lessonsService: LessonsService) {}
+  constructor(private readonly lessonsService: LessonsService) { }
 
   @Post()
   @UseGuards(AuthRollGuard)
   @userRoles(Role.ADMIN, Role.OWNER)
-  @UseInterceptors(FileInterceptor('pdf', {
-    storage: diskStorage({
-      destination: './uploads',
-      filename: (req, file, callback) => {
-        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
-        const ext = extname(file.originalname);
-        callback(null, `lesson-pdf-${uniqueSuffix}${ext}`);
-      },
-    }),
-    fileFilter: (req, file, callback) => {
-      if (!file.originalname.match(/\.(pdf)$/)) {
-        return callback(new BadRequestException('Only PDF files are allowed!'), false);
-      }
-      callback(null, true);
-    },
-  }))
-  @ApiOperation({ summary: 'Create a new lesson with optional PDF' })
-  @ApiConsumes('multipart/form-data')
-  @ApiBody({
-    schema: {
-      type: 'object',
-      properties: {
-        title: { type: 'string' },
-        description: { type: 'string' },
-        content: { type: 'string' },
-        videoUrl: { type: 'string' },
-        exam: { type: 'string' },
-        order: { type: 'integer' },
-        moduleId: { type: 'integer' },
-        pdf: {
-          type: 'string',
-          format: 'binary',
-        },
-      },
-    },
-  })
-  @ApiResponse({ status: 201, description: 'The lesson has been successfully created.' })
+  @UseInterceptors(FileInterceptor('pdf'))
+  @SwaggerCreateLesson()
   create(
-    @Body() createLessonDto: CreateLessonDto, 
+    @Body() createLessonDto: CreateLessonDto,
     @CurrentUser() user: JwtPayloadType,
-    @UploadedFile() file?: Express.Multer.File
+    @UploadedFile(
+      new ParseFilePipe({
+        validators: [
+          new MaxFileSizeValidator({ maxSize: pdfFileSizeLimit }), // الحد الأقصى 10 ميجابايت
+          new FileTypeValidator({ fileType: allowedFileTypes[0] }), // يقبل PDF فقط
+        ],
+        fileIsRequired: false, 
+      }),
+
+    ) file?: Express.Multer.File
   ) {
-    if (file) {
-      createLessonDto.pdfUrl = `uploads/${file.filename}`;
-    }
-    return this.lessonsService.create(createLessonDto, user.id);
+   
+    return this.lessonsService.create(createLessonDto, user.id , file);
   }
 
   @Get('module/:moduleId')
-  @ApiOperation({ summary: 'Get all lessons for a specific module' })
+  @SwaggerGetAllLessonsByModule()
   findAllByModule(@Param('moduleId', ParseIntPipe) moduleId: number) {
     return this.lessonsService.findAllByModule(moduleId);
   }
 
   @Get(':id')
-  @ApiOperation({ summary: 'Get a specific lesson by ID' })
+  @SwaggerGetLesson()
   findOne(@Param('id', ParseIntPipe) id: number) {
     return this.lessonsService.findOne(id);
   }
@@ -84,45 +58,11 @@ export class LessonsController {
   @Patch(':id')
   @UseGuards(AuthRollGuard)
   @userRoles(Role.ADMIN, Role.OWNER)
-  @UseInterceptors(FileInterceptor('pdf', {
-    storage: diskStorage({
-      destination: './uploads',
-      filename: (req, file, callback) => {
-        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
-        const ext = extname(file.originalname);
-        callback(null, `lesson-pdf-${uniqueSuffix}${ext}`);
-      },
-    }),
-    fileFilter: (req, file, callback) => {
-      if (!file.originalname.match(/\.(pdf)$/)) {
-        return callback(new BadRequestException('Only PDF files are allowed!'), false);
-      }
-      callback(null, true);
-    },
-  }))
-  @ApiOperation({ summary: 'Update a lesson with optional PDF' })
-  @ApiConsumes('multipart/form-data')
-  @ApiBody({
-    schema: {
-      type: 'object',
-      properties: {
-        title: { type: 'string' },
-        description: { type: 'string' },
-        content: { type: 'string' },
-        videoUrl: { type: 'string' },
-        exam: { type: 'string' },
-        order: { type: 'integer' },
-        moduleId: { type: 'integer' },
-        pdf: {
-          type: 'string',
-          format: 'binary',
-        },
-      },
-    },
-  })
+  @UseInterceptors(FileInterceptor('pdf'))
+  @SwaggerUpdateLesson()
   update(
-    @Param('id', ParseIntPipe) id: number, 
-    @Body() updateLessonDto: UpdateLessonDto, 
+    @Param('id', ParseIntPipe) id: number,
+    @Body() updateLessonDto: UpdateLessonDto,
     @CurrentUser() user: JwtPayloadType,
     @UploadedFile() file?: Express.Multer.File
   ) {
@@ -135,7 +75,7 @@ export class LessonsController {
   @Delete(':id')
   @UseGuards(AuthRollGuard)
   @userRoles(Role.ADMIN, Role.OWNER)
-  @ApiOperation({ summary: 'Delete a lesson' })
+  @SwaggerDeleteLesson()
   remove(@Param('id', ParseIntPipe) id: number, @CurrentUser() user: JwtPayloadType) {
     return this.lessonsService.remove(id, user.id);
   }
