@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { CreateEnrollmentDto } from '../dto/enrollment.dto';
 import { PrismaService } from 'src/prisma/prisma.service';
+import { MESSAGES } from 'src/utils/messages';
 
 @Injectable()
 export class EnrollmentService {
@@ -17,10 +18,10 @@ export class EnrollmentService {
         });
 
         if (!course) {
-            throw new NotFoundException('Course not found');
+            throw new NotFoundException(MESSAGES.COURSES.COURSE_NOT_FOUND_DEFAULT);
         }
         if (!student) {
-            throw new NotFoundException('Student profile not found');
+            throw new NotFoundException(MESSAGES.ENROLLMENT.STUDENT_PROFILE_NOT_FOUND);
         }
 
         await this.prisma.enrollment.create({
@@ -31,7 +32,7 @@ export class EnrollmentService {
         });
 
         return {
-            message: "successfully enrolled in course"
+            message: MESSAGES.ENROLLMENT.ENROLLED_SUCCESSFULLY
         };
     }
 }

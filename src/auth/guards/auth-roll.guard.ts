@@ -8,6 +8,7 @@ import { AuthService } from "../services/auth.services";
 import { UserRole } from "../enums/userRole";
 import { CURRENT_USER_KEY } from "src/utils/conistants";
 import { Role } from "src/prisma/client/enums";
+import { MESSAGES } from "src/utils/messages";
 
 
 @Injectable()
@@ -31,21 +32,21 @@ export class AuthRollGuard implements CanActivate {
         const [type, token] = request.headers.authorization?.split(" ") ?? [];
 
         if (!token || type !== "Bearer") {
-            throw new UnauthorizedException("access denied, no token provided");
+            throw new UnauthorizedException(MESSAGES.AUTH.NO_TOKEN_PROVIDED);
         }
 
         let payload: JwtPayloadType;
         try {
-            payload = await this.jwtService.verifyAsync(token, { 
-                secret: this.config.get<string>('JWT_SECRET') || 'defaultSecret' 
+            payload = await this.jwtService.verifyAsync(token, {
+                secret: this.config.get<string>('JWT_SECRET') || 'defaultSecret'
             }) as JwtPayloadType;
         } catch (e) {
-            throw new UnauthorizedException("access denied, invalid token");
+            throw new UnauthorizedException(MESSAGES.AUTH.INVALID_TOKEN);
         }
 
         const user = await this.authService.getCurrentUser(payload.id);
         if (!user) {
-            throw new UnauthorizedException("access denied, user not found");
+            throw new UnauthorizedException(MESSAGES.AUTH.ACCESS_DENIED_USER_NOT_FOUND);
         }
 
         if (rolls.includes(user.user.role)) {
@@ -53,7 +54,7 @@ export class AuthRollGuard implements CanActivate {
             return true;
         }
 
-        throw new ForbiddenException("access denied, insufficient permissions");
+        throw new ForbiddenException(MESSAGES.AUTH.INSUFFICIENT_PERMISSIONS);
     }
 
 }

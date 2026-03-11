@@ -6,6 +6,7 @@ import { JwtService } from "@nestjs/jwt";
 import * as bcrypt from 'bcrypt';
 import { UserRole } from "../enums/userRole";
 import { Role } from "../../prisma/client/enums";
+import { MESSAGES } from "src/utils/messages";
 
 
 @Injectable()
@@ -24,7 +25,7 @@ export class AuthService {
         });
 
         if (existingUser) {
-            throw new ConflictException('Email already registered');
+            throw new ConflictException(MESSAGES.AUTH.EMAIL_ALREADY_REGISTERED);
         }
 
 
@@ -63,7 +64,7 @@ export class AuthService {
         const token = await this.generateToken(user.id, user.email, user.role);
 
         return {
-            message: 'User registered successfully',
+            message: MESSAGES.AUTH.USER_REGISTERED,
             user: {
                 id: user.id,
                 email: user.email,
@@ -83,21 +84,21 @@ export class AuthService {
         });
 
         if (!user) {
-            throw new UnauthorizedException('Invalid credentials');
+            throw new UnauthorizedException(MESSAGES.AUTH.INVALID_CREDENTIALS);
         }
 
 
         const isPasswordValid = await bcrypt.compare(password, user.password);
 
         if (!isPasswordValid) {
-            throw new UnauthorizedException('Invalid credentials');
+            throw new UnauthorizedException(MESSAGES.AUTH.INVALID_CREDENTIALS);
         }
 
 
         const token = await this.generateToken(user.id, user.email, user.role);
 
         return {
-            message: 'Logged in successfully',
+            message: MESSAGES.AUTH.LOGGED_IN,
             user: {
                 id: user.id,
                 email: user.email,
@@ -111,7 +112,7 @@ export class AuthService {
     async getCurrentUser(id: number) {
         const user = await this.prisma.user.findUnique({ where: { id } });
         if (!user) {
-            throw new NotFoundException(`user with id ${id} is not exist`);
+            throw new NotFoundException(MESSAGES.AUTH.USER_NOT_EXIST(id));
         }
         else {
             return {

@@ -2,6 +2,7 @@ import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/commo
 import { CreateModuleDto } from '../dto/create-module.dto';
 import { UpdateModuleDto } from '../dto/update-module.dto';
 import { PrismaService } from 'src/prisma/prisma.service';
+import { MESSAGES } from 'src/utils/messages';
 
 @Injectable()
 export class ModulesService {
@@ -16,7 +17,7 @@ export class ModulesService {
     });
 
     if (!course) {
-      throw new NotFoundException(`Course with ID ${courseId} not found`);
+      throw new NotFoundException(MESSAGES.COURSES.COURSE_NOT_FOUND(courseId));
     }
 
     // Check if the user is the instructor of the course or an OWNER
@@ -25,11 +26,11 @@ export class ModulesService {
       include: { teacherProfile: true }
     });
 
-    const isInstructor = user.teacherProfile && course.instructorId === user.teacherProfile.id;
-    const isOwner = user.role === 'OWNER';
+    const isInstructor = user?.teacherProfile && course.instructorId === user.teacherProfile.id;
+    const isOwner = user?.role === 'OWNER';
 
     if (!isInstructor && !isOwner) {
-      throw new ForbiddenException('You are not authorized to add modules to this course');
+      throw new ForbiddenException(MESSAGES.MODULES.UNAUTHORIZED_ADD);
     }
 
     return this.prisma.module.create({
@@ -72,7 +73,7 @@ export class ModulesService {
     });
 
     if (!module) {
-      throw new NotFoundException(`Module with ID ${id} not found`);
+      throw new NotFoundException(MESSAGES.MODULES.MODULE_NOT_FOUND(id));
     }
 
     return module;
@@ -86,11 +87,11 @@ export class ModulesService {
       include: { teacherProfile: true }
     });
 
-    const isInstructor = user.teacherProfile && module.course.instructorId === user.teacherProfile.id;
-    const isOwner = user.role === 'OWNER';
+    const isInstructor = user?.teacherProfile && module.course.instructorId === user.teacherProfile.id;
+    const isOwner = user?.role === 'OWNER';
 
     if (!isInstructor && !isOwner) {
-      throw new ForbiddenException('You are not authorized to update this module');
+      throw new ForbiddenException(MESSAGES.MODULES.UNAUTHORIZED_UPDATE);
     }
 
     return this.prisma.module.update({
@@ -107,11 +108,11 @@ export class ModulesService {
       include: { teacherProfile: true }
     });
 
-    const isInstructor = user.teacherProfile && module.course.instructorId === user.teacherProfile.id;
-    const isOwner = user.role === 'OWNER';
+    const isInstructor = user?.teacherProfile && module.course.instructorId === user.teacherProfile.id;
+    const isOwner = user?.role === 'OWNER';
 
     if (!isInstructor && !isOwner) {
-      throw new ForbiddenException('You are not authorized to delete this module');
+      throw new ForbiddenException(MESSAGES.MODULES.UNAUTHORIZED_DELETE);
     }
 
     await this.prisma.module.delete({
@@ -119,7 +120,7 @@ export class ModulesService {
     });
 
     return {
-      message: 'Module deleted successfully',
+      message: MESSAGES.MODULES.MODULE_DELETED,
     };
   }
 }

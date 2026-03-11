@@ -4,6 +4,7 @@ import { JwtService } from "@nestjs/jwt";
 import { Request } from "express";
 import { CURRENT_USER_KEY } from "src/utils/conistants";
 import { JwtPayloadType } from "src/utils/types";
+import { MESSAGES } from "src/utils/messages";
 
 
 @Injectable()
@@ -27,11 +28,11 @@ export class AuthGuard implements CanActivate {
                 }
 
             } catch (e) {
-                throw new UnauthorizedException("access denied , invalid token")
+                throw new UnauthorizedException(MESSAGES.AUTH.INVALID_TOKEN)
             }
             return true
         } else {
-            throw new UnauthorizedException("access denied , invalid token")
+            throw new UnauthorizedException(MESSAGES.AUTH.INVALID_TOKEN)
         }
     }
 

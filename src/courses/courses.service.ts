@@ -2,18 +2,19 @@ import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/commo
 import { CreateCourseDto } from './dto/create-course.dto';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { UpdateCourseDto } from './dto/update-course.dto';
+import { MESSAGES } from 'src/utils/messages';
 
 @Injectable()
 export class CoursesService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService) { }
 
   async create(createCourseDto: CreateCourseDto, userId: number) {
     const teacher = await this.prisma.teacher.findUnique({
       where: { userId },
     });
-    
+
     if (!teacher) {
-      throw new NotFoundException('Teacher profile not found');
+      throw new NotFoundException(MESSAGES.COURSES.TEACHER_PROFILE_NOT_FOUND);
     }
 
     return this.prisma.course.create({
@@ -59,7 +60,7 @@ export class CoursesService {
     });
 
     if (!course) {
-      throw new NotFoundException(`Course with ID ${id} not found`);
+      throw new NotFoundException(MESSAGES.COURSES.COURSE_NOT_FOUND(id));
     }
 
     return course;
@@ -73,14 +74,14 @@ export class CoursesService {
     });
 
     if (!user) {
-      throw new NotFoundException('User not found');
+      throw new NotFoundException(MESSAGES.COURSES.USER_NOT_FOUND);
     }
 
     const isInstructor = user.teacherProfile && course.instructorId === user.teacherProfile.id;
     const isOwner = user.role === 'OWNER';
 
     if (!isInstructor && !isOwner) {
-      throw new ForbiddenException('You are not authorized to update this course');
+      throw new ForbiddenException(MESSAGES.COURSES.UNAUTHORIZED_UPDATE);
     }
 
     return this.prisma.course.update({
@@ -97,21 +98,21 @@ export class CoursesService {
     });
 
     if (!user) {
-      throw new NotFoundException('User not found');
+      throw new NotFoundException(MESSAGES.COURSES.USER_NOT_FOUND);
     }
 
     const isInstructor = user.teacherProfile && course.instructorId === user.teacherProfile.id;
     const isOwner = user.role === 'OWNER';
 
     if (!isInstructor && !isOwner) {
-      throw new ForbiddenException('You are not authorized to delete this course');
+      throw new ForbiddenException(MESSAGES.COURSES.UNAUTHORIZED_DELETE);
     }
     this.prisma.course.delete({
       where: { id },
     });
 
     return {
-      message : "course deleted successfuly"
+      message: MESSAGES.COURSES.COURSE_DELETED
     }
   }
 }
