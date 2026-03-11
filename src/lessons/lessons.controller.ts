@@ -5,7 +5,7 @@ import { AuthRollGuard } from 'src/auth/guards/auth-roll.guard';
 import { userRoles } from 'src/auth/decorators/user_roll.decorator';
 import { Role } from 'src/prisma/client/enums';
 import { CurrentUser } from 'src/auth/decorators/current-user.decorator';
-import type { JwtPayloadType } from 'src/utils/types';
+import { JwtPayloadType } from 'src/utils/types';
 import { CreateLessonDto } from './dto/create-lesson.dto';
 import { UpdateLessonDto } from './dto/update-lesson.dto';
 import { FileInterceptor } from '@nestjs/platform-express';

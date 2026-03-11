@@ -2,7 +2,7 @@ import { Body, Controller, Post, Req, UseGuards } from '@nestjs/common';
 import { CreateEnrollmentDto } from '../dto/enrollment.dto';
 import { EnrollmentService } from '../service/enrollment.service';
 import { CurrentUser } from 'src/auth/decorators/current-user.decorator';
-import type { JwtPayloadType } from 'src/utils/types';
+import { JwtPayloadType } from 'src/utils/types';
 import { AuthRollGuard } from 'src/auth/guards/auth-roll.guard';
 import { UserRole } from 'src/auth/enums/userRole';
 import { Role } from 'src/prisma/client/enums';

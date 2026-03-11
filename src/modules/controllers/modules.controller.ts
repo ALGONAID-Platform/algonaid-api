@@ -7,7 +7,7 @@ import { AuthRollGuard } from 'src/auth/guards/auth-roll.guard';
 import { userRoles } from 'src/auth/decorators/user_roll.decorator';
 import { Role } from 'src/prisma/client/enums';
 import { CurrentUser } from 'src/auth/decorators/current-user.decorator';
-import type { JwtPayloadType } from 'src/utils/types';
+import { JwtPayloadType } from 'src/utils/types';
 
 @ApiTags('modules')
 @ApiBearerAuth()

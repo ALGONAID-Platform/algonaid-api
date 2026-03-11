@@ -4,11 +4,11 @@ import { CreateCourseDto } from './dto/create-course.dto';
 import { AuthRollGuard } from 'src/auth/guards/auth-roll.guard';
 import { userRoles } from 'src/auth/decorators/user_roll.decorator';
 import { Role } from 'src/prisma/client/enums';
-import type { JwtPayloadType } from 'src/utils/types';
+import { CurrentUser } from 'src/auth/decorators/current-user.decorator';
+import { JwtPayloadType } from 'src/utils/types';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { SwaggerCreateCourse, SwaggerDeleteCourse, SwaggerGetCourse, SwaggerUpdateCourse, SwaggerGetAllCourses } from './decorators/swagger.decorator';
 import { UpdateCourseDto } from './dto/update-course.dto';
-import { CurrentUser } from 'src/auth/decorators/current-user.decorator';
 
 @ApiTags('courses')
 @Controller('courses')
