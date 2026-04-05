@@ -5,7 +5,6 @@ import { AuthRollGuard } from 'src/auth/guards/auth-roll.guard';
 import { userRoles } from 'src/auth/decorators/user_roll.decorator';
 import { Role } from 'src/prisma/client/enums';
 import { CurrentUser } from 'src/auth/decorators/current-user.decorator';
-import { JwtPayloadType } from 'src/utils/types';
 import { CreateLessonDto } from './dto/create-lesson.dto';
 import { UpdateLessonDto } from './dto/update-lesson.dto';
 import { FileInterceptor } from '@nestjs/platform-express';
@@ -13,6 +12,7 @@ import { diskStorage } from 'multer';
 import { extname } from 'path';
 import { allowedFileTypes, pdfFileSizeLimit, uploadsFolder } from 'src/utils/conistants';
 import { SwaggerCreateLesson, SwaggerGetAllLessonsByModule, SwaggerGetLesson, SwaggerUpdateLesson, SwaggerDeleteLesson } from './decorators/swagger.decorator';
+import * as types from 'src/utils/types';
 
 @ApiTags('lessons')
 @ApiBearerAuth()
@@ -27,7 +27,7 @@ export class LessonsController {
   @SwaggerCreateLesson()
   create(
     @Body() createLessonDto: CreateLessonDto,
-    @CurrentUser() user: JwtPayloadType,
+    @CurrentUser() user: types.JwtPayloadType,
     @UploadedFile(
       new ParseFilePipe({
         validators: [
@@ -63,7 +63,7 @@ export class LessonsController {
   update(
     @Param('id', ParseIntPipe) id: number,
     @Body() updateLessonDto: UpdateLessonDto,
-    @CurrentUser() user: JwtPayloadType,
+    @CurrentUser() user: types.JwtPayloadType,
     @UploadedFile() file?: Express.Multer.File
   ) {
     if (file) {
@@ -76,7 +76,7 @@ export class LessonsController {
   @UseGuards(AuthRollGuard)
   @userRoles(Role.ADMIN, Role.OWNER)
   @SwaggerDeleteLesson()
-  remove(@Param('id', ParseIntPipe) id: number, @CurrentUser() user: JwtPayloadType) {
+  remove(@Param('id', ParseIntPipe) id: number, @CurrentUser() user: types.JwtPayloadType) {
     return this.lessonsService.remove(id, user.id);
   }
 }
