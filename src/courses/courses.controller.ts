@@ -5,7 +5,7 @@ import { AuthRollGuard } from 'src/auth/guards/auth-roll.guard';
 import { userRoles } from 'src/auth/decorators/user_roll.decorator';
 import { Role } from 'src/prisma/client/enums';
 import { CurrentUser } from 'src/auth/decorators/current-user.decorator';
-import { JwtPayloadType } from 'src/utils/types';
+import * as types from 'src/utils/types';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { SwaggerCreateCourse, SwaggerDeleteCourse, SwaggerGetCourse, SwaggerUpdateCourse, SwaggerGetAllCourses } from './decorators/swagger.decorator';
 import { UpdateCourseDto } from './dto/update-course.dto';
@@ -20,7 +20,7 @@ export class CoursesController {
   @UseGuards(AuthRollGuard)
   @userRoles(Role.ADMIN, Role.OWNER)
   @userRoles(Role.STUDENT)
-  create(@Body() createCourseDto: CreateCourseDto, @CurrentUser() user: JwtPayloadType) {
+  create(@Body() createCourseDto: CreateCourseDto, @CurrentUser() user: types.JwtPayloadType) {
     return this.coursesService.create(createCourseDto, user.id);
   }
 
@@ -40,7 +40,7 @@ export class CoursesController {
   @SwaggerUpdateCourse()
   @UseGuards(AuthRollGuard)
   @userRoles(Role.ADMIN, Role.OWNER)
-  update(@Param('id') id: string, @Body() updateCourseDto: UpdateCourseDto, @CurrentUser() user: JwtPayloadType) {
+  update(@Param('id') id: string, @Body() updateCourseDto: UpdateCourseDto, @CurrentUser() user: types.JwtPayloadType) {
     return this.coursesService.update(+id, updateCourseDto, user.id);
   }
 
@@ -48,7 +48,7 @@ export class CoursesController {
   @SwaggerDeleteCourse()
   @UseGuards(AuthRollGuard)
   @userRoles(Role.ADMIN, Role.OWNER)
-  remove(@Param('id') id: string, @CurrentUser() user: JwtPayloadType) {
+  remove(@Param('id') id: string, @CurrentUser() user: types.JwtPayloadType) {
     return this.coursesService.remove(+id, user.id);
   }
 }

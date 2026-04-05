@@ -17,7 +17,9 @@ async function bootstrap() {
   }));
 
   app.enableCors({
-    origin: "http://localhost:5000"
+    // origin: "http://localhost:5000"
+    origin: true,
+    credentials: true,
   });
 
   app.useStaticAssets(join(__dirname, '..', 'uploads'), {
@@ -27,7 +29,7 @@ async function bootstrap() {
   const documentation = SwaggerModule.createDocument(app, swaggerConfig);
   SwaggerModule.setup("swagger", app, documentation);
   
-  await app.listen(process.env.PORT ?? 3000);
+  await app.listen(process.env.PORT ?? 3000, '0.0.0.0');
 }
 bootstrap();
  

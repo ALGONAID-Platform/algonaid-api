@@ -2,7 +2,7 @@ import { Body, Controller, Post, Req, UseGuards } from '@nestjs/common';
 import { CreateEnrollmentDto } from '../dto/enrollment.dto';
 import { EnrollmentService } from '../service/enrollment.service';
 import { CurrentUser } from 'src/auth/decorators/current-user.decorator';
-import { JwtPayloadType } from 'src/utils/types';
+import * as types from 'src/utils/types';
 import { AuthRollGuard } from 'src/auth/guards/auth-roll.guard';
 import { UserRole } from 'src/auth/enums/userRole';
 import { Role } from 'src/prisma/client/enums';
@@ -21,7 +21,7 @@ export class EnrollmentController {
   @UseGuards(AuthRollGuard)
   @userRoles(Role.STUDENT)
   @SwaggerEnrollInCourse()
-  enroll(@Body() createDto: CreateEnrollmentDto, @CurrentUser() user: JwtPayloadType) {
+  enroll(@Body() createDto: CreateEnrollmentDto, @CurrentUser() user: types.JwtPayloadType) {
     return this.enrollmentSevice.craete(user.id, createDto);
   }
 
