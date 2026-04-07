@@ -25,7 +25,11 @@ export class ModulesService {
       include: { teacherProfile: true }
     });
 
-    const isInstructor = user.teacherProfile && course.instructorId === user.teacherProfile.id;
+    if (!user) {
+      throw new NotFoundException(`User with ID ${userId} not found`);
+    }
+
+    const isInstructor = !!user.teacherProfile && (course?.instructorId === user.teacherProfile.id || (module as any)?.course?.instructorId === user.teacherProfile.id);
     const isOwner = user.role === 'OWNER';
 
     if (!isInstructor && !isOwner) {
@@ -86,7 +90,11 @@ export class ModulesService {
       include: { teacherProfile: true }
     });
 
-    const isInstructor = user.teacherProfile && module.course.instructorId === user.teacherProfile.id;
+    if (!user) {
+      throw new NotFoundException(`User with ID ${userId} not found`);
+    }
+
+    const isInstructor = !!user.teacherProfile && module.course.instructorId === user.teacherProfile.id;
     const isOwner = user.role === 'OWNER';
 
     if (!isInstructor && !isOwner) {
@@ -107,7 +115,11 @@ export class ModulesService {
       include: { teacherProfile: true }
     });
 
-    const isInstructor = user.teacherProfile && module.course.instructorId === user.teacherProfile.id;
+    if (!user) {
+      throw new NotFoundException(`User with ID ${userId} not found`);
+    }
+
+    const isInstructor = !!user.teacherProfile && module.course.instructorId === user.teacherProfile.id;
     const isOwner = user.role === 'OWNER';
 
     if (!isInstructor && !isOwner) {

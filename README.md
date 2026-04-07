@@ -6,6 +6,7 @@ Algonaid is a robust Learning Management System (LMS) backend built with NestJS.
 
 - **Authentication & Authorization**:
   - Secure registration and login using JWT.
+  - **Google OAuth 2.0 Integration**: Single-click login for students.
   - Role-Based Access Control (RBAC) with three roles: `STUDENT`, `ADMIN` (Teacher), and `OWNER`.
   - Automatic profile creation for Students and Teachers upon registration.
 - **Course Management**:
@@ -17,9 +18,54 @@ Algonaid is a robust Learning Management System (LMS) backend built with NestJS.
   - Enrollment status tracking (`ACTIVE`, `COMPLETED`, `CANCELLED`).
 - **Content Delivery**:
   - Support for video URLs, PDF links, and exam descriptions within lessons.
+  - **PDF Upload**: Teachers can upload educational PDF materials directly to lessons.
   - Static file serving for uploads.
-- **API Documentation**:
-  - Fully documented with Swagger.
+
+## 📁 Testing PDF Uploads
+
+The API supports PDF uploads for lessons. You can test this using **Swagger** or **Postman**:
+
+### 1. Using Swagger (Recommended)
+1.  Navigate to `http://localhost:3000/swagger`.
+2.  Go to the **`lessons`** section and open `POST /api/v1/lessons`.
+3.  Click **"Try it out"**.
+4.  Fill in the required fields (`title`, `moduleId`, etc.).
+5.  In the **`pdf`** field, click **"Choose File"** and select a `.pdf` file from your computer.
+6.  Click **"Execute"**.
+7.  The response will include a `pdfUrl` (e.g., `uploads/lesson-pdf-12345.pdf`).
+
+### 2. Accessing Uploaded Files
+Once a file is uploaded, it is served statically and can be accessed via:
+`http://localhost:3000/uploads/your-file-name.pdf`
+
+*Note: Ensure you are logged in as a user with `ADMIN` (Teacher) or `OWNER` roles and provide the Bearer token in Swagger's **Authorize** section.*
+
+## 🔐 Google OAuth Setup
+
+To enable Google Login, follow these steps:
+
+1.  **Google Cloud Console**:
+    - Go to the [Google Cloud Console](https://console.cloud.google.com/).
+    - Create a new project or select an existing one.
+    - Go to **APIs & Services > Credentials**.
+    - Click **Create Credentials > OAuth client ID**.
+    - Set the Application type to **Web application**.
+    - Add **Authorized redirect URIs**:
+      `http://localhost:3000/api/v1/auth/google/callback`
+    - Copy your **Client ID** and **Client Secret**.
+
+2.  **Environment Variables**:
+    Add the following keys to your `.env` file:
+    ```env
+    GOOGLE_CLIENT_ID=your_client_id_here
+    GOOGLE_CLIENT_SECRET=your_client_secret_here
+    GOOGLE_CALLBACK_URL=http://localhost:3000/api/v1/auth/google/callback
+    ```
+
+3.  **How to Use**:
+    - Visit `http://localhost:3000/api/v1/auth/google` in your browser.
+    - Login with your Google account.
+    - You will be redirected back with a JSON response containing your user info and a **JWT Access Token**.
 
 ## 🛠 Tech Stack
 

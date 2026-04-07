@@ -11,6 +11,7 @@ import { UpdateLessonDto } from './dto/update-lesson.dto';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 import { extname } from 'path';
+import * as multer from 'multer';
 
 @ApiTags('lessons')
 @ApiBearerAuth()
@@ -24,13 +25,13 @@ export class LessonsController {
   @UseInterceptors(FileInterceptor('pdf', {
     storage: diskStorage({
       destination: './uploads',
-      filename: (req, file, callback) => {
+      filename: (req: any, file: any, callback: any) => {
         const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
         const ext = extname(file.originalname);
         callback(null, `lesson-pdf-${uniqueSuffix}${ext}`);
       },
     }),
-    fileFilter: (req, file, callback) => {
+    fileFilter: (req: any, file: any, callback: any) => {
       if (!file.originalname.match(/\.(pdf)$/)) {
         return callback(new BadRequestException('Only PDF files are allowed!'), false);
       }
@@ -87,13 +88,13 @@ export class LessonsController {
   @UseInterceptors(FileInterceptor('pdf', {
     storage: diskStorage({
       destination: './uploads',
-      filename: (req, file, callback) => {
+      filename: (req: any, file: any, callback: any) => {
         const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
         const ext = extname(file.originalname);
         callback(null, `lesson-pdf-${uniqueSuffix}${ext}`);
       },
     }),
-    fileFilter: (req, file, callback) => {
+    fileFilter: (req: any, file: any, callback: any) => {
       if (!file.originalname.match(/\.(pdf)$/)) {
         return callback(new BadRequestException('Only PDF files are allowed!'), false);
       }

@@ -23,7 +23,8 @@ model User {
   id             Int      @id @default(autoincrement())
   name           String
   email          String   @unique
-  password       String
+  password       String?
+  googleId       String?  @unique
   role           Role     @default(STUDENT)
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt

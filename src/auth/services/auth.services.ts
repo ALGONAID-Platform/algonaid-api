@@ -82,7 +82,7 @@ export class AuthService {
             where: { email }
         });
 
-        if (!user) {
+        if (!user || !user.password) {
             throw new UnauthorizedException('Invalid credentials');
         }
 
@@ -98,6 +98,52 @@ export class AuthService {
 
         return {
             message: 'Logged in successfully',
+            user: {
+                id: user.id,
+                email: user.email,
+                name: user.name,
+                role: user.role
+            },
+            access_token: token
+        };
+    }
+
+    async validateGoogleUser(googleUser: any) {
+        const { email, name, googleId } = googleUser;
+
+        let user = await this.prisma.user.findUnique({
+            where: { email },
+        });
+
+        if (user) {
+            // Update user with googleId if they signed up with email before
+            if (!user.googleId) {
+                user = await this.prisma.user.update({
+                    where: { id: user.id },
+                    data: { googleId },
+                });
+            }
+        } else {
+            // Create new user (default role is STUDENT)
+            user = await this.prisma.user.create({
+                data: {
+                    email,
+                    name,
+                    googleId,
+                    role: Role.STUDENT,
+                    studentProfile: {
+                        create: {
+                            academicId: `STU-G-${Date.now()}`
+                        }
+                    }
+                },
+            });
+        }
+
+        const token = await this.generateToken(user.id, user.email, user.role);
+
+        return {
+            message: 'Google login successful',
             user: {
                 id: user.id,
                 email: user.email,
