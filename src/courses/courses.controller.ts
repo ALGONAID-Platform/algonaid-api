@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, ParseIntPipe } from '@nestjs/common';
 import { CoursesService } from './courses.service';
 import { CreateCourseDto } from './dto/create-course.dto';
 import { AuthRollGuard } from 'src/auth/guards/auth-roll.guard';
@@ -26,10 +26,18 @@ export class CoursesController {
 
   @Get()
   @SwaggerGetAllCourses()
-  findAll() {
-    return this.coursesService.findAll();
+  @UseGuards(AuthRollGuard) 
+  @userRoles(Role.STUDENT, Role.ADMIN, Role.OWNER)
+  findAll(@CurrentUser() user: types.JwtPayloadType) {
+    return this.coursesService.findAll(user.id);
   }
-
+ @Get("my-courses")
+@SwaggerGetAllCourses()
+@UseGuards(AuthRollGuard) 
+  @userRoles(Role.STUDENT, Role.ADMIN, Role.OWNER)
+findMyCourses(@CurrentUser() user: types.JwtPayloadType) {
+  return this.coursesService.findMyCourses(user.id);
+}
   @Get(':id')
   @SwaggerGetCourse()
   findOne(@Param('id') id: string) {
@@ -48,7 +56,7 @@ export class CoursesController {
   @SwaggerDeleteCourse()
   @UseGuards(AuthRollGuard)
   @userRoles(Role.ADMIN, Role.OWNER)
-  remove(@Param('id') id: string, @CurrentUser() user: types.JwtPayloadType) {
-    return this.coursesService.remove(+id, user.id);
+  remove(@Param('id' , ParseIntPipe) id: number, @CurrentUser() user: types.JwtPayloadType) {
+    return this.coursesService.remove(id, user.id);
   }
 }

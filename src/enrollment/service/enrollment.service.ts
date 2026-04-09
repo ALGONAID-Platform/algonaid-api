@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { CreateEnrollmentDto } from '../dto/enrollment.dto';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { MESSAGES } from 'src/utils/messages';
@@ -10,9 +10,12 @@ export class EnrollmentService {
     async craete(userId: number, enrollmentDto: CreateEnrollmentDto) {
         const { courseId } = enrollmentDto;
 
+        // 1. جلب بيانات الطالب والكورس
         const student = await this.prisma.student.findUnique({
             where: { userId }
         });
+
+        // 2. التحقق من وجود الكورس والطالب
         const course = await this.prisma.course.findUnique({
             where: { id: courseId }
         });
@@ -24,6 +27,22 @@ export class EnrollmentService {
             throw new NotFoundException(MESSAGES.ENROLLMENT.STUDENT_PROFILE_NOT_FOUND);
         }
 
+        // 🌟 3. التحقق من أن الطالب غير مسجل مسبقاً (هذا ما ينقصك)
+        const existingEnrollment = await this.prisma.enrollment.findUnique({
+            where: {
+                studentId_courseId: {
+                    studentId: student.id,
+                    courseId: courseId,
+                },
+            },
+        });
+
+        if (existingEnrollment) {
+            // يمكنك إرجاع رسالة "أنت مسجل بالفعل" بدلاً من إظهار خطأ
+            throw new ConflictException("أنت مسجل بالفعل في هذا الكورس");
+        }
+
+        // 4. إذا لم يكن مسجلاً، نقوم بإنشاء التسجيل
         await this.prisma.enrollment.create({
             data: {
                 courseId,
@@ -33,6 +52,6 @@ export class EnrollmentService {
 
         return {
             message: MESSAGES.ENROLLMENT.ENROLLED_SUCCESSFULLY
-        };
+        }
     }
 }
