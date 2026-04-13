@@ -132,9 +132,9 @@ async findAll(userId: number) {
     }
 
     const isInstructor = user.teacherProfile && course.instructorId === user.teacherProfile.id;
-    const isOwner = user.role === 'OWNER';
+    const isOwnerOrAdmin = user.role === 'OWNER' || user.role === 'ADMIN';
 
-    if (!isInstructor && !isOwner) {
+    if (!isInstructor && !isOwnerOrAdmin) {
       throw new ForbiddenException(MESSAGES.COURSES.UNAUTHORIZED_UPDATE);
     }
 

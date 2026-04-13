@@ -57,7 +57,7 @@ const isOwnerOrAdmin = user?.role === 'OWNER' || user?.role === 'ADMIN';
       throw new NotFoundException(MESSAGES.MODULES.MODULE_NOT_FOUND(moduleId));
     }
 
-    return this.prisma.lesson.findMany({
+    return await this.prisma.lesson.findMany({
       where: { moduleId },
       orderBy: { order: 'asc' },
     });
@@ -113,9 +113,9 @@ const isOwnerOrAdmin = user?.role === 'OWNER' || user?.role === 'ADMIN';
     });
 
     const isInstructor = user?.teacherProfile && lesson.module.course.instructorId === user.teacherProfile.id;
-    const isOwner = user?.role === 'OWNER';
+    const isOwnerOrAdmin = user?.role === 'OWNER' || user?.role === 'ADMIN';
 
-    if (!isInstructor && !isOwner) {
+    if (!isInstructor && !isOwnerOrAdmin) {
       throw new ForbiddenException(MESSAGES.LESSONS.UNAUTHORIZED_DELETE);
     }
 
