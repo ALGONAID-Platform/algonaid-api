@@ -96,3 +96,41 @@ export function SwaggerLogin() {
     })
   );
 }
+
+export function SwaggerGoogleAuth() {
+  return applyDecorators(
+    ApiOperation({
+      summary: 'تسجيل الدخول عبر جوجل',
+      description: 'يتم توجيه المستخدم إلى صفحة تسجيل الدخول الخاصة بجوجل'
+    }),
+    ApiResponse({
+      status: 302,
+      description: 'إعادة توجيه إلى صفحة جوجل'
+    })
+  );
+}
+
+export function SwaggerGoogleCallback() {
+  return applyDecorators(
+    ApiOperation({
+      summary: 'رابط العودة من جوجل (Callback)',
+      description: 'يتم استدعاء هذا الرابط تلقائياً بعد نجاح تسجيل الدخول في جوجل'
+    }),
+    ApiResponse({
+      status: 200,
+      description: 'تم تسجيل الدخول بنجاح عبر جوجل',
+      schema: {
+        example: {
+          message: 'Google login successful',
+          user: {
+            id: 5,
+            email: 'user@gmail.com',
+            name: 'User Name',
+            role: 'STUDENT'
+          },
+          access_token: 'eyJhbGciOiJIUzI1...'
+        }
+      }
+    })
+  );
+}

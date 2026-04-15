@@ -1,4 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
+import { Type } from 'class-transformer';
 import { IsInt, IsNotEmpty, IsOptional, IsString, IsUrl } from 'class-validator';
 
 export class CreateLessonDto {
@@ -35,10 +36,12 @@ export class CreateLessonDto {
   @ApiProperty({ example: 1 })
   @IsOptional()
   @IsInt()
+  @Type(() => Number)
   order?: number;
 
   @ApiProperty({ example: 1 })
   @IsNotEmpty()
   @IsInt()
+  @Type(() => Number)
   moduleId: number;
 }

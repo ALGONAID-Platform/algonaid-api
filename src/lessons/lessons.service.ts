@@ -35,7 +35,8 @@ export class LessonsService {
     });
 
     const isInstructor = user?.teacherProfile && module.course.instructorId === user.teacherProfile.id;
-const isOwnerOrAdmin = user?.role === 'OWNER' || user?.role === 'ADMIN';
+    const isOwnerOrAdmin = user?.role === 'OWNER' || user?.role === 'ADMIN';
+
     if (!isInstructor && !isOwnerOrAdmin) {
       throw new ForbiddenException(MESSAGES.LESSONS.UNAUTHORIZED_ADD);
     }
@@ -93,7 +94,8 @@ const isOwnerOrAdmin = user?.role === 'OWNER' || user?.role === 'ADMIN';
     });
 
     const isInstructor = user?.teacherProfile && lesson.module.course.instructorId === user.teacherProfile.id;
-const isOwnerOrAdmin = user?.role === 'OWNER' || user?.role === 'ADMIN';
+    const isOwnerOrAdmin = user?.role === 'OWNER' || user?.role === 'ADMIN';
+
     if (!isInstructor && !isOwnerOrAdmin) {
       throw new ForbiddenException(MESSAGES.LESSONS.UNAUTHORIZED_UPDATE);
     }
