@@ -1,5 +1,6 @@
 import { applyDecorators } from '@nestjs/common';
 import { ApiOperation, ApiResponse, ApiBearerAuth, ApiParam, ApiBody } from '@nestjs/swagger';
+import { MESSAGES } from 'src/utils/messages';
 
 export function SwaggerCreateCourse() {
     return applyDecorators(
@@ -24,7 +25,7 @@ export function SwaggerCreateCourse() {
             schema: {
                 example: {
                     statusCode: 201,
-                    message: 'Course created successfully',
+                    message: MESSAGES.COURSES.COURSE_CREATED,
                     data: {
                         id: 1,
                         title: 'دورة NestJS للمبتدئين',
@@ -143,7 +144,7 @@ export function SwaggerUpdateCourse() {
             schema: {
                 example: {
                     statusCode: 200,
-                    message: 'Course updated successfully',
+                    message: MESSAGES.COURSES.COURSE_UPDATED,
                     data: {
                         id: 1,
                         title: 'دورة NestJS المتقدمة',
@@ -182,7 +183,7 @@ export function SwaggerDeleteCourse() {
             schema: {
                 example: {
                     statusCode: 200,
-                    message: 'Course deleted successfully'
+                    message: MESSAGES.COURSES.COURSE_DELETED
                 }
             }
         }),

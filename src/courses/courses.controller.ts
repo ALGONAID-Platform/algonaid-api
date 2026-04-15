@@ -1,11 +1,11 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, ParseIntPipe } from '@nestjs/common';
 import { CoursesService } from './courses.service';
 import { CreateCourseDto } from './dto/create-course.dto';
 import { AuthRollGuard } from 'src/auth/guards/auth-roll.guard';
 import { userRoles } from 'src/auth/decorators/user_roll.decorator';
 import { Role } from 'src/prisma/client/enums';
 import { CurrentUser } from 'src/auth/decorators/current-user.decorator';
-import { JwtPayloadType } from 'src/utils/types';
+import * as types from 'src/utils/types';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { SwaggerCreateCourse, SwaggerDeleteCourse, SwaggerGetCourse, SwaggerUpdateCourse, SwaggerGetAllCourses } from './decorators/swagger.decorator';
 import { UpdateCourseDto } from './dto/update-course.dto';
@@ -20,16 +20,24 @@ export class CoursesController {
   @UseGuards(AuthRollGuard)
   @userRoles(Role.ADMIN, Role.OWNER)
   @userRoles(Role.STUDENT)
-  create(@Body() createCourseDto: CreateCourseDto, @CurrentUser() user: JwtPayloadType) {
+  create(@Body() createCourseDto: CreateCourseDto, @CurrentUser() user: types.JwtPayloadType) {
     return this.coursesService.create(createCourseDto, user.id);
   }
 
   @Get()
   @SwaggerGetAllCourses()
-  findAll() {
-    return this.coursesService.findAll();
+  @UseGuards(AuthRollGuard) 
+  @userRoles(Role.STUDENT, Role.ADMIN, Role.OWNER)
+  findAll(@CurrentUser() user: types.JwtPayloadType) {
+    return this.coursesService.findAll(user.id);
   }
-
+ @Get("my-courses")
+@SwaggerGetAllCourses()
+@UseGuards(AuthRollGuard) 
+  @userRoles(Role.STUDENT, Role.ADMIN, Role.OWNER)
+findMyCourses(@CurrentUser() user: types.JwtPayloadType) {
+  return this.coursesService.findMyCourses(user.id);
+}
   @Get(':id')
   @SwaggerGetCourse()
   findOne(@Param('id') id: string) {
@@ -40,7 +48,7 @@ export class CoursesController {
   @SwaggerUpdateCourse()
   @UseGuards(AuthRollGuard)
   @userRoles(Role.ADMIN, Role.OWNER)
-  update(@Param('id') id: string, @Body() updateCourseDto: UpdateCourseDto, @CurrentUser() user: JwtPayloadType) {
+  update(@Param('id') id: string, @Body() updateCourseDto: UpdateCourseDto, @CurrentUser() user: types.JwtPayloadType) {
     return this.coursesService.update(+id, updateCourseDto, user.id);
   }
 
@@ -48,7 +56,7 @@ export class CoursesController {
   @SwaggerDeleteCourse()
   @UseGuards(AuthRollGuard)
   @userRoles(Role.ADMIN, Role.OWNER)
-  remove(@Param('id') id: string, @CurrentUser() user: JwtPayloadType) {
-    return this.coursesService.remove(+id, user.id);
+  remove(@Param('id' , ParseIntPipe) id: number, @CurrentUser() user: types.JwtPayloadType) {
+    return this.coursesService.remove(id, user.id);
   }
 }

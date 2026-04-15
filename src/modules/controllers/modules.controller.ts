@@ -7,7 +7,7 @@ import { AuthRollGuard } from 'src/auth/guards/auth-roll.guard';
 import { userRoles } from 'src/auth/decorators/user_roll.decorator';
 import { Role } from 'src/prisma/client/enums';
 import { CurrentUser } from 'src/auth/decorators/current-user.decorator';
-import { JwtPayloadType } from 'src/utils/types';
+import * as types from 'src/utils/types';
 
 @ApiTags('modules')
 @ApiBearerAuth()
@@ -21,7 +21,7 @@ export class ModulesController {
   @ApiOperation({ summary: 'Create a new module for a course' })
   @ApiResponse({ status: 201, description: 'The module has been successfully created.' })
   @ApiResponse({ status: 403, description: 'Forbidden.' })
-  create(@Body() createModuleDto: CreateModuleDto, @CurrentUser() user: JwtPayloadType) {
+  create(@Body() createModuleDto: CreateModuleDto, @CurrentUser() user: types.JwtPayloadType) {
     return this.modulesService.create(createModuleDto, user.id);
   }
 
@@ -47,7 +47,7 @@ export class ModulesController {
   @UseGuards(AuthRollGuard)
   @userRoles(Role.ADMIN, Role.OWNER)
   @ApiOperation({ summary: 'Update a module' })
-  update(@Param('id', ParseIntPipe) id: number, @Body() updateModuleDto: UpdateModuleDto, @CurrentUser() user: JwtPayloadType) {
+  update(@Param('id', ParseIntPipe) id: number, @Body() updateModuleDto: UpdateModuleDto, @CurrentUser() user: types.JwtPayloadType) {
     return this.modulesService.update(id, updateModuleDto, user.id);
   }
 
@@ -55,7 +55,7 @@ export class ModulesController {
   @UseGuards(AuthRollGuard)
   @userRoles(Role.ADMIN, Role.OWNER)
   @ApiOperation({ summary: 'Delete a module' })
-  remove(@Param('id', ParseIntPipe) id: number, @CurrentUser() user: JwtPayloadType) {
+  remove(@Param('id', ParseIntPipe) id: number, @CurrentUser() user: types.JwtPayloadType) {
     return this.modulesService.remove(id, user.id);
   }
 }

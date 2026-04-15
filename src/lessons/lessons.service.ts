@@ -2,13 +2,19 @@ import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/commo
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateLessonDto } from './dto/create-lesson.dto';
 import { UpdateLessonDto } from './dto/update-lesson.dto';
+import { MESSAGES } from 'src/utils/messages';
+import { uploadsFolder } from 'src/utils/conistants';
 
 @Injectable()
 export class LessonsService {
   constructor(private readonly prisma: PrismaService) { }
 
-  async create(createLessonDto: CreateLessonDto, userId: number) {
+  async create(createLessonDto: CreateLessonDto, userId: number , file?: Express.Multer.File) {
     const { moduleId, ...lessonData } = createLessonDto;
+
+    if (file) {
+      lessonData.pdfUrl = `${uploadsFolder}/${file.filename}`;
+    }
 
     const module = await this.prisma.module.findUnique({
       where: { id: moduleId },
@@ -20,7 +26,7 @@ export class LessonsService {
     });
 
     if (!module) {
-      throw new NotFoundException(`Module with ID ${moduleId} not found`);
+      throw new NotFoundException(MESSAGES.MODULES.MODULE_NOT_FOUND(moduleId));
     }
 
     const user = await this.prisma.user.findUnique({
@@ -28,15 +34,11 @@ export class LessonsService {
       include: { teacherProfile: true }
     });
 
-    if (!user) {
-      throw new NotFoundException(`User with ID ${userId} not found`);
-    }
+    const isInstructor = user?.teacherProfile && module.course.instructorId === user.teacherProfile.id;
+    const isOwnerOrAdmin = user?.role === 'OWNER' || user?.role === 'ADMIN';
 
-    const isInstructor = !!user.teacherProfile && module.course.instructorId === user.teacherProfile.id;
-    const isOwner = user.role === 'OWNER';
-
-    if (!isInstructor && !isOwner) {
-      throw new ForbiddenException('You are not authorized to add lessons to this module');
+    if (!isInstructor && !isOwnerOrAdmin) {
+      throw new ForbiddenException(MESSAGES.LESSONS.UNAUTHORIZED_ADD);
     }
 
     return this.prisma.lesson.create({
@@ -53,10 +55,10 @@ export class LessonsService {
     });
 
     if (!module) {
-      throw new NotFoundException(`Module with ID ${moduleId} not found`);
+      throw new NotFoundException(MESSAGES.MODULES.MODULE_NOT_FOUND(moduleId));
     }
 
-    return this.prisma.lesson.findMany({
+    return await this.prisma.lesson.findMany({
       where: { moduleId },
       orderBy: { order: 'asc' },
     });
@@ -77,7 +79,7 @@ export class LessonsService {
     });
 
     if (!lesson) {
-      throw new NotFoundException(`Lesson with ID ${id} not found`);
+      throw new NotFoundException(MESSAGES.LESSONS.LESSON_NOT_FOUND(id));
     }
 
     return lesson;
@@ -91,15 +93,11 @@ export class LessonsService {
       include: { teacherProfile: true }
     });
 
-    if (!user) {
-      throw new NotFoundException(`User with ID ${userId} not found`);
-    }
+    const isInstructor = user?.teacherProfile && lesson.module.course.instructorId === user.teacherProfile.id;
+    const isOwnerOrAdmin = user?.role === 'OWNER' || user?.role === 'ADMIN';
 
-    const isInstructor = !!user.teacherProfile && lesson.module.course.instructorId === user.teacherProfile.id;
-    const isOwner = user.role === 'OWNER';
-
-    if (!isInstructor && !isOwner) {
-      throw new ForbiddenException('You are not authorized to update this lesson');
+    if (!isInstructor && !isOwnerOrAdmin) {
+      throw new ForbiddenException(MESSAGES.LESSONS.UNAUTHORIZED_UPDATE);
     }
 
     return this.prisma.lesson.update({
@@ -116,15 +114,11 @@ export class LessonsService {
       include: { teacherProfile: true }
     });
 
-    if (!user) {
-      throw new NotFoundException(`User with ID ${userId} not found`);
-    }
+    const isInstructor = user?.teacherProfile && lesson.module.course.instructorId === user.teacherProfile.id;
+    const isOwnerOrAdmin = user?.role === 'OWNER' || user?.role === 'ADMIN';
 
-    const isInstructor = !!user.teacherProfile && lesson.module.course.instructorId === user.teacherProfile.id;
-    const isOwner = user.role === 'OWNER';
-
-    if (!isInstructor && !isOwner) {
-      throw new ForbiddenException('You are not authorized to delete this lesson');
+    if (!isInstructor && !isOwnerOrAdmin) {
+      throw new ForbiddenException(MESSAGES.LESSONS.UNAUTHORIZED_DELETE);
     }
 
     await this.prisma.lesson.delete({
@@ -132,7 +126,7 @@ export class LessonsService {
     });
 
     return {
-      message: 'Lesson deleted successfully',
+      message: MESSAGES.LESSONS.LESSON_DELETED,
     };
   }
 }

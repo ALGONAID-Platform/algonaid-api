@@ -1,6 +1,7 @@
 import { applyDecorators } from '@nestjs/common';
 import { ApiOperation, ApiResponse, ApiBearerAuth, ApiBody } from '@nestjs/swagger';
 import { CreateEnrollmentDto } from '../dto/enrollment.dto';
+import { MESSAGES } from 'src/utils/messages';
 
 export function SwaggerEnrollInCourse() {
     return applyDecorators(
@@ -24,7 +25,7 @@ export function SwaggerEnrollInCourse() {
             schema: {
                 example: {
                     statusCode: 201,
-                    message: 'Enrollment completed successfully',
+                    message: MESSAGES.ENROLLMENT.ENROLLMENT_COMPLETED,
                     data: {
                         id: 1,
                         studentId: 5,

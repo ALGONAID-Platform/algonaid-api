@@ -1,5 +1,6 @@
 import { applyDecorators, HttpCode } from '@nestjs/common';
 import { ApiOperation, ApiBody, ApiResponse } from '@nestjs/swagger';
+import { MESSAGES } from 'src/utils/messages';
 
 export function SwaggerRegister() {
   return applyDecorators(
@@ -26,7 +27,7 @@ export function SwaggerRegister() {
       schema: {
         example: {
           statusCode: 201,
-          message: 'User registered successfully',
+          message: MESSAGES.AUTH.USER_REGISTERED,
           data: {
             user: {
               id: 1,
@@ -70,7 +71,7 @@ export function SwaggerLogin() {
       description: 'تم تسجيل الدخول بنجاح',
       schema: {
         example: {
-          message: 'Logged in successfully',
+          message: MESSAGES.AUTH.LOGGED_IN,
           data: {
             user: {
               id: 1,
