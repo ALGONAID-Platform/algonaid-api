@@ -9,6 +9,8 @@ import { JwtModule } from '@nestjs/jwt';
 import { CoursesModule } from './courses/courses.module';
 import { LessonsModule } from './lessons/lessons.module';
 import { ModulesModule } from './modules/modules.module';
+import { ExamsModule } from './exams/exams.module';
+import { ProgressModule } from './progress/progress.module';
 
 @Module({
   imports: [
@@ -30,6 +32,8 @@ import { ModulesModule } from './modules/modules.module';
     CoursesModule,
     LessonsModule,
     ModulesModule,
+    ExamsModule,
+    ProgressModule,
   ],
   controllers: [AppController],
   providers: [AppService],

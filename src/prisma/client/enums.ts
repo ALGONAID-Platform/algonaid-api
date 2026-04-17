@@ -25,3 +25,21 @@ export const EnrollmentStatus = {
 } as const
 
 export type EnrollmentStatus = (typeof EnrollmentStatus)[keyof typeof EnrollmentStatus]
+
+
+export const QuestionType = {
+  MULTIPLE_CHOICE: 'MULTIPLE_CHOICE',
+  TRUE_FALSE: 'TRUE_FALSE'
+} as const
+
+export type QuestionType = (typeof QuestionType)[keyof typeof QuestionType]
+
+
+export const ExamStatus = {
+  IN_PROGRESS: 'IN_PROGRESS',
+  PASSED: 'PASSED',
+  FAILED: 'FAILED',
+  IMPROVEMENT_NEEDED: 'IMPROVEMENT_NEEDED'
+} as const
+
+export type ExamStatus = (typeof ExamStatus)[keyof typeof ExamStatus]

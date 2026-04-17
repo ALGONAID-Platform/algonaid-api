@@ -172,6 +172,20 @@ export class AuthService {
         }
     }
 
+    async logout(token: string) {
+        const decoded = this.jwtService.decode(token) as any;
+        const expiresAt = new Date(decoded.exp * 1000);
+
+        await this.prisma.tokenBlacklist.create({
+            data: {
+                token,
+                expiresAt,
+            },
+        });
+
+        return { message: 'Logged out successfully' };
+    }
+
     private async generateToken(userId: number, email: string, role: Role) {
 
         let userRole: UserRole = UserRole.STUDENT;

@@ -100,9 +100,14 @@ export class LessonsService {
       throw new ForbiddenException(MESSAGES.LESSONS.UNAUTHORIZED_UPDATE);
     }
 
+    const { moduleId, ...data } = updateLessonDto;
+
     return this.prisma.lesson.update({
       where: { id },
-      data: updateLessonDto,
+      data: {
+        ...data,
+        ...(moduleId && { moduleId }),
+      },
     });
   }
 

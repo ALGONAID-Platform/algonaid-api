@@ -52,4 +52,14 @@ export class AuthController {
         return await this.authService.getCurrentUser(id);
     }
 
-}
+    @Post('logout')
+    @ApiOperation({ summary: 'Logout user and invalidate token' })
+    async logout(@Req() req: any) {
+        const [type, token] = req.headers.authorization?.split(" ") ?? [];
+        if (token && type === 'Bearer') {
+            return await this.authService.logout(token);
+        }
+        return { message: 'Already logged out' };
+    }
+
+    }

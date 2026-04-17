@@ -52,3 +52,38 @@ export type Module = Prisma.ModuleModel
  * 
  */
 export type Lesson = Prisma.LessonModel
+/**
+ * Model Exam
+ * 
+ */
+export type Exam = Prisma.ExamModel
+/**
+ * Model Question
+ * 
+ */
+export type Question = Prisma.QuestionModel
+/**
+ * Model Option
+ * 
+ */
+export type Option = Prisma.OptionModel
+/**
+ * Model ExamAttempt
+ * 
+ */
+export type ExamAttempt = Prisma.ExamAttemptModel
+/**
+ * Model UserAnswer
+ * 
+ */
+export type UserAnswer = Prisma.UserAnswerModel
+/**
+ * Model LessonProgress
+ * 
+ */
+export type LessonProgress = Prisma.LessonProgressModel
+/**
+ * Model TokenBlacklist
+ * 
+ */
+export type TokenBlacklist = Prisma.TokenBlacklistModel

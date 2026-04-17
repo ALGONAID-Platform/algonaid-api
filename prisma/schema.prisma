@@ -33,14 +33,16 @@ model User {
 }
 
 model Student {
-  id          Int          @id @default(autoincrement())
-  academicId  String       @unique
-  grade       String? // الصف الدراسي
-  birthDate   DateTime?
-  address     String?
-  userId      Int          @unique
-  user        User         @relation(fields: [userId], references: [id])
-  enrollments Enrollment[] // one user can have many courses  
+  id             Int              @id @default(autoincrement())
+  academicId     String           @unique
+  grade          String? // الصف الدراسي
+  birthDate      DateTime?
+  address        String?
+  userId         Int              @unique
+  user           User             @relation(fields: [userId], references: [id])
+  enrollments    Enrollment[] // one user can have many courses  
+  examAttempts   ExamAttempt[]
+  lessonProgress LessonProgress[]
 }
 
 model Teacher {
@@ -112,7 +114,6 @@ model Lesson {
   content     String? @db.Text
   videoUrl    String?
   pdfUrl      String?
-  exam        String? @db.Text
   order       Int     @default(0)
 
   createdAt DateTime @default(now())
@@ -120,4 +121,108 @@ model Lesson {
 
   moduleId Int
   module   Module @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+
+  exam           Exam?
+  lessonProgress LessonProgress[]
+}
+
+model Exam {
+  id           Int      @id @default(autoincrement())
+  title        String
+  description  String?  @db.Text
+  passingScore Int      @default(50)
+  maxAttempts  Int      @default(3)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  lessonId Int    @unique
+  lesson   Lesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+
+  questions Question[]
+  attempts  ExamAttempt[]
+}
+
+model Question {
+  id     Int          @id @default(autoincrement())
+  text   String       @db.Text
+  type   QuestionType @default(MULTIPLE_CHOICE)
+  points Int          @default(1)
+
+  examId Int
+  exam   Exam @relation(fields: [examId], references: [id], onDelete: Cascade)
+
+  options     Option[]
+  userAnswers UserAnswer[]
+}
+
+enum QuestionType {
+  MULTIPLE_CHOICE
+  TRUE_FALSE
+}
+
+model Option {
+  id        Int     @id @default(autoincrement())
+  text      String
+  isCorrect Boolean @default(false)
+
+  questionId Int
+  question   Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+  userAnswers UserAnswer[]
+}
+
+model ExamAttempt {
+  id          Int        @id @default(autoincrement())
+  score       Int        @default(0)
+  status      ExamStatus @default(IN_PROGRESS)
+  startedAt   DateTime   @default(now())
+  completedAt DateTime?
+
+  studentId Int
+  student   Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  examId Int
+  exam   Exam @relation(fields: [examId], references: [id], onDelete: Cascade)
+
+  answers UserAnswer[]
+}
+
+enum ExamStatus {
+  IN_PROGRESS
+  PASSED
+  FAILED
+  IMPROVEMENT_NEEDED
+}
+
+model UserAnswer {
+  id Int @id @default(autoincrement())
+
+  attemptId Int
+  attempt   ExamAttempt @relation(fields: [attemptId], references: [id], onDelete: Cascade)
+
+  questionId Int
+  question   Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+  selectedOptionId Int
+  selectedOption   Option @relation(fields: [selectedOptionId], references: [id])
+}
+
+model LessonProgress {
+  id          Int       @id @default(autoincrement())
+  isCompleted Boolean   @default(false)
+  completedAt DateTime?
+
+  studentId Int
+  student   Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  lessonId Int
+  lesson   Lesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+
+  @@unique([studentId, lessonId])
+}
+
+model TokenBlacklist {
+  id        Int      @id @default(autoincrement())
+  token     String   @unique
+  expiresAt DateTime
 }

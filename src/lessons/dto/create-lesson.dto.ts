@@ -28,11 +28,6 @@ export class CreateLessonDto {
   @IsString()
   pdfUrl?: string;
 
-  @ApiProperty({ example: '{"questions": []}', required: false })
-  @IsOptional()
-  @IsString()
-  exam?: string;
-
   @ApiProperty({ example: 1 })
   @IsOptional()
   @IsInt()
