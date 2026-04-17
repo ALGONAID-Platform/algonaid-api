@@ -16,6 +16,15 @@ Algonaid is a robust Learning Management System (LMS) backend built with NestJS.
 - **Enrollment System**:
   - Students can enroll in courses.
   - Enrollment status tracking (`ACTIVE`, `COMPLETED`, `CANCELLED`).
+- **Exam Flow**:
+  - Automatic grading logic for multiple-choice and true/false questions.
+  - Attempt management (limits per student per exam).
+  - Detailed results review showing correct vs. selected answers.
+- **Progress Tracking**:
+  - Track lesson completion status for each student.
+  - Real-time calculation of course progress percentage.
+- **Secure Session Management**:
+  - Logout functionality with JWT blacklisting for immediate token invalidation.
 - **Content Delivery**:
   - Support for video URLs, PDF links, and exam descriptions within lessons.
   - **PDF Upload**: Teachers can upload educational PDF materials directly to lessons.
@@ -169,12 +178,22 @@ Once the server is running, you can access the interactive Swagger documentation
 `http://localhost:3000/swagger`
 
 ### Key Endpoints
-- `POST /api/v1/auth/register`: Register a new user.
-- `POST /api/v1/auth/login`: Login and receive a JWT.
-- `GET /api/v1/courses`: List all courses.
-- `POST /api/v1/enrollment`: Enroll in a course.
+- **Authentication**:
+  - `POST /api/v1/auth/signup`: Register a new user.
+  - `POST /api/v1/auth/signin`: Login and receive a JWT.
+  - `POST /api/v1/auth/logout`: Securely logout and invalidate token.
+- **Learning & Progress**:
+  - `GET /api/v1/courses`: List all courses.
+  - `POST /api/v1/enrollment`: Enroll in a course.
+  - `POST /api/v1/progress/lesson/:id/complete`: Mark a lesson as finished.
+  - `GET /api/v1/progress/course/:id`: Get course progress percentage.
+- **Exams**:
+  - `POST /api/v1/exams/:id/start`: Start a new exam attempt.
+  - `POST /api/v1/exams/attempts/:id/submit`: Submit answers for grading.
+  - `GET /api/v1/exams/attempts/:id/result`: View detailed exam results.
 
-## 🏗 Project Structure
+### 🏗 Project Structure
+
 
 ```text
 src/
