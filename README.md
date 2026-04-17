@@ -202,10 +202,14 @@ src/
 ├── modules/        # Course modules (units)
 ├── lessons/        # Individual lessons with video/PDF content
 ├── enrollment/     # Student enrollment logic
+├── exams/          # Exam lifecycle, grading, and results
+├── progress/       # Lesson and course progress tracking
 ├── prisma/         # Prisma client and service
 ├── config/         # Global configurations (Swagger, etc.)
-└── uploads/        # Static assets (PDFs, Thumbnails)
+└── utils/          # Constants, types, and helper messages
 ```
+
+*Note: The `uploads/` folder is located at the root level for storing static assets.*
 
 ## 🧪 Testing
 
