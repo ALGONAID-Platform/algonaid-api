@@ -42,20 +42,110 @@ export class ModulesService {
     });
   }
 
-  async findAll() {
-    return this.prisma.module.findMany({
+  async findAll(userId?: number) {
+    let studentId: number | undefined;
+    if (userId) {
+      const student = await this.prisma.student.findUnique({
+        where: { userId },
+      });
+      studentId = student?.id;
+    }
+
+    const modules = await this.prisma.module.findMany({
       include: {
-        lessons: true,
+        lessons: {
+          include: {
+            lessonProgress: studentId ? {
+              where: { studentId },
+            } : false,
+          }
+        },
+        _count: {
+          select: { lessons: true }
+        }
       }
+    });
+
+    return modules.map((mod) => {
+      const { lessons, _count, ...rest } = mod;
+
+      let totalLessons = lessons.length;
+      let completedLessons = 0;
+
+      if (studentId) {
+        lessons.forEach(lesson => {
+          // @ts-ignore
+          const progress = lesson.lessonProgress;
+          if (progress && progress.length > 0 && progress[0].isCompleted) {
+            completedLessons++;
+          }
+        });
+      }
+
+      const progressPercentage = totalLessons > 0 ? Math.round((completedLessons / totalLessons) * 100) : 0;
+
+      return {
+        ...rest,
+        lessons,
+        lessonsCount: _count.lessons,
+        totalLessons,
+        completedLessons,
+        progressPercentage: studentId ? progressPercentage : undefined,
+      };
     });
   }
 
-  async findByCourse(courseId: number) {
-    return this.prisma.module.findMany({
+  async findByCourse(courseId: number, userId?: number) {
+    let studentId: number | undefined;
+    if (userId) {
+      const student = await this.prisma.student.findUnique({
+        where: { userId },
+      });
+      studentId = student?.id;
+    }
+
+    const modules = await this.prisma.module.findMany({
       where: { courseId },
       include: {
-        lessons: true,
+        lessons: {
+          include: {
+            lessonProgress: studentId ? {
+              where: { studentId },
+            } : false,
+          }
+        },
+        _count: {
+          select: { lessons: true }
+        }
       }
+    });
+
+    return modules.map((mod) => {
+      const { lessons, _count, ...rest } = mod;
+      
+      let totalLessons = lessons.length;
+      let completedLessons = 0;
+      
+      if (studentId) {
+        lessons.forEach(lesson => {
+          // @ts-ignore
+          const progress = lesson.lessonProgress;
+          if (progress && progress.length > 0 && progress[0].isCompleted) {
+            completedLessons++;
+          }
+        });
+      }
+
+      const progressPercentage = totalLessons > 0 ? Math.round((completedLessons / totalLessons) * 100) : 0;
+
+      return {
+        ...rest,
+        lessons,
+        lessonsCount: _count.lessons,
+        totalLessons,
+        completedLessons,
+        progressPercentage: studentId ? progressPercentage : undefined,
+      };
     });
   }
 

@@ -1,4 +1,4 @@
-import { Body, Controller, Post, Req, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Post, Query, Req, UseGuards } from '@nestjs/common';
 import { CreateEnrollmentDto } from '../dto/enrollment.dto';
 import { EnrollmentService } from '../service/enrollment.service';
 import { CurrentUser } from 'src/auth/decorators/current-user.decorator';
@@ -23,6 +23,15 @@ export class EnrollmentController {
   @SwaggerEnrollInCourse()
   enroll(@Body() createDto: CreateEnrollmentDto, @CurrentUser() user: types.JwtPayloadType) {
     return this.enrollmentSevice.craete(user.id, createDto);
+  }
+
+  @Get('check-enrollment')
+  @UseGuards(AuthRollGuard)
+  async checkStatus(
+    @Query('courseId') courseId: number,
+    @CurrentUser() user: types.JwtPayloadType
+  ) {
+    return await this.enrollmentSevice.isUserEnrolled(user.id, courseId);
   }
 
 }

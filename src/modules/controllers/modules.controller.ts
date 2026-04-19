@@ -26,15 +26,19 @@ export class ModulesController {
   }
 
   @Get()
+  @UseGuards(AuthRollGuard)
+  @userRoles(Role.STUDENT, Role.ADMIN, Role.OWNER)
   @ApiOperation({ summary: 'Get all modules' })
-  findAll() {
-    return this.modulesService.findAll();
+  findAll(@CurrentUser() user: types.JwtPayloadType) {
+    return this.modulesService.findAll(user.id);
   }
 
   @Get('course/:courseId')
+  @UseGuards(AuthRollGuard)
+  @userRoles(Role.STUDENT, Role.ADMIN, Role.OWNER)
   @ApiOperation({ summary: 'Get all modules for a specific course' })
-  findByCourse(@Param('courseId', ParseIntPipe) courseId: number) {
-    return this.modulesService.findByCourse(courseId);
+  findByCourse(@Param('courseId', ParseIntPipe) courseId: number, @CurrentUser() user: types.JwtPayloadType) {
+    return this.modulesService.findByCourse(courseId, user.id);
   }
 
   @Get(':id')
