@@ -32,4 +32,11 @@ export class ProgressController {
   getCourseProgress(@Param('courseId', ParseIntPipe) courseId: number, @CurrentUser() user: types.JwtPayloadType) {
     return this.progressService.getCourseProgress(user.id, courseId);
   }
+
+  @Get('last-watched')
+  @userRoles(Role.STUDENT)
+  @ApiOperation({ summary: 'Get the last watched lesson progress' })
+  getLastWatched(@CurrentUser() user: types.JwtPayloadType) {
+    return this.progressService.getLastWatched(user.id);
+  }
 }

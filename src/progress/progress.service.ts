@@ -82,4 +82,51 @@ export class ProgressService {
       progressPercentage: Math.round(progressPercentage),
     };
   }
+
+  async getLastWatched(studentUserId: number) {
+    const student = await this.prisma.student.findUnique({
+      where: { userId: studentUserId },
+    });
+
+    if (!student) throw new NotFoundException('Student profile not found');
+
+    const lastProgress = await this.prisma.lessonProgress.findFirst({
+      where: { studentId: student.id },
+      orderBy: { id: 'desc' },
+      include: {
+        lesson: {
+          include: {
+            module: {
+              include: {
+                course: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    if (!lastProgress) {
+      return null;
+    }
+
+    return {
+      courseName: lastProgress.lesson.module.course.title,
+      categoryName: lastProgress.lesson.module.title, // الفئة
+      lesson: {
+        id: lastProgress.lesson.id,
+        title: lastProgress.lesson.title,
+        description: lastProgress.lesson.description,
+        content: lastProgress.lesson.content,
+        videoUrl: lastProgress.lesson.videoUrl,
+        pdfUrl: lastProgress.lesson.pdfUrl,
+        order: lastProgress.lesson.order,
+      },
+      progress: {
+        id: lastProgress.id,
+        isCompleted: lastProgress.isCompleted,
+        completedAt: lastProgress.completedAt,
+      },
+    };
+  }
 }
