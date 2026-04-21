@@ -34,19 +34,24 @@ export class LessonsController {
           new MaxFileSizeValidator({ maxSize: pdfFileSizeLimit }), // الحد الأقصى 10 ميجابايت
           new FileTypeValidator({ fileType: allowedFileTypes[0] }), // يقبل PDF فقط
         ],
-        fileIsRequired: false, 
+        fileIsRequired: false,
       }),
 
     ) file?: Express.Multer.File
   ) {
-   
-    return this.lessonsService.create(createLessonDto, user.id , file);
+
+    return this.lessonsService.create(createLessonDto, user.id, file);
   }
 
   @Get('module/:moduleId')
+  @UseGuards(AuthRollGuard)
+  @userRoles(Role.STUDENT, Role.ADMIN, Role.OWNER)
   @SwaggerGetAllLessonsByModule()
-  findAllByModule(@Param('moduleId', ParseIntPipe) moduleId: number) {
-    return this.lessonsService.findAllByModule(moduleId);
+  findAllByModule(
+    @Param('moduleId', ParseIntPipe) moduleId: number,
+    @CurrentUser() user: types.JwtPayloadType
+  ) {
+    return this.lessonsService.findAllByModule(moduleId, user.id);
   }
 
   @Get(':id')

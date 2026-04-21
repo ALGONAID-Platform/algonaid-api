@@ -7,6 +7,26 @@ import { MESSAGES } from 'src/utils/messages';
 export class EnrollmentService {
     constructor(private readonly prisma: PrismaService) { }
 
+
+async isUserEnrolled(userId: number, courseId: number) {
+    const student = await this.prisma.student.findUnique({
+      where: { userId: userId },
+    });
+
+    if (!student) return { enrolled: false };
+
+    const enrollment = await this.prisma.enrollment.findUnique({
+      where: {
+        studentId_courseId: {
+          studentId: student.id,
+          courseId: courseId,
+          
+        },
+      },
+    });
+
+    return { enrolled: !!enrollment };
+  }
     async craete(userId: number, enrollmentDto: CreateEnrollmentDto) {
         const { courseId } = enrollmentDto;
 

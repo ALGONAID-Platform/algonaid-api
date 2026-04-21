@@ -9,7 +9,7 @@ import { uploadsFolder } from 'src/utils/conistants';
 export class LessonsService {
   constructor(private readonly prisma: PrismaService) { }
 
-  async create(createLessonDto: CreateLessonDto, userId: number , file?: Express.Multer.File) {
+  async create(createLessonDto: CreateLessonDto, userId: number, file?: Express.Multer.File) {
     const { moduleId, ...lessonData } = createLessonDto;
 
     if (file) {
@@ -49,7 +49,7 @@ export class LessonsService {
     });
   }
 
-  async findAllByModule(moduleId: number) {
+  async findAllByModule(moduleId: number, userId?: number) {
     const module = await this.prisma.module.findUnique({
       where: { id: moduleId },
     });
@@ -58,8 +58,21 @@ export class LessonsService {
       throw new NotFoundException(MESSAGES.MODULES.MODULE_NOT_FOUND(moduleId));
     }
 
+    let studentId: number | undefined;
+    if (userId) {
+      const student = await this.prisma.student.findUnique({
+        where: { userId },
+      });
+      studentId = student?.id;
+    }
+
     return await this.prisma.lesson.findMany({
       where: { moduleId },
+      include: {
+        lessonProgress: studentId ? {
+          where: { studentId },
+        } : false,
+      },
       orderBy: { order: 'asc' },
     });
   }

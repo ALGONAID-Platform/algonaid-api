@@ -42,7 +42,17 @@ async findMyCourses(userId: number) {
         include: {
           teacher: { include: { user: { select: { name: true, email: true } } } },
           _count: { select: { modules: true } },
-          modules: { select: { title: true }, take: 3 },
+          modules: {
+            include: {
+              lessons: {
+                include: {
+                  lessonProgress: {
+                    where: { studentId: student?.id },
+                  },
+                },
+              },
+            },
+          },
         },
       },
     },
@@ -52,12 +62,31 @@ async findMyCourses(userId: number) {
   return myEnrollments.map((enrol) => {
     const { course } = enrol;
     const { modules, _count, ...rest } = course;
+
+    let totalLessons = 0;
+    let completedLessons = 0;
+
+    modules.forEach((module) => {
+      totalLessons += module.lessons.length;
+      module.lessons.forEach((lesson) => {
+        const progress = lesson.lessonProgress;
+        if (progress && progress.length > 0 && progress[0].isCompleted) {
+          completedLessons++;
+        }
+      });
+    });
+
+    const progressPercentage = totalLessons > 0 ? Math.round((completedLessons / totalLessons) * 100) : 0;
+
     return {
       ...rest,
-      moduleTitles: modules.map((m) => m.title),
+      moduleTitles: modules.slice(0, 3).map((m) => m.title),
       modulesCount: _count.modules,
       isEnrolled: true, // دائماً ترو لأننا جلبناها من جدول التسجيلات
       enrollmentStatus: enrol.status,
+      totalLessons,
+      completedLessons,
+      progressPercentage,
     };
   });
 }

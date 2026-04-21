@@ -3,20 +3,28 @@ import { PrismaService } from 'src/prisma/prisma.service';
 
 @Injectable()
 export class ProgressService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService) { }
 
-  async completeLesson(studentUserId: number, lessonId: number) {
+ 
+
+  async updateProgress(studentUserId: number, dto: import('./dto/update-progress.dto').UpdateProgressDto) {
     const student = await this.prisma.student.findUnique({
       where: { userId: studentUserId },
     });
 
-    if (!student) throw new NotFoundException('Student profile not found');
+    if (!student) {
+      throw new NotFoundException('Student profile not found');
+    }
+
+    const { lessonId, isCompleted = true } = dto;
 
     const lesson = await this.prisma.lesson.findUnique({
       where: { id: lessonId },
     });
 
-    if (!lesson) throw new NotFoundException('Lesson not found');
+    if (!lesson) {
+      throw new NotFoundException('Lesson not found');
+    }
 
     return await this.prisma.lessonProgress.upsert({
       where: {
@@ -26,14 +34,14 @@ export class ProgressService {
         },
       },
       update: {
-        isCompleted: true,
-        completedAt: new Date(),
+        isCompleted: isCompleted,
+        completedAt: isCompleted ? new Date() : null,
       },
       create: {
         studentId: student.id,
         lessonId: lesson.id,
-        isCompleted: true,
-        completedAt: new Date(),
+        isCompleted: isCompleted,
+        completedAt: isCompleted ? new Date() : null,
       },
     });
   }
@@ -72,6 +80,53 @@ export class ProgressService {
       totalLessons: lessons.length,
       completedLessons: completedLessonsCount,
       progressPercentage: Math.round(progressPercentage),
+    };
+  }
+
+  async getLastWatched(studentUserId: number) {
+    const student = await this.prisma.student.findUnique({
+      where: { userId: studentUserId },
+    });
+
+    if (!student) throw new NotFoundException('Student profile not found');
+
+    const lastProgress = await this.prisma.lessonProgress.findFirst({
+      where: { studentId: student.id },
+      orderBy: { id: 'desc' },
+      include: {
+        lesson: {
+          include: {
+            module: {
+              include: {
+                course: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    if (!lastProgress) {
+      return null;
+    }
+
+    return {
+      courseName: lastProgress.lesson.module.course.title,
+      categoryName: lastProgress.lesson.module.title, // الفئة
+      lesson: {
+        id: lastProgress.lesson.id,
+        title: lastProgress.lesson.title,
+        description: lastProgress.lesson.description,
+        content: lastProgress.lesson.content,
+        videoUrl: lastProgress.lesson.videoUrl,
+        pdfUrl: lastProgress.lesson.pdfUrl,
+        order: lastProgress.lesson.order,
+      },
+      progress: {
+        id: lastProgress.id,
+        isCompleted: lastProgress.isCompleted,
+        completedAt: lastProgress.completedAt,
+      },
     };
   }
 }
