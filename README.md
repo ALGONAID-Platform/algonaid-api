@@ -28,9 +28,28 @@ Algonaid is a robust Learning Management System (LMS) backend built with NestJS.
 - **Content Delivery**:
   - Support for video URLs, PDF links, and exam descriptions within lessons.
   - **PDF Upload**: Teachers can upload educational PDF materials directly to lessons.
-  - Static file serving for uploads.
+  - **Static file serving** for uploads.
 
-## 📁 Testing PDF Uploads
+  ## 📝 Exams Module
+
+  The Exams module allows for automated student assessment.
+
+  ### 🏫 For Teachers (ADMIN/OWNER)
+  Teachers can manage exams linked to lessons.
+  - **Create**: `POST /exams` - Define title, passing score, and all questions with multiple options.
+  - **Update**: `PATCH /exams/:id` - Update metadata or replace all questions.
+  - **Delete**: `DELETE /exams/:id` - Completely remove an exam.
+
+  *Note: A teacher can only manage exams for courses they instruct.*
+
+  ### 🎓 For Students (STUDENT)
+  Students can take exams to validate their learning.
+  - **Start**: `POST /exams/:id/start` - Creates an attempt (if within limits).
+  - **Submit**: `POST /exams/attempts/:id/submit` - Grades the attempt instantly.
+  - **Result**: `GET /exams/attempts/:id/result` - Review score and correct answers.
+
+  ## 📁 Testing PDF Uploads
+
 
 The API supports PDF uploads for lessons. You can test this using **Swagger** or **Postman**:
 
