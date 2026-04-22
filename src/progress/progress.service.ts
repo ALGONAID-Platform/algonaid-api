@@ -129,4 +129,69 @@ export class ProgressService {
       },
     };
   }
+
+  async getLastAccessedModuleProgress(studentUserId: number) {
+    const student = await this.prisma.student.findUnique({
+      where: { userId: studentUserId },
+    });
+
+    if (!student) throw new NotFoundException('Student profile not found');
+
+    const lastProgress = await this.prisma.lessonProgress.findFirst({
+      where: { studentId: student.id },
+      orderBy: { id: 'desc' },
+      include: {
+        lesson: {
+          include: {
+            module: {
+              include: {
+                course: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    if (!lastProgress) {
+      return null;
+    }
+
+    const module = lastProgress.lesson.module;
+
+    const lessons = await this.prisma.lesson.findMany({
+      where: {
+        moduleId: module.id,
+      },
+      include: {
+        lessonProgress: {
+          where: { studentId: student.id },
+        }
+      }
+    });
+
+    let totalLessons = lessons.length;
+    let completedLessons = 0;
+
+    lessons.forEach(lesson => {
+      // @ts-ignore
+      const progressList = lesson.lessonProgress;
+      if (progressList && progressList.length > 0 && progressList[0].isCompleted) {
+        completedLessons++;
+      }
+    });
+
+    const progressPercentage = totalLessons > 0 ? Math.round((completedLessons / totalLessons) * 100) : 0;
+
+    return {
+      moduleId: module.id,
+      courseName: module.course.title,
+      courseImage: module.course.thumbnail,
+      moduleName: module.title,
+      moduleDescription: module.description,
+      totalLessons,
+      completedLessons,
+      progressPercentage,
+    };
+  }
 }

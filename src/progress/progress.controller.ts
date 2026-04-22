@@ -39,4 +39,11 @@ export class ProgressController {
   getLastWatched(@CurrentUser() user: types.JwtPayloadType) {
     return this.progressService.getLastWatched(user.id);
   }
+
+  @Get('last-accessed-module')
+  @userRoles(Role.STUDENT)
+  @ApiOperation({ summary: 'Get progress data for the last accessed module' })
+  getLastAccessedModule(@CurrentUser() user: types.JwtPayloadType) {
+    return this.progressService.getLastAccessedModuleProgress(user.id);
+  }
 }

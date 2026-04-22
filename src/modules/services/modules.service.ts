@@ -122,10 +122,10 @@ export class ModulesService {
 
     return modules.map((mod) => {
       const { lessons, _count, ...rest } = mod;
-      
+
       let totalLessons = lessons.length;
       let completedLessons = 0;
-      
+
       if (studentId) {
         lessons.forEach(lesson => {
           // @ts-ignore
