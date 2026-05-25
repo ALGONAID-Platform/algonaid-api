@@ -81,6 +81,7 @@ export class LessonsService {
     const lesson = await this.prisma.lesson.findUnique({
       where: { id },
       include: {
+        exam: true,
         module: {
           include: {
             course: {

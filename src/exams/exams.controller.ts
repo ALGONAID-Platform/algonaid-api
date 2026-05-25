@@ -50,6 +50,15 @@ export class ExamsController {
     return this.examsService.deleteExam(user.id, user.role, id);
   }
 
+  @Get(':id')
+  @userRoles(Role.STUDENT, Role.ADMIN, Role.OWNER)
+  @ApiOperation({ summary: 'Get exam details' })
+  @ApiParam({ name: 'id', description: 'Exam ID' })
+  @ApiResponse({ status: 200, description: 'Exam details retrieved successfully.' })
+  getExam(@Param('id', ParseIntPipe) id: number) {
+    return this.examsService.getExam(id);
+  }
+
   @Post(':examId/start')
   @userRoles(Role.STUDENT)
   @ApiOperation({ summary: 'Start a new exam attempt' })
