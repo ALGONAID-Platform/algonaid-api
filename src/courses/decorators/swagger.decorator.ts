@@ -192,3 +192,18 @@ export function SwaggerDeleteCourse() {
         ApiResponse({ status: 404, description: 'الكورس غير موجود' }),
     );
 }
+
+export function SwaggerSearchCourses() {
+    return applyDecorators(
+        ApiBearerAuth(),
+        ApiOperation({
+            summary: 'البحث عن الكورسات',
+            description: 'يتيح للمستخدم البحث عن طريق اسم الكورس أو اسم الوحدة أو اسم الدرس'
+        }),
+        ApiResponse({
+            status: 200,
+            description: 'تم إرجاع نتائج البحث بنجاح',
+        }),
+        ApiResponse({ status: 401, description: 'غير مصرح للوصول (Unauthorized)' }),
+    );
+}

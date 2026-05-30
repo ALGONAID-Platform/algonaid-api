@@ -125,6 +125,115 @@ async findAll(userId: number) {
     };
   });
 }
+
+  async search(query: string, userId: number) {
+    if (!query) {
+      return { courses: [], modules: [], lessons: [] };
+    }
+
+    const student = await this.prisma.student.findUnique({ where: { userId } });
+    const studentId = student?.id;
+
+    const coursesData = await this.prisma.course.findMany({
+      where: {
+        OR: [
+          { title: { contains: query, mode: 'insensitive' } },
+          {
+            modules: {
+              some: {
+                title: { contains: query, mode: 'insensitive' },
+              },
+            },
+          },
+          {
+            modules: {
+              some: {
+                lessons: {
+                  some: {
+                    title: { contains: query, mode: 'insensitive' },
+                  },
+                },
+              },
+            },
+          },
+        ],
+      },
+      select: {
+        id: true,
+        title: true,
+        description: true,
+        thumbnail: true,
+        teacher: {
+          select: {
+            user: {
+              select: {
+                name: true,
+              },
+            },
+          },
+        },
+        enrollments: studentId ? { where: { studentId }, select: { id: true } } : false,
+      },
+    });
+
+    const courses = coursesData.map((course) => {
+      const { enrollments, teacher, ...rest } = course;
+      return {
+        ...rest,
+        teacher: teacher?.user ? { name: teacher.user.name } : null,
+        isEnrolled: enrollments && enrollments.length > 0,
+      };
+    });
+
+    const modulesData = await this.prisma.module.findMany({
+      where: { title: { contains: query, mode: 'insensitive' } },
+      select: {
+        id: true,
+        title: true,
+        courseId: true,
+        course: {
+          select: {
+            title: true,
+          },
+        },
+      },
+    });
+
+    const modules = modulesData.map((module) => ({
+      id: module.id,
+      title: module.title,
+      courseId: module.courseId,
+      courseTitle: module.course?.title,
+    }));
+
+    const lessonsData = await this.prisma.lesson.findMany({
+      where: { title: { contains: query, mode: 'insensitive' } },
+      select: {
+        id: true,
+        title: true,
+        moduleId: true,
+        module: {
+          select: {
+            courseId: true,
+          },
+        },
+      },
+    });
+
+    const lessons = lessonsData.map((lesson) => ({
+      id: lesson.id,
+      title: lesson.title,
+      moduleId: lesson.moduleId,
+      courseId: lesson.module?.courseId,
+    }));
+
+    return {
+      courses,
+      modules,
+      lessons,
+    };
+  }
+
   async findOne(id: number) {
     const course = await this.prisma.course.findUnique({
       where: { id },

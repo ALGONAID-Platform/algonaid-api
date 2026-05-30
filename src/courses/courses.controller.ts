@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, ParseIntPipe } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, ParseIntPipe, Query } from '@nestjs/common';
 import { CoursesService } from './courses.service';
 import { CreateCourseDto } from './dto/create-course.dto';
 import { AuthRollGuard } from 'src/auth/guards/auth-roll.guard';
@@ -7,7 +7,7 @@ import { Role } from 'src/prisma/client/enums';
 import { CurrentUser } from 'src/auth/decorators/current-user.decorator';
 import * as types from 'src/utils/types';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
-import { SwaggerCreateCourse, SwaggerDeleteCourse, SwaggerGetCourse, SwaggerUpdateCourse, SwaggerGetAllCourses } from './decorators/swagger.decorator';
+import { SwaggerCreateCourse, SwaggerDeleteCourse, SwaggerGetCourse, SwaggerUpdateCourse, SwaggerGetAllCourses, SwaggerSearchCourses } from './decorators/swagger.decorator';
 import { UpdateCourseDto } from './dto/update-course.dto';
 
 @ApiTags('courses')
@@ -38,6 +38,16 @@ export class CoursesController {
 findMyCourses(@CurrentUser() user: types.JwtPayloadType) {
   return this.coursesService.findMyCourses(user.id);
 }
+
+  @Get('search')
+  @SwaggerSearchCourses()
+  @UseGuards(AuthRollGuard)
+  @userRoles(Role.STUDENT, Role.ADMIN, Role.OWNER)
+  search(@Query('q') query: string, @CurrentUser() user: types.JwtPayloadType) {
+    return this.coursesService.search(query || '', user.id);
+  }
+
+
   @Get(':id')
   @SwaggerGetCourse()
   findOne(@Param('id') id: string) {
