@@ -46,4 +46,39 @@ export class ProgressController {
   getLastAccessedModule(@CurrentUser() user: types.JwtPayloadType) {
     return this.progressService.getLastAccessedModuleProgress(user.id);
   }
+
+  @Get('excellence-courses')
+  @userRoles(Role.STUDENT)
+  @ApiOperation({ summary: 'Get completed courses with an average grade of 90% or higher' })
+  getExcellenceCourses(@CurrentUser() user: types.JwtPayloadType) {
+    return this.progressService.getExcellenceCourses(user.id);
+  }
+
+  @Get('course/:courseId/excellence-modules')
+  @userRoles(Role.STUDENT)
+  @ApiOperation({ summary: 'Get completed modules with an average grade of 90% or higher for a specific course' })
+  getExcellenceModules(@Param('courseId', ParseIntPipe) courseId: number, @CurrentUser() user: types.JwtPayloadType) {
+    return this.progressService.getExcellenceModules(user.id, courseId);
+  }
+
+  @Get('module/:moduleId/grades')
+  @userRoles(Role.STUDENT)
+  @ApiOperation({ summary: 'Get exam grades and average percentage for a module' })
+  getModuleGrades(@Param('moduleId', ParseIntPipe) moduleId: number, @CurrentUser() user: types.JwtPayloadType) {
+    return this.progressService.getModuleGrades(user.id, moduleId);
+  }
+
+  @Get('course/:courseId/grades')
+  @userRoles(Role.STUDENT)
+  @ApiOperation({ summary: 'Get exam grades and average percentage for a course' })
+  getCourseGrades(@Param('courseId', ParseIntPipe) courseId: number, @CurrentUser() user: types.JwtPayloadType) {
+    return this.progressService.getCourseGrades(user.id, courseId);
+  }
+
+  @Get('total-points')
+  @userRoles(Role.STUDENT)
+  @ApiOperation({ summary: 'Get total points earned by the student across all exams' })
+  getTotalEarnedPoints(@CurrentUser() user: types.JwtPayloadType) {
+    return this.progressService.getTotalEarnedPoints(user.id);
+  }
 }

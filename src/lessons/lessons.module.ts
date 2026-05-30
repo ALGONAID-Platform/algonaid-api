@@ -12,7 +12,7 @@ import { MESSAGES } from 'src/utils/messages';
 @Module({
   imports: [
     MulterModule.register(
-      {
+      {  
         storage: diskStorage({
           destination: `./${uploadsFolder}`,
           filename: (req, file, callback) => {

@@ -263,6 +263,27 @@ export class ExamsService {
       data: userAnswersData,
     });
 
+    if (status === ExamStatus.PASSED) {
+      await this.prisma.lessonProgress.upsert({
+        where: {
+          studentId_lessonId: {
+            studentId: student.id,
+            lessonId: attempt.exam.lessonId,
+          },
+        },
+        update: {
+          isCompleted: true,
+          completedAt: new Date(),
+        },
+        create: {
+          studentId: student.id,
+          lessonId: attempt.exam.lessonId,
+          isCompleted: true,
+          completedAt: new Date(),
+        },
+      });
+    }
+
     return await this.prisma.examAttempt.update({
       where: { id: attempt.id },
       data: {

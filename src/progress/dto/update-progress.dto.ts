@@ -12,3 +12,4 @@ export class UpdateProgressDto {
   @IsOptional()
   isCompleted?: boolean;
 }
+ 

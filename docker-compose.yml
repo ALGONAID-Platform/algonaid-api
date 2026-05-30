@@ -13,7 +13,7 @@ services:
       - /usr/src/app/node_modules
     depends_on:
       - db
-    command: npm run start:dev
+
   db:
     image: postgres:latest
     environment:

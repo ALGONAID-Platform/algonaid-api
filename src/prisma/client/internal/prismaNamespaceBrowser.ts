@@ -90,6 +90,8 @@ export const UserScalarFieldEnum = {
   password: 'password',
   googleId: 'googleId',
   role: 'role',
+  avatar: 'avatar',
+  background: 'background',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 } as const
@@ -235,6 +237,7 @@ export const LessonProgressScalarFieldEnum = {
   id: 'id',
   isCompleted: 'isCompleted',
   completedAt: 'completedAt',
+  watchCount: 'watchCount',
   studentId: 'studentId',
   lessonId: 'lessonId'
 } as const
