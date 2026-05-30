@@ -57,7 +57,8 @@ export class AuthService {
                         }
                     }
                 } : {})
-            }
+            },
+            include: { studentProfile: true, teacherProfile: true }
         });
 
 
@@ -65,12 +66,7 @@ export class AuthService {
 
         return {
             message: MESSAGES.AUTH.USER_REGISTERED,
-            user: {
-                id: user.id,
-                email: user.email,
-                name: user.name,
-                role: user.role
-            },
+            user: this.formatUserResponse(user),
             access_token: token
         };
     }
@@ -80,7 +76,8 @@ export class AuthService {
 
 
         const user = await this.prisma.user.findUnique({
-            where: { email }
+            where: { email },
+            include: { studentProfile: true, teacherProfile: true }
         });
 
         if (!user || !user.password) {
@@ -99,12 +96,7 @@ export class AuthService {
 
         return {
             message: MESSAGES.AUTH.LOGGED_IN,
-            user: {
-                id: user.id,
-                email: user.email,
-                name: user.name,
-                role: user.role
-            },
+            user: this.formatUserResponse(user),
             access_token: token
         };
     }
@@ -114,6 +106,7 @@ export class AuthService {
 
         let user = await this.prisma.user.findUnique({
             where: { email },
+            include: { studentProfile: true, teacherProfile: true }
         });
 
         if (user) {
@@ -122,6 +115,7 @@ export class AuthService {
                 user = await this.prisma.user.update({
                     where: { id: user.id },
                     data: { googleId },
+                    include: { studentProfile: true, teacherProfile: true }
                 });
             }
         } else {
@@ -138,6 +132,7 @@ export class AuthService {
                         }
                     }
                 },
+                include: { studentProfile: true, teacherProfile: true }
             });
         }
 
@@ -145,29 +140,22 @@ export class AuthService {
 
         return {
             message: 'Google login successful',
-            user: {
-                id: user.id,
-                email: user.email,
-                name: user.name,
-                role: user.role
-            },
+            user: this.formatUserResponse(user),
             access_token: token
         };
     }
 
     async getCurrentUser(id: number) {
-        const user = await this.prisma.user.findUnique({ where: { id } });
+        const user = await this.prisma.user.findUnique({
+            where: { id },
+            include: { studentProfile: true, teacherProfile: true }
+        });
         if (!user) {
             throw new NotFoundException(MESSAGES.AUTH.USER_NOT_EXIST(id));
         }
         else {
             return {
-                user: {
-                    id: user.id,
-                    email: user.email,
-                    name: user.name,
-                    role: user.role
-                },
+                user: this.formatUserResponse(user),
             }
         }
     }
@@ -194,6 +182,30 @@ export class AuthService {
 
         const payload = { id: userId, email, role: userRole };
         return await this.jwtService.signAsync(payload);
+    }
+
+    private formatUserResponse(user: any) {
+        return {
+            id: user.id,
+            email: user.email,
+            name: user.name,
+            role: user.role,
+            avatar: user.avatar,
+            background: user.background,
+            createdAt: user.createdAt,
+            updatedAt: user.updatedAt,
+            ...(user.studentProfile ? {
+                academicId: user.studentProfile.academicId,
+                grade: user.studentProfile.grade,
+                birthDate: user.studentProfile.birthDate,
+                address: user.studentProfile.address,
+            } : {}),
+            ...(user.teacherProfile ? {
+                specialization: user.teacherProfile.specialization,
+                bio: user.teacherProfile.bio,
+                experience: user.teacherProfile.experience,
+            } : {})
+        };
     }
 
 }

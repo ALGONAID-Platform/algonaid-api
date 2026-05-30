@@ -11,6 +11,7 @@ import { LessonsModule } from './lessons/lessons.module';
 import { ModulesModule } from './modules/modules.module';
 import { ExamsModule } from './exams/exams.module';
 import { ProgressModule } from './progress/progress.module';
+import { UsersModule } from './users/users.module';
 
 @Module({
   imports: [
@@ -34,6 +35,7 @@ import { ProgressModule } from './progress/progress.module';
     ModulesModule,
     ExamsModule,
     ProgressModule,
+    UsersModule,
   ],
   controllers: [AppController],
   providers: [AppService],

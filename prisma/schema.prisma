@@ -26,6 +26,8 @@ model User {
   password       String?
   googleId       String?  @unique
   role           Role     @default(STUDENT)
+  avatar         String?
+  background     String?
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
   studentProfile Student?
@@ -59,15 +61,11 @@ model Enrollment {
   id        Int      @id @default(autoincrement())
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-
   studentId Int
   student   Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
-
   courseId Int
   course   Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
-
   status EnrollmentStatus @default(ACTIVE)
-
   @@unique([studentId, courseId]) // لمنع المستخدم من التسجيل في نفس الكورس مرتين
 }
 
@@ -82,12 +80,9 @@ model Course {
   title       String
   description String? @db.Text
   thumbnail   String? // رابط صورة الغلاف
-
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-
   enrollments Enrollment[]
-
   instructorId Int
   teacher      Teacher  @relation(fields: [instructorId], references: [id])
   modules      Module[]
@@ -97,13 +92,10 @@ model Module {
   id          Int     @id @default(autoincrement())
   title       String
   description String? @db.Text
-
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-
   courseId Int
   course   Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
-
   lessons Lesson[]
 }
 
@@ -115,13 +107,10 @@ model Lesson {
   videoUrl    String?
   pdfUrl      String?
   order       Int     @default(0)
-
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-
   moduleId Int
   module   Module @relation(fields: [moduleId], references: [id], onDelete: Cascade)
-
   exam           Exam?
   lessonProgress LessonProgress[]
 }
@@ -134,10 +123,8 @@ model Exam {
   maxAttempts  Int      @default(3)
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
-
   lessonId Int    @unique
   lesson   Lesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
-
   questions Question[]
   attempts  ExamAttempt[]
 }
@@ -147,10 +134,8 @@ model Question {
   text        String       @db.Text
   type        QuestionType @default(MULTIPLE_CHOICE)
   points      Int          @default(1)
-
   examId      Int
   exam        Exam         @relation(fields: [examId], references: [id], onDelete: Cascade)
-  
   options     Option[]
   userAnswers UserAnswer[]
 }
@@ -211,6 +196,7 @@ model LessonProgress {
   id          Int       @id @default(autoincrement())
   isCompleted Boolean   @default(false)
   completedAt DateTime?
+  watchCount  Int       @default(1)
 
   studentId Int
   student   Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
