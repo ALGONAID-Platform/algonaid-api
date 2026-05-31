@@ -316,6 +316,11 @@ export class UsersService {
       }
     ];
 
+    badges.sort((a, b) => {
+      if (a.isUnlocked === b.isUnlocked) return 0;
+      return a.isUnlocked ? -1 : 1;
+    });
+
     return {
       success: true,
       message: "Badges retrieved successfully",

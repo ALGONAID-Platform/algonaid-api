@@ -40,26 +40,31 @@ export class ProgressService {
       newWatchCount += 1;
     }
 
-    return await this.prisma.lessonProgress.upsert({
-      where: {
-        studentId_lessonId: {
+    if (existingProgress) {
+      const [, newProgress] = await this.prisma.$transaction([
+        this.prisma.lessonProgress.delete({ where: { id: existingProgress.id } }),
+        this.prisma.lessonProgress.create({
+          data: {
+            studentId: student.id,
+            lessonId: lesson.id,
+            isCompleted: isCompleted,
+            completedAt: isCompleted ? new Date() : null,
+            watchCount: newWatchCount,
+          } as any,
+        })
+      ]);
+      return newProgress;
+    } else {
+      return await this.prisma.lessonProgress.create({
+        data: {
           studentId: student.id,
           lessonId: lesson.id,
-        },
-      },
-      update: {
-        isCompleted: isCompleted,
-        completedAt: isCompleted ? new Date() : null,
-        watchCount: newWatchCount,
-      } as any,
-      create: {
-        studentId: student.id,
-        lessonId: lesson.id,
-        isCompleted: isCompleted,
-        completedAt: isCompleted ? new Date() : null,
-        watchCount: 1,
-      } as any,
-    });
+          isCompleted: isCompleted,
+          completedAt: isCompleted ? new Date() : null,
+          watchCount: 1,
+        } as any,
+      });
+    }
   }
 
   async getCourseProgress(studentUserId: number, courseId: number) {
@@ -230,6 +235,7 @@ export class ProgressService {
       moduleId: module.id,
       courseName: module.course.title,
       courseImage: module.course.thumbnail,
+      thumbnail: module.course.thumbnail,
       moduleName: module.title,
       moduleDescription: module.description,
       totalLessons,
