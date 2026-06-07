@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, ParseIntPipe, Query } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, ParseIntPipe, Query, HttpCode, HttpStatus, Req } from '@nestjs/common';
 import { CoursesService } from './courses.service';
 import { CreateCourseDto } from './dto/create-course.dto';
 import { AuthRollGuard } from 'src/auth/guards/auth-roll.guard';
@@ -6,7 +6,7 @@ import { userRoles } from 'src/auth/decorators/user_roll.decorator';
 import { Role } from 'src/prisma/client/enums';
 import { CurrentUser } from 'src/auth/decorators/current-user.decorator';
 import * as types from 'src/utils/types';
-import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { SwaggerCreateCourse, SwaggerDeleteCourse, SwaggerGetCourse, SwaggerUpdateCourse, SwaggerGetAllCourses, SwaggerSearchCourses } from './decorators/swagger.decorator';
 import { UpdateCourseDto } from './dto/update-course.dto';
 
@@ -34,18 +34,6 @@ export class CoursesController {
   @SwaggerGetAllCourses()
   @UseGuards(AuthRollGuard)
   @userRoles(Role.STUDENT, Role.ADMIN, Role.OWNER)
-<<<<<<< HEAD
-findMyCourses(@CurrentUser() user: types.JwtPayloadType) {
-  return this.coursesService.findMyCourses(user.id);
-}
-
-  @Get('search')
-  @SwaggerSearchCourses()
-  @UseGuards(AuthRollGuard)
-  @userRoles(Role.STUDENT, Role.ADMIN, Role.OWNER)
-  search(@Query('q') query: string, @CurrentUser() user: types.JwtPayloadType) {
-    return this.coursesService.search(query || '', user.id);
-=======
   findMyCourses(@CurrentUser() user: types.JwtPayloadType) {
     return this.coursesService.findMyCourses(user.id);
   }
@@ -54,7 +42,6 @@ findMyCourses(@CurrentUser() user: types.JwtPayloadType) {
   @SwaggerSearchCourses()
   search(@Query('q') query: string, @CurrentUser() user?: types.JwtPayloadType) {
     return this.coursesService.search(query || '', user?.id);
->>>>>>> 1c8a4b3 (feat: adding the reset password and the forget password and change the auth guard to view the courses for the visitor)
   }
 
 

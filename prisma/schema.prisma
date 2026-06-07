@@ -20,20 +20,6 @@ enum Role {
 }
 
 model User {
-<<<<<<< HEAD
-  id             Int      @id @default(autoincrement())
-  name           String
-  email          String   @unique
-  password       String?
-  googleId       String?  @unique
-  role           Role     @default(STUDENT)
-  avatar         String?
-  background     String?
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
-  studentProfile Student?
-  teacherProfile Teacher?
-=======
   id                   Int      @id @default(autoincrement())
   name                 String
   email                String   @unique
@@ -48,7 +34,6 @@ model User {
   updatedAt            DateTime @updatedAt
   studentProfile       Student?
   teacherProfile       Teacher?
->>>>>>> 1c8a4b3 (feat: adding the reset password and the forget password and change the auth guard to view the courses for the visitor)
 }
 
 model Student {

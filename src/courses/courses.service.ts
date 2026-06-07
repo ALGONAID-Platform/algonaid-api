@@ -126,20 +126,12 @@ async findAll(userId?: number) {
   });
 }
 
-<<<<<<< HEAD
-  async search(query: string, userId: number) {
-=======
   async search(query: string, userId?: number) {
->>>>>>> 1c8a4b3 (feat: adding the reset password and the forget password and change the auth guard to view the courses for the visitor)
     if (!query) {
       return { courses: [], modules: [], lessons: [] };
     }
 
-<<<<<<< HEAD
-    const student = await this.prisma.student.findUnique({ where: { userId } });
-=======
     const student = userId ? await this.prisma.student.findUnique({ where: { userId } }) : null;
->>>>>>> 1c8a4b3 (feat: adding the reset password and the forget password and change the auth guard to view the courses for the visitor)
     const studentId = student?.id;
 
     const coursesData = await this.prisma.course.findMany({
