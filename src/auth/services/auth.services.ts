@@ -4,9 +4,11 @@ import { UserLoginDto } from "../dtos/user-login.dto";
 import { PrismaService } from "src/prisma/prisma.service";
 import { JwtService } from "@nestjs/jwt";
 import * as bcrypt from 'bcrypt';
-import { UserRole } from "../enums/userRole";
+import * as crypto from 'crypto';
 import { Role } from "../../prisma/client/enums";
 import { MESSAGES } from "src/utils/messages";
+import { ForgotPasswordDto } from "../dtos/forgot-password.dto";
+import { ResetPasswordDto } from "../dtos/reset-password.dto";
 
 
 @Injectable()
@@ -16,6 +18,69 @@ export class AuthService {
         private readonly prisma: PrismaService,
         private readonly jwtService: JwtService
     ) { }
+
+    async forgotPassword(forgotPasswordDto: ForgotPasswordDto) {
+        const { email } = forgotPasswordDto;
+
+        const user = await this.prisma.user.findUnique({
+            where: { email }
+        });
+
+        if (!user) {
+            throw new NotFoundException(MESSAGES.AUTH.EMAIL_NOT_FOUND);
+        }
+
+        const resetToken = crypto.randomBytes(32).toString('hex');
+        const resetPasswordExpires = new Date(Date.now() + 3600000); // 1 hour
+
+        await this.prisma.user.update({
+            where: { id: user.id },
+            data: {
+                resetPasswordToken: resetToken,
+                resetPasswordExpires: resetPasswordExpires
+            }
+        });
+
+        // TODO: Send email with resetToken
+        console.log(`Reset Token for ${email}: ${resetToken}`);
+
+        return {
+            message: MESSAGES.AUTH.RESET_PASSWORD_SENT,
+            // resetToken // For testing purposes, we might return it here, but usually it's only in the email
+        };
+    }
+
+    async resetPassword(resetPasswordDto: ResetPasswordDto) {
+        const { token, newPassword } = resetPasswordDto;
+
+        const user = await this.prisma.user.findFirst({
+            where: {
+                resetPasswordToken: token,
+                resetPasswordExpires: {
+                    gt: new Date()
+                }
+            }
+        });
+
+        if (!user) {
+            throw new UnauthorizedException(MESSAGES.AUTH.INVALID_OR_EXPIRED_TOKEN);
+        }
+
+        const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+        await this.prisma.user.update({
+            where: { id: user.id },
+            data: {
+                password: hashedPassword,
+                resetPasswordToken: null,
+                resetPasswordExpires: null
+            }
+        });
+
+        return {
+            message: MESSAGES.AUTH.PASSWORD_RESET_SUCCESS
+        };
+    }
 
     async register(userDto: UserRegisterDto) {
         const { email, password, name, role } = userDto;

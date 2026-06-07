@@ -26,15 +26,15 @@ export class CoursesController {
 
   @Get()
   @SwaggerGetAllCourses()
-  @UseGuards(AuthRollGuard) 
-  @userRoles(Role.STUDENT, Role.ADMIN, Role.OWNER)
-  findAll(@CurrentUser() user: types.JwtPayloadType) {
-    return this.coursesService.findAll(user.id);
+  findAll(@CurrentUser() user?: types.JwtPayloadType) {
+    return this.coursesService.findAll(user?.id);
   }
- @Get("my-courses")
-@SwaggerGetAllCourses()
-@UseGuards(AuthRollGuard) 
+
+  @Get("my-courses")
+  @SwaggerGetAllCourses()
+  @UseGuards(AuthRollGuard)
   @userRoles(Role.STUDENT, Role.ADMIN, Role.OWNER)
+<<<<<<< HEAD
 findMyCourses(@CurrentUser() user: types.JwtPayloadType) {
   return this.coursesService.findMyCourses(user.id);
 }
@@ -45,6 +45,16 @@ findMyCourses(@CurrentUser() user: types.JwtPayloadType) {
   @userRoles(Role.STUDENT, Role.ADMIN, Role.OWNER)
   search(@Query('q') query: string, @CurrentUser() user: types.JwtPayloadType) {
     return this.coursesService.search(query || '', user.id);
+=======
+  findMyCourses(@CurrentUser() user: types.JwtPayloadType) {
+    return this.coursesService.findMyCourses(user.id);
+  }
+
+  @Get('search')
+  @SwaggerSearchCourses()
+  search(@Query('q') query: string, @CurrentUser() user?: types.JwtPayloadType) {
+    return this.coursesService.search(query || '', user?.id);
+>>>>>>> 1c8a4b3 (feat: adding the reset password and the forget password and change the auth guard to view the courses for the visitor)
   }
 
 

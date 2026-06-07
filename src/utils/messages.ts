@@ -9,6 +9,10 @@ export const MESSAGES = {
         NO_TOKEN_PROVIDED: 'تم رفض الوصول، لم يتم تقديم رمز الدخول',
         ACCESS_DENIED_USER_NOT_FOUND: 'تم رفض الوصول، المستخدم غير موجود',
         INSUFFICIENT_PERMISSIONS: 'تم رفض الوصول، صلاحيات غير كافية',
+        RESET_PASSWORD_SENT: 'تم إرسال رابط إعادة تعيين كلمة المرور إلى بريدك الإلكتروني',
+        PASSWORD_RESET_SUCCESS: 'تم إعادة تعيين كلمة المرور بنجاح',
+        INVALID_OR_EXPIRED_TOKEN: 'الرمز غير صحيح أو منتهي الصلاحية',
+        EMAIL_NOT_FOUND: 'البريد الإلكتروني غير موجود',
     },
     VALIDATION: {
         NAME_REQUIRED: 'الاسم مطلوب',

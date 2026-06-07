@@ -20,7 +20,7 @@ yarn-debug.log*
 yarn-error.log*
 lerna-debug.log*
 .pnpm-debug.log*
-
+postman-mock-data.md
 # Docker
 .dockerignore
 

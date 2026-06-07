@@ -92,8 +92,8 @@ async findMyCourses(userId: number) {
 }
 
 
-async findAll(userId: number) {
-  const student =  await this.prisma.student.findUnique({ where: { userId } }) ;
+async findAll(userId?: number) {
+  const student = userId ? await this.prisma.student.findUnique({ where: { userId } }) : null;
   const studentId = student?.id;
 
   const courses = await this.prisma.course.findMany({
@@ -121,17 +121,25 @@ async findAll(userId: number) {
       moduleTitles: modules.map((m) => m.title),
       modulesCount: _count.modules,
       // ستكون دائماً false الآن في قائمة الاكتشاف، وهذا هو المنطق السليم
-      isEnrolled: enrollments && enrollments.length > 0,
+      isEnrolled: !!(enrollments && enrollments.length > 0),
     };
   });
 }
 
+<<<<<<< HEAD
   async search(query: string, userId: number) {
+=======
+  async search(query: string, userId?: number) {
+>>>>>>> 1c8a4b3 (feat: adding the reset password and the forget password and change the auth guard to view the courses for the visitor)
     if (!query) {
       return { courses: [], modules: [], lessons: [] };
     }
 
+<<<<<<< HEAD
     const student = await this.prisma.student.findUnique({ where: { userId } });
+=======
+    const student = userId ? await this.prisma.student.findUnique({ where: { userId } }) : null;
+>>>>>>> 1c8a4b3 (feat: adding the reset password and the forget password and change the auth guard to view the courses for the visitor)
     const studentId = student?.id;
 
     const coursesData = await this.prisma.course.findMany({

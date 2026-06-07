@@ -2,6 +2,8 @@ import { Body, Controller, Get, HttpCode, HttpStatus, Param, ParseIntPipe, Post,
 import { UserRegisterDto } from "../dtos/user-register.dto";
 import { AuthService } from "../services/auth.services";
 import { UserLoginDto } from "../dtos/user-login.dto";
+import { ForgotPasswordDto } from "../dtos/forgot-password.dto";
+import { ResetPasswordDto } from "../dtos/reset-password.dto";
 import { SwaggerGoogleAuth, SwaggerGoogleCallback, SwaggerLogin, SwaggerRegister } from "../decorators/swagger.decorators";
 import { ApiOperation, ApiResponse, ApiTags } from "@nestjs/swagger";
 import { AuthGuard } from "@nestjs/passport";
@@ -31,6 +33,18 @@ export class AuthController {
     @SwaggerLogin()
     async signin(@Body() userDto: UserLoginDto) {
         return await this.authService.login(userDto);
+    }
+
+    @Post('forgot-password')
+    @ApiOperation({ summary: 'Request password reset token' })
+    async forgotPassword(@Body() forgotPasswordDto: ForgotPasswordDto) {
+        return await this.authService.forgotPassword(forgotPasswordDto);
+    }
+
+    @Post('reset-password')
+    @ApiOperation({ summary: 'Reset password using token' })
+    async resetPassword(@Body() resetPasswordDto: ResetPasswordDto) {
+        return await this.authService.resetPassword(resetPasswordDto);
     }
 
     @Get('google')
