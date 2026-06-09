@@ -7,7 +7,7 @@ export default defineConfig({
     },
   schema: "prisma/schema.prisma",
   datasource: {
-    url: process.env.DATABASE_URL as string,
+    url: process.env.DIRECT_URL as string,
   },
   generate: {
     output: "src/prisma/client"
