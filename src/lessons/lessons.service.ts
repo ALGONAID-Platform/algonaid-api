@@ -3,18 +3,13 @@ import { PrismaService } from '../prisma/prisma.service';
 import { CreateLessonDto } from './dto/create-lesson.dto';
 import { UpdateLessonDto } from './dto/update-lesson.dto';
 import { MESSAGES } from 'src/utils/messages';
-import { uploadsFolder } from 'src/utils/conistants';
 
 @Injectable()
 export class LessonsService {
   constructor(private readonly prisma: PrismaService) { }
 
-  async create(createLessonDto: CreateLessonDto, userId: number, file?: Express.Multer.File) {
+  async create(createLessonDto: CreateLessonDto, userId: number) {
     const { moduleId, ...lessonData } = createLessonDto;
-
-    if (file) {
-      lessonData.pdfUrl = `${uploadsFolder}/${file.filename}`;
-    }
 
     const module = await this.prisma.module.findUnique({
       where: { id: moduleId },

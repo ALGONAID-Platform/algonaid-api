@@ -5,10 +5,14 @@ import { AuthGuard } from 'src/auth/guards/auth.guard';
 import { CurrentUser } from 'src/auth/decorators/current-user.decorator';
 import { JwtPayloadType } from 'src/utils/types';
 import { FileFieldsInterceptor } from '@nestjs/platform-express';
+import { SupabaseStorageService } from 'src/utils/supabase-storage.service';
 
 @Controller('users')
 export class UsersController {
-  constructor(private readonly usersService: UsersService) {}
+  constructor(
+    private readonly usersService: UsersService,
+    private readonly supabaseStorageService: SupabaseStorageService,
+  ) {}
 
   @Get('profile/badges')
   @UseGuards(AuthGuard)
@@ -34,10 +38,10 @@ export class UsersController {
     @UploadedFiles() files?: { avatar?: Express.Multer.File[], background?: Express.Multer.File[] },
   ) {
     if (files?.avatar?.[0]) {
-      updateProfileDto.avatar = `uploads/${files.avatar[0].filename}`;
+      updateProfileDto.avatar = await this.supabaseStorageService.uploadFile(files.avatar[0], 'algonaid', 'avatars');
     }
     if (files?.background?.[0]) {
-      updateProfileDto.background = `uploads/${files.background[0].filename}`;
+      updateProfileDto.background = await this.supabaseStorageService.uploadFile(files.background[0], 'algonaid', 'backgrounds');
     }
     return this.usersService.updateProfile(user.id, updateProfileDto, user.role);
   }

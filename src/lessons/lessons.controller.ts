@@ -8,24 +8,26 @@ import { CurrentUser } from 'src/auth/decorators/current-user.decorator';
 import { CreateLessonDto } from './dto/create-lesson.dto';
 import { UpdateLessonDto } from './dto/update-lesson.dto';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { diskStorage } from 'multer';
-import { extname } from 'path';
-import { allowedFileTypes, pdfFileSizeLimit, uploadsFolder } from 'src/utils/conistants';
+import { allowedFileTypes, pdfFileSizeLimit } from 'src/utils/conistants';
 import { SwaggerCreateLesson, SwaggerGetAllLessonsByModule, SwaggerGetLesson, SwaggerUpdateLesson, SwaggerDeleteLesson } from './decorators/swagger.decorator';
 import * as types from 'src/utils/types';
+import { SupabaseStorageService } from 'src/utils/supabase-storage.service';
 
 @ApiTags('lessons')
 @ApiBearerAuth()
 @Controller('lessons')
 export class LessonsController {
-  constructor(private readonly lessonsService: LessonsService) { }
+  constructor(
+    private readonly lessonsService: LessonsService,
+    private readonly supabaseStorageService: SupabaseStorageService,
+  ) { }
 
   @Post()
   @UseGuards(AuthRollGuard)
   @userRoles(Role.ADMIN, Role.OWNER)
   @UseInterceptors(FileInterceptor('pdf'))
   @SwaggerCreateLesson()
-  create(
+  async create(
     @Body() createLessonDto: CreateLessonDto,
     @CurrentUser() user: types.JwtPayloadType,
     @UploadedFile(
@@ -39,8 +41,10 @@ export class LessonsController {
 
     ) file?: Express.Multer.File
   ) {
-
-    return this.lessonsService.create(createLessonDto, user.id, file);
+    if (file) {
+      createLessonDto.pdfUrl = await this.supabaseStorageService.uploadFile(file, 'algonaid', 'lessons');
+    }
+    return this.lessonsService.create(createLessonDto, user.id);
   }
 
   @Get('module/:moduleId')
@@ -65,14 +69,14 @@ export class LessonsController {
   @userRoles(Role.ADMIN, Role.OWNER)
   @UseInterceptors(FileInterceptor('pdf'))
   @SwaggerUpdateLesson()
-  update(
+  async update(
     @Param('id', ParseIntPipe) id: number,
     @Body() updateLessonDto: UpdateLessonDto,
     @CurrentUser() user: types.JwtPayloadType,
     @UploadedFile() file?: Express.Multer.File
   ) {
     if (file) {
-      updateLessonDto.pdfUrl = `uploads/${file.filename}`;
+      updateLessonDto.pdfUrl = await this.supabaseStorageService.uploadFile(file, 'algonaid', 'lessons');
     }
     return this.lessonsService.update(id, updateLessonDto, user.id);
   }

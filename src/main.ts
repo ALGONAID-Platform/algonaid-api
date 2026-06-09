@@ -22,10 +22,6 @@ async function bootstrap() {
     credentials: true,
   });
 
-  app.useStaticAssets(join(__dirname, '..', 'uploads'), {
-    prefix: '/uploads/',
-  });
-
   const documentation = SwaggerModule.createDocument(app, swaggerConfig);
   SwaggerModule.setup("swagger", app, documentation);
   
