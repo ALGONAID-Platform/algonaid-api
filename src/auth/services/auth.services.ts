@@ -6,6 +6,7 @@ import { JwtService } from "@nestjs/jwt";
 import * as bcrypt from 'bcrypt';
 import * as crypto from 'crypto';
 import { Role } from "../../prisma/client/enums";
+import { UserRole } from "../enums/userRole";
 import { MESSAGES } from "src/utils/messages";
 import { ForgotPasswordDto } from "../dtos/forgot-password.dto";
 import { ResetPasswordDto } from "../dtos/reset-password.dto";

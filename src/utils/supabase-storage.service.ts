@@ -9,8 +9,8 @@ export class SupabaseStorageService implements OnModuleInit {
   constructor(private configService: ConfigService) {}
 
   onModuleInit() {
-    const supabaseUrl = this.configService.get<string>('SUPABASE_URL');
-    const supabaseKey = this.configService.get<string>('SUPABASE_SERVICE_ROLE_KEY');
+    const supabaseUrl = this.configService.get<string>('SUPABASE_URL') as string;
+    const supabaseKey = this.configService.get<string>('SUPABASE_SERVICE_ROLE_KEY') as string;
     
     this.supabase = createClient(supabaseUrl, supabaseKey);
   }
