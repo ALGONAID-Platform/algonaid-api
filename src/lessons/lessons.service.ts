@@ -3,6 +3,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { CreateLessonDto } from './dto/create-lesson.dto';
 import { UpdateLessonDto } from './dto/update-lesson.dto';
 import { MESSAGES } from 'src/utils/messages';
+import { LessonStatus, Role } from 'src/prisma/client/enums';
 
 @Injectable()
 export class LessonsService {
@@ -30,7 +31,7 @@ export class LessonsService {
     });
 
     const isInstructor = user?.teacherProfile && module.course.instructorId === user.teacherProfile.id;
-    const isOwnerOrAdmin = user?.role === 'OWNER' || user?.role === 'ADMIN';
+    const isOwnerOrAdmin = user?.role === Role.OWNER || user?.role === Role.ADMIN;
 
     if (!isInstructor && !isOwnerOrAdmin) {
       throw new ForbiddenException(MESSAGES.LESSONS.UNAUTHORIZED_ADD);
@@ -54,15 +55,22 @@ export class LessonsService {
     }
 
     let studentId: number | undefined;
+    let isOwnerOrAdmin = false;
+
     if (userId) {
-      const student = await this.prisma.student.findUnique({
-        where: { userId },
+      const user = await this.prisma.user.findUnique({
+        where: { id: userId },
+        include: { studentProfile: true }
       });
-      studentId = student?.id;
+      studentId = user?.studentProfile?.id;
+      isOwnerOrAdmin = user?.role === Role.OWNER || user?.role === Role.ADMIN;
     }
 
     return await this.prisma.lesson.findMany({
-      where: { moduleId },
+      where: { 
+        moduleId,
+        ...(!isOwnerOrAdmin && { status: LessonStatus.PUBLISHED })
+      },
       include: {
         lessonProgress: studentId ? {
           where: { studentId },
@@ -72,7 +80,7 @@ export class LessonsService {
     });
   }
 
-  async findOne(id: number) {
+  async findOne(id: number, userId?: number) {
     const lesson = await this.prisma.lesson.findUnique({
       where: { id },
       include: {
@@ -91,11 +99,27 @@ export class LessonsService {
       throw new NotFoundException(MESSAGES.LESSONS.LESSON_NOT_FOUND(id));
     }
 
+    if (lesson.status === LessonStatus.DRAFT) {
+      if (!userId) {
+        throw new ForbiddenException(MESSAGES.LESSONS.LESSON_NOT_FOUND(id));
+      }
+      const user = await this.prisma.user.findUnique({
+        where: { id: userId },
+        include: { teacherProfile: true }
+      });
+      const isInstructor = user?.teacherProfile && lesson.module.course.instructorId === user.teacherProfile.id;
+      const isOwnerOrAdmin = user?.role === Role.OWNER || user?.role === Role.ADMIN;
+
+      if (!isInstructor && !isOwnerOrAdmin) {
+        throw new ForbiddenException(MESSAGES.LESSONS.LESSON_NOT_FOUND(id));
+      }
+    }
+
     return lesson;
   }
 
   async update(id: number, updateLessonDto: UpdateLessonDto, userId: number) {
-    const lesson = await this.findOne(id);
+    const lesson = await this.findOne(id, userId);
 
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
@@ -103,7 +127,7 @@ export class LessonsService {
     });
 
     const isInstructor = user?.teacherProfile && lesson.module.course.instructorId === user.teacherProfile.id;
-    const isOwnerOrAdmin = user?.role === 'OWNER' || user?.role === 'ADMIN';
+    const isOwnerOrAdmin = user?.role === Role.OWNER || user?.role === Role.ADMIN;
 
     if (!isInstructor && !isOwnerOrAdmin) {
       throw new ForbiddenException(MESSAGES.LESSONS.UNAUTHORIZED_UPDATE);
@@ -121,7 +145,7 @@ export class LessonsService {
   }
 
   async remove(id: number, userId: number) {
-    const lesson = await this.findOne(id);
+    const lesson = await this.findOne(id, userId);
 
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
@@ -129,7 +153,7 @@ export class LessonsService {
     });
 
     const isInstructor = user?.teacherProfile && lesson.module.course.instructorId === user.teacherProfile.id;
-    const isOwnerOrAdmin = user?.role === 'OWNER' || user?.role === 'ADMIN';
+    const isOwnerOrAdmin = user?.role === Role.OWNER || user?.role === Role.ADMIN;
 
     if (!isInstructor && !isOwnerOrAdmin) {
       throw new ForbiddenException(MESSAGES.LESSONS.UNAUTHORIZED_DELETE);

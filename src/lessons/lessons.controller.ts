@@ -11,15 +11,15 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { allowedFileTypes, pdfFileSizeLimit } from 'src/utils/conistants';
 import { SwaggerCreateLesson, SwaggerGetAllLessonsByModule, SwaggerGetLesson, SwaggerUpdateLesson, SwaggerDeleteLesson } from './decorators/swagger.decorator';
 import * as types from 'src/utils/types';
-import { SupabaseStorageService } from 'src/utils/supabase-storage.service';
+import { UploadcareStorageService } from 'src/utils/uploadcare-storage.service';
 
 @ApiTags('lessons')
-@ApiBearerAuth()
+@ApiBearerAuth('JWT-auth')
 @Controller('lessons')
 export class LessonsController {
   constructor(
     private readonly lessonsService: LessonsService,
-    private readonly supabaseStorageService: SupabaseStorageService,
+    private readonly uploadcareStorageService: UploadcareStorageService,
   ) { }
 
   @Post()
@@ -42,7 +42,7 @@ export class LessonsController {
     ) file?: Express.Multer.File
   ) {
     if (file) {
-      createLessonDto.pdfUrl = await this.supabaseStorageService.uploadFile(file, 'algonaid', 'lessons');
+      createLessonDto.pdfUrl = await this.uploadcareStorageService.upload(file);
     }
     return this.lessonsService.create(createLessonDto, user.id);
   }
@@ -59,9 +59,14 @@ export class LessonsController {
   }
 
   @Get(':id')
+  @UseGuards(AuthRollGuard)
+  @userRoles(Role.STUDENT, Role.ADMIN, Role.OWNER)
   @SwaggerGetLesson()
-  findOne(@Param('id', ParseIntPipe) id: number) {
-    return this.lessonsService.findOne(id);
+  findOne(
+    @Param('id', ParseIntPipe) id: number,
+    @CurrentUser() user: types.JwtPayloadType
+  ) {
+    return this.lessonsService.findOne(id, user.id);
   }
 
   @Patch(':id')
@@ -76,7 +81,7 @@ export class LessonsController {
     @UploadedFile() file?: Express.Multer.File
   ) {
     if (file) {
-      updateLessonDto.pdfUrl = await this.supabaseStorageService.uploadFile(file, 'algonaid', 'lessons');
+      updateLessonDto.pdfUrl = await this.uploadcareStorageService.upload(file);
     }
     return this.lessonsService.update(id, updateLessonDto, user.id);
   }

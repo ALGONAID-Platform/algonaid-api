@@ -10,6 +10,7 @@ import { UserRole } from "../enums/userRole";
 import { MESSAGES } from "src/utils/messages";
 import { ForgotPasswordDto } from "../dtos/forgot-password.dto";
 import { ResetPasswordDto } from "../dtos/reset-password.dto";
+import { MailService } from "src/utils/mail.service";
 
 
 @Injectable()
@@ -17,7 +18,8 @@ export class AuthService {
 
     constructor(
         private readonly prisma: PrismaService,
-        private readonly jwtService: JwtService
+        private readonly jwtService: JwtService,
+        private readonly mailService: MailService,
     ) { }
 
     async forgotPassword(forgotPasswordDto: ForgotPasswordDto) {
@@ -42,12 +44,11 @@ export class AuthService {
             }
         });
 
-        // TODO: Send email with resetToken
-        console.log(`Reset Token for ${email}: ${resetToken}`);
+        // Send email with resetToken using Resend
+        await this.mailService.sendPasswordResetEmail(email, resetToken);
 
         return {
             message: MESSAGES.AUTH.RESET_PASSWORD_SENT,
-            // resetToken // For testing purposes, we might return it here, but usually it's only in the email
         };
     }
 

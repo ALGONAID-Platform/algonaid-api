@@ -3,6 +3,7 @@ import { CreateModuleDto } from '../dto/create-module.dto';
 import { UpdateModuleDto } from '../dto/update-module.dto';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { MESSAGES } from 'src/utils/messages';
+import { LessonStatus, Role } from 'src/prisma/client/enums';
 
 @Injectable()
 export class ModulesService {
@@ -27,7 +28,7 @@ export class ModulesService {
     });
 
     const isInstructor = user?.teacherProfile && course.instructorId === user.teacherProfile.id;
-    const isOwnerOrAdmin = user?.role === 'OWNER' || user?.role === 'ADMIN';
+    const isOwnerOrAdmin = user?.role === Role.OWNER || user?.role === Role.ADMIN;
 
     if (!isInstructor && !isOwnerOrAdmin) {
       throw new ForbiddenException(MESSAGES.MODULES.UNAUTHORIZED_ADD);
@@ -44,16 +45,23 @@ export class ModulesService {
 
   async findAll(userId?: number) {
     let studentId: number | undefined;
+    let isOwnerOrAdmin = false;
+
     if (userId) {
-      const student = await this.prisma.student.findUnique({
-        where: { userId },
+      const user = await this.prisma.user.findUnique({
+        where: { id: userId },
+        include: { studentProfile: true }
       });
-      studentId = student?.id;
+      studentId = user?.studentProfile?.id;
+      isOwnerOrAdmin = user?.role === Role.OWNER || user?.role === Role.ADMIN;
     }
 
     const modules = await this.prisma.module.findMany({
       include: {
         lessons: {
+          where: {
+            ...(!isOwnerOrAdmin && { status: LessonStatus.PUBLISHED })
+          },
           include: {
             lessonProgress: studentId ? {
               where: { studentId },
@@ -97,17 +105,24 @@ export class ModulesService {
 
   async findByCourse(courseId: number, userId?: number) {
     let studentId: number | undefined;
+    let isOwnerOrAdmin = false;
+
     if (userId) {
-      const student = await this.prisma.student.findUnique({
-        where: { userId },
+      const user = await this.prisma.user.findUnique({
+        where: { id: userId },
+        include: { studentProfile: true }
       });
-      studentId = student?.id;
+      studentId = user?.studentProfile?.id;
+      isOwnerOrAdmin = user?.role === Role.OWNER || user?.role === Role.ADMIN;
     }
 
     const modules = await this.prisma.module.findMany({
       where: { courseId },
       include: {
         lessons: {
+          where: {
+            ...(!isOwnerOrAdmin && { status: LessonStatus.PUBLISHED })
+          },
           include: {
             lessonProgress: studentId ? {
               where: { studentId },
@@ -178,7 +193,7 @@ export class ModulesService {
     });
 
     const isInstructor = user?.teacherProfile && module.course.instructorId === user.teacherProfile.id;
-    const isOwnerOrAdmin = user?.role === 'OWNER' || user?.role === 'ADMIN';
+    const isOwnerOrAdmin = user?.role === Role.OWNER || user?.role === Role.ADMIN;
 
     if (!isInstructor && !isOwnerOrAdmin) {
       throw new ForbiddenException(MESSAGES.MODULES.UNAUTHORIZED_UPDATE);
@@ -199,7 +214,7 @@ export class ModulesService {
     });
 
     const isInstructor = user?.teacherProfile && module.course.instructorId === user.teacherProfile.id;
-    const isOwnerOrAdmin = user?.role === 'OWNER' || user?.role === 'ADMIN';
+    const isOwnerOrAdmin = user?.role === Role.OWNER || user?.role === Role.ADMIN;
 
     if (!isInstructor && !isOwnerOrAdmin) {
       throw new ForbiddenException(MESSAGES.MODULES.UNAUTHORIZED_DELETE);

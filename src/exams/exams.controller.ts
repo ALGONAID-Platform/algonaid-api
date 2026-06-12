@@ -11,7 +11,7 @@ import { ApiTags, ApiBearerAuth, ApiOperation, ApiResponse, ApiParam, ApiBody } 
 import * as types from 'src/utils/types';
 
 @ApiTags('exams')
-@ApiBearerAuth()
+@ApiBearerAuth('JWT-auth')
 @Controller('exams')
 @UseGuards(AuthRollGuard)
 export class ExamsController {
@@ -55,8 +55,11 @@ export class ExamsController {
   @ApiOperation({ summary: 'Get exam details' })
   @ApiParam({ name: 'id', description: 'Exam ID' })
   @ApiResponse({ status: 200, description: 'Exam details retrieved successfully.' })
-  getExam(@Param('id', ParseIntPipe) id: number) {
-    return this.examsService.getExam(id);
+  getExam(
+    @Param('id', ParseIntPipe) id: number,
+    @CurrentUser() user: types.JwtPayloadType
+  ) {
+    return this.examsService.getExam(id, user.id);
   }
 
   @Post(':examId/start')

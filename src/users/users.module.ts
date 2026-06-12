@@ -3,7 +3,7 @@ import { UsersController } from './users.controller';
 import { UsersService } from './users.service';
 import { MulterModule } from '@nestjs/platform-express/multer';
 import { memoryStorage } from 'multer';
-import { SupabaseStorageService } from 'src/utils/supabase-storage.service';
+import { UploadcareStorageService } from 'src/utils/uploadcare-storage.service';
 
 @Module({
   imports: [
@@ -19,6 +19,6 @@ import { SupabaseStorageService } from 'src/utils/supabase-storage.service';
     })
   ],
   controllers: [UsersController],
-  providers: [UsersService, SupabaseStorageService]
+  providers: [UsersService, UploadcareStorageService]
 })
 export class UsersModule {}

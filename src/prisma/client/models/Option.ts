@@ -189,7 +189,7 @@ export type OptionGroupByOutputType = {
   _max: OptionMaxAggregateOutputType | null
 }
 
-type GetOptionGroupByPayload<T extends OptionGroupByArgs> = Prisma.PrismaPromise<
+export type GetOptionGroupByPayload<T extends OptionGroupByArgs> = Prisma.PrismaPromise<
   Array<
     Prisma.PickEnumerable<OptionGroupByOutputType, T['by']> &
       {
@@ -1243,6 +1243,11 @@ export type OptionFindManyArgs<ExtArgs extends runtime.Types.Extensions.Internal
    * Skip the first `n` Options.
    */
   skip?: number
+  /**
+   * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+   * 
+   * Filter by unique combinations of Options.
+   */
   distinct?: Prisma.OptionScalarFieldEnum | Prisma.OptionScalarFieldEnum[]
 }
 

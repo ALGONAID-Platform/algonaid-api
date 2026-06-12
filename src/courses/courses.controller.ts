@@ -11,6 +11,7 @@ import { SwaggerCreateCourse, SwaggerDeleteCourse, SwaggerGetCourse, SwaggerUpda
 import { UpdateCourseDto } from './dto/update-course.dto';
 
 @ApiTags('courses')
+@ApiBearerAuth('JWT-auth')
 @Controller('courses')
 export class CoursesController {
   constructor(private readonly coursesService: CoursesService) { }

@@ -10,7 +10,7 @@ import { CurrentUser } from 'src/auth/decorators/current-user.decorator';
 import * as types from 'src/utils/types';
 
 @ApiTags('modules')
-@ApiBearerAuth()
+@ApiBearerAuth('JWT-auth')
 @Controller('modules')
 export class ModulesController {
   constructor(private readonly modulesService: ModulesService) { }

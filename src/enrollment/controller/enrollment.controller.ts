@@ -8,7 +8,10 @@ import { UserRole } from 'src/auth/enums/userRole';
 import { Role } from 'src/prisma/client/enums';
 import { userRoles } from 'src/auth/decorators/user_roll.decorator';
 import { SwaggerEnrollInCourse } from '../decorators/enrollment.decorator';
+import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 
+@ApiTags('enrollment')
+@ApiBearerAuth('JWT-auth')
 @Controller('enrollment')
 export class EnrollmentController {
 
@@ -25,6 +28,8 @@ export class EnrollmentController {
     return this.enrollmentSevice.craete(user.id, createDto);
   }
 
+  @ApiOperation({ summary: 'Check if current user is enrolled in a course' })
+  @ApiResponse({ status: 200, description: 'Return true if enrolled, false otherwise.' })
   @Get('check-enrollment')
   @UseGuards(AuthRollGuard)
   async checkStatus(

@@ -1,6 +1,7 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
-import { IsInt, IsNotEmpty, IsOptional, IsString, IsUrl } from 'class-validator';
+import { IsEnum, IsInt, IsNotEmpty, IsOptional, IsString, IsUrl } from 'class-validator';
+import { LessonStatus } from 'src/prisma/client/enums';
 
 export class CreateLessonDto {
   @ApiProperty({ example: 'Introduction to NestJS' })
@@ -27,6 +28,11 @@ export class CreateLessonDto {
   @IsOptional()
   @IsString()
   pdfUrl?: string;
+
+  @ApiProperty({ enum: LessonStatus, example: LessonStatus.DRAFT, required: false })
+  @IsOptional()
+  @IsEnum(LessonStatus)
+  status?: LessonStatus;
 
   @ApiProperty({ example: 1 })
   @IsOptional()

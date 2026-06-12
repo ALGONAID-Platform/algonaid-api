@@ -102,6 +102,11 @@ model Module {
   lessons Lesson[]
 }
 
+enum LessonStatus {
+  DRAFT
+  PUBLISHED
+}
+
 model Lesson {
   id          Int     @id @default(autoincrement())
   title       String
@@ -109,6 +114,7 @@ model Lesson {
   content     String? @db.Text
   videoUrl    String?
   pdfUrl      String?
+  status      LessonStatus @default(DRAFT)
   order       Int     @default(0)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

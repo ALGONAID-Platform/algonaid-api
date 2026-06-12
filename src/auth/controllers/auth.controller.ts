@@ -62,11 +62,14 @@ export class AuthController {
     }
 
     @Get(":id")
-    async getCureentUser(@Param("id", ParseIntPipe) id: number) {
+    @ApiBearerAuth('JWT-auth')
+    @ApiOperation({ summary: 'Get current user data by ID' })
+    async getCurrentUser(@Param("id", ParseIntPipe) id: number) {
         return await this.authService.getCurrentUser(id);
     }
 
     @Post('logout')
+    @ApiBearerAuth('JWT-auth')
     @ApiOperation({ summary: 'Logout user and invalidate token' })
     async logout(@Req() req: any) {
         const [type, token] = req.headers.authorization?.split(" ") ?? [];

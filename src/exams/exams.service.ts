@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException, BadRequestException, ForbiddenException } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
-import { ExamStatus, Role } from 'src/prisma/client/enums';
+import { ExamStatus, LessonStatus, Role } from 'src/prisma/client/enums';
 import { SubmitExamDto } from './dto/exam-submission.dto';
 import { CreateExamDto, CreateQuestionDto, CreateOptionDto } from './dto/create-exam.dto';
 import { UpdateExamDto } from './dto/update-exam.dto';
@@ -17,7 +17,11 @@ export class ExamsService {
 
     if (!exam) throw new NotFoundException('Exam not found');
 
-    if (role !== Role.OWNER) {
+    if (role !== Role.OWNER && role !== Role.ADMIN) {
+      throw new ForbiddenException('You are not authorized to manage this exam');
+    }
+
+    if (role === Role.ADMIN) {
       const teacher = await this.prisma.teacher.findUnique({
         where: { userId },
       });
@@ -134,10 +138,11 @@ export class ExamsService {
     });
   }
 
-  async getExam(examId: number) {
+  async getExam(examId: number, userId?: number) {
     const exam = await this.prisma.exam.findUnique({
       where: { id: examId },
       include: {
+        lesson: true,
         questions: {
           select: {
             id: true,
@@ -159,6 +164,18 @@ export class ExamsService {
       throw new NotFoundException('Exam not found');
     }
 
+    if (exam.lesson.status === LessonStatus.DRAFT) {
+      if (!userId) throw new NotFoundException('Exam not found');
+      
+      const user = await this.prisma.user.findUnique({
+        where: { id: userId },
+        include: { teacherProfile: true }
+      });
+      
+      const isOwnerOrAdmin = user?.role === Role.OWNER || user?.role === Role.ADMIN;
+      if (!isOwnerOrAdmin) throw new NotFoundException('Exam not found');
+    }
+
     return exam;
   }
 
@@ -173,13 +190,16 @@ export class ExamsService {
     const exam = await this.prisma.exam.findUnique({
       where: { id: examId },
       include: {
+        lesson: true,
         _count: {
           select: { attempts: { where: { studentId: student.id } } },
         },
       },
     });
 
-    if (!exam) throw new NotFoundException('Exam not found');
+    if (!exam || exam.lesson.status === LessonStatus.DRAFT) {
+      throw new NotFoundException('Exam not found');
+    }
 
     if (exam._count.attempts >= exam.maxAttempts) {
       throw new ForbiddenException('Maximum attempts reached for this exam');

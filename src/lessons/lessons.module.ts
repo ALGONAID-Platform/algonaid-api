@@ -7,7 +7,7 @@ import { MulterModule } from '@nestjs/platform-express/multer';
 import { memoryStorage } from 'multer';
 import { pdfFileSizeLimit } from 'src/utils/conistants';
 import { MESSAGES } from 'src/utils/messages';
-import { SupabaseStorageService } from 'src/utils/supabase-storage.service';
+import { UploadcareStorageService } from 'src/utils/uploadcare-storage.service';
 
 @Module({
   imports: [
@@ -27,7 +27,7 @@ import { SupabaseStorageService } from 'src/utils/supabase-storage.service';
     AuthModule
   ],
   controllers: [LessonsController],
-  providers: [LessonsService, SupabaseStorageService],
+  providers: [LessonsService, UploadcareStorageService],
   exports: [LessonsService],
 })
 export class LessonsModule { }

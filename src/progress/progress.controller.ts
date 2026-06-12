@@ -9,7 +9,7 @@ import * as types from 'src/utils/types';
 import { UpdateProgressDto } from './dto/update-progress.dto';
 
 @ApiTags('progress')
-@ApiBearerAuth()
+@ApiBearerAuth('JWT-auth')
 @Controller('progress')
 @UseGuards(AuthRollGuard)
 export class ProgressController {
