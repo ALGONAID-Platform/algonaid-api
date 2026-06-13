@@ -5,7 +5,7 @@ import { UserLoginDto } from "../dtos/user-login.dto";
 import { ForgotPasswordDto } from "../dtos/forgot-password.dto";
 import { ResetPasswordDto } from "../dtos/reset-password.dto";
 import { SwaggerGoogleAuth, SwaggerGoogleCallback, SwaggerLogin, SwaggerRegister } from "../decorators/swagger.decorators";
-import { ApiOperation, ApiResponse, ApiTags } from "@nestjs/swagger";
+import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from "@nestjs/swagger";
 import { AuthGuard } from "@nestjs/passport";
 
 
