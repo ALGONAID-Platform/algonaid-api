@@ -3,6 +3,7 @@ import { UserRegisterDto } from "../dtos/user-register.dto";
 import { UserLoginDto } from "../dtos/user-login.dto";
 import { PrismaService } from "src/prisma/prisma.service";
 import { JwtService } from "@nestjs/jwt";
+import { ConfigService } from "@nestjs/config";
 import * as bcrypt from 'bcrypt';
 import * as crypto from 'crypto';
 import { Role } from "../../prisma/client/enums";
@@ -20,6 +21,7 @@ export class AuthService {
         private readonly prisma: PrismaService,
         private readonly jwtService: JwtService,
         private readonly mailService: MailService,
+        private readonly configService: ConfigService,
     ) { }
 
     async forgotPassword(forgotPasswordDto: ForgotPasswordDto) {
@@ -169,6 +171,7 @@ export class AuthService {
     }
 
     async validateGoogleUser(googleUser: any) {
+        console.log("============")
         const { email, name, googleId } = googleUser;
 
         let user = await this.prisma.user.findUnique({
@@ -273,6 +276,45 @@ export class AuthService {
                 experience: user.teacherProfile.experience,
             } : {})
         };
+    }
+
+    async loginWithGoogleMobile(idToken: string) {
+        try {
+                    console.log("======login======")
+
+            const response = await fetch(`https://oauth2.googleapis.com/tokeninfo?id_token=${idToken}`);
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}));
+                throw new UnauthorizedException(errorData.error_description || 'Invalid Google ID Token');
+            }
+
+            const payload = await response.json();
+
+            // Verify audience matches our Web Client ID
+            const expectedClientId = this.configService.get<string>('GOOGLE_CLIENT_ID');
+            if (payload.aud !== expectedClientId) {
+                throw new UnauthorizedException('Invalid Google ID Token audience');
+            }
+
+            // Verify token expiration
+            const currentTimestamp = Math.floor(Date.now() / 1000);
+            if (Number(payload.exp) < currentTimestamp) {
+                throw new UnauthorizedException('Google ID Token has expired');
+            }
+
+            const googleUser = {
+                email: payload.email,
+                name: payload.name || `${payload.given_name || ''} ${payload.family_name || ''}`.trim() || payload.email.split('@')[0],
+                googleId: payload.sub,
+            };
+
+            return this.validateGoogleUser(googleUser);
+        } catch (error: any) {
+            if (error instanceof UnauthorizedException) {
+                throw error;
+            }
+            throw new UnauthorizedException(error.message || 'Failed to verify Google ID Token');
+        }
     }
 
 }

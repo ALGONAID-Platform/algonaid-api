@@ -134,3 +134,45 @@ export function SwaggerGoogleCallback() {
     })
   );
 }
+
+export function SwaggerGoogleMobileAuth() {
+  return applyDecorators(
+    HttpCode(200),
+
+    ApiOperation({
+      summary: 'تسجيل الدخول عبر جوجل للهواتف (أندرويد/iOS)',
+      description: 'يسمح بتسجيل الدخول أو إنشاء حساب باستخدام الـ ID Token المستلم من جوجل على الموبايل'
+    }),
+
+    ApiBody({
+      description: 'رمز التعريف (ID Token) المستلم من تطبيق الموبايل',
+      schema: {
+        example: {
+          idToken: 'eyJhbGciOiJSUzI1NiIsImtpZCI6IjFl...'
+        }
+      }
+    }),
+
+    ApiResponse({
+      status: 200,
+      description: 'تم تسجيل الدخول بنجاح عبر جوجل',
+      schema: {
+        example: {
+          message: 'Google login successful',
+          user: {
+            id: 5,
+            email: 'user@gmail.com',
+            name: 'User Name',
+            role: 'STUDENT'
+          },
+          access_token: 'eyJhbGciOiJIUzI1...'
+        }
+      }
+    }),
+
+    ApiResponse({
+      status: 401,
+      description: 'رمز التعريف (ID Token) غير صالح أو منتهي الصلاحية'
+    })
+  );
+}

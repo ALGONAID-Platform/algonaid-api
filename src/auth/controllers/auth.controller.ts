@@ -4,7 +4,8 @@ import { AuthService } from "../services/auth.services";
 import { UserLoginDto } from "../dtos/user-login.dto";
 import { ForgotPasswordDto } from "../dtos/forgot-password.dto";
 import { ResetPasswordDto } from "../dtos/reset-password.dto";
-import { SwaggerGoogleAuth, SwaggerGoogleCallback, SwaggerLogin, SwaggerRegister } from "../decorators/swagger.decorators";
+import { GoogleMobileLoginDto } from "../dtos/google-mobile-login.dto";
+import { SwaggerGoogleAuth, SwaggerGoogleCallback, SwaggerGoogleMobileAuth, SwaggerLogin, SwaggerRegister } from "../decorators/swagger.decorators";
 import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from "@nestjs/swagger";
 import { AuthGuard } from "@nestjs/passport";
 
@@ -59,6 +60,12 @@ export class AuthController {
     @UseGuards(AuthGuard('google'))
     async googleAuthRedirect(@Req() req: any) {
         return this.authService.validateGoogleUser(req.user);
+    }
+
+    @Post('google/mobile')
+    @SwaggerGoogleMobileAuth()
+    async googleMobileAuth(@Body() googleMobileLoginDto: GoogleMobileLoginDto) {
+        return await this.authService.loginWithGoogleMobile(googleMobileLoginDto.idToken);
     }
 
     @Get(":id")
