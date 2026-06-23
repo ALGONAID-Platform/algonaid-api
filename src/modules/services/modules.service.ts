@@ -69,7 +69,11 @@ export class ModulesService {
           }
         },
         _count: {
-          select: { lessons: true }
+          select: { 
+            lessons: {
+              where: { status: LessonStatus.PUBLISHED }
+            }
+          }
         }
       }
     });
@@ -77,7 +81,7 @@ export class ModulesService {
     return modules.map((mod) => {
       const { lessons, _count, ...rest } = mod;
 
-      let totalLessons = lessons.length;
+      let totalLessons = _count.lessons;
       let completedLessons = 0;
 
       if (studentId) {
@@ -94,8 +98,6 @@ export class ModulesService {
 
       return {
         ...rest,
-        lessons,
-        lessonsCount: _count.lessons,
         totalLessons,
         completedLessons,
         progressPercentage: studentId ? progressPercentage : undefined,
@@ -130,7 +132,11 @@ export class ModulesService {
           }
         },
         _count: {
-          select: { lessons: true }
+          select: { 
+            lessons: {
+              where: { status: LessonStatus.PUBLISHED }
+            }
+          }
         }
       }
     });
@@ -138,7 +144,7 @@ export class ModulesService {
     return modules.map((mod) => {
       const { lessons, _count, ...rest } = mod;
 
-      let totalLessons = lessons.length;
+      let totalLessons = _count.lessons;
       let completedLessons = 0;
 
       if (studentId) {
@@ -155,8 +161,6 @@ export class ModulesService {
 
       return {
         ...rest,
-        lessons,
-        lessonsCount: _count.lessons,
         totalLessons,
         completedLessons,
         progressPercentage: studentId ? progressPercentage : undefined,
