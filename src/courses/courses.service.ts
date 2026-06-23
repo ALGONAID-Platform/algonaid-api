@@ -25,32 +25,43 @@ export class CoursesService {
     });
   }
 
-async findMyCourses(userId: number) {
-  // جلب الطالب أولاً
-  const student = await this.prisma.student.findUnique({
-    where: { userId },
-  });
- 
-  // جلب التسجيلات ومن ثم استخراج الكورسات منها
-  const myEnrollments = await this.prisma.enrollment.findMany({
-    where: { 
-      studentId: student?.id,
-      status: 'ACTIVE', // جلب الكورسات القائمة فقط
-    },
-    include: {
-      course: {
-        include: {
-          teacher: { include: { user: { select: { name: true, email: true } } } },
-          _count: { select: { modules: true } },
-          modules: {
-            include: {
-              lessons: {
-                where: {
-                  status: 'PUBLISHED',
-                },
-                include: {
-                  lessonProgress: {
-                    where: { studentId: student?.id },
+  async findMyCourses(userId: number) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      include: { studentProfile: true },
+    });
+    
+    const student = user?.studentProfile;
+    const isOwnerOrAdmin = user?.role === 'OWNER' || user?.role === 'ADMIN';
+   
+    const myEnrollments = await this.prisma.enrollment.findMany({
+      where: { 
+        studentId: student?.id,
+        status: 'ACTIVE',
+      },
+      include: {
+        course: {
+          include: {
+            teacher: { include: { user: { select: { name: true, email: true } } } },
+            _count: { select: { modules: true } },
+            modules: {
+              include: {
+                lessons: {
+                  where: {
+                    ...(!isOwnerOrAdmin && { status: 'PUBLISHED' }),
+                  },
+                  include: {
+                    lessonProgress: {
+                      where: { studentId: student?.id },
+                    },
+                    exam: {
+                      include: {
+                        attempts: {
+                          where: { studentId: student?.id, status: 'PASSED' },
+                          take: 1,
+                        }
+                      }
+                    }
                   },
                 },
               },
@@ -58,28 +69,30 @@ async findMyCourses(userId: number) {
           },
         },
       },
-    },
-  });
-
-  // تنظيف البيانات لتعود بنفس تنسيق الكورس العادي
-  return myEnrollments.map((enrol) => {
-    const { course } = enrol;
-    const { modules, _count, ...rest } = course;
-
-    let totalLessons = 0;
-    let completedLessons = 0;
-
-    modules.forEach((module) => {
-      totalLessons += module.lessons.length;
-      module.lessons.forEach((lesson) => {
-        const progress = lesson.lessonProgress;
-        if (progress && progress.length > 0 && progress[0].isCompleted) {
-          completedLessons++;
-        }
-      });
     });
 
-    const progressPercentage = totalLessons > 0 ? Math.round((completedLessons / totalLessons) * 100) : 0;
+    return myEnrollments.map((enrol) => {
+      const { course } = enrol;
+      const { modules, _count, ...rest } = course;
+
+      let totalLessons = 0;
+      let completedLessons = 0;
+
+      modules.forEach((module) => {
+        totalLessons += module.lessons.length;
+        module.lessons.forEach((lesson) => {
+          const progress = lesson.lessonProgress;
+          const passedExam = lesson.exam?.attempts;
+          if (
+            (progress && progress.length > 0 && progress[0].isCompleted) ||
+            (passedExam && passedExam.length > 0)
+          ) {
+            completedLessons++;
+          }
+        });
+      });
+
+      const progressPercentage = totalLessons > 0 ? Math.round((completedLessons / totalLessons) * 100) : 0;
 
     return {
       ...rest,

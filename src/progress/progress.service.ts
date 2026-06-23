@@ -70,13 +70,16 @@ export class ProgressService {
   async getCourseProgress(studentUserId: number, courseId: number) {
     const student = await this.prisma.student.findUnique({
       where: { userId: studentUserId },
+      include: { user: true },
     });
 
     if (!student) throw new NotFoundException('Student profile not found');
 
+    const isOwnerOrAdmin = student.user?.role === 'OWNER' || student.user?.role === 'ADMIN';
+
     const lessons = await this.prisma.lesson.findMany({
       where: {
-        status: 'PUBLISHED',
+        ...(!isOwnerOrAdmin && { status: 'PUBLISHED' }),
         module: {
           courseId: courseId,
         },
@@ -196,11 +199,12 @@ export class ProgressService {
     }
 
     const module = lastProgress.lesson.module;
+    const isOwnerOrAdmin = student.user?.role === 'OWNER' || student.user?.role === 'ADMIN';
 
     const lessons = await this.prisma.lesson.findMany({
       where: {
         moduleId: module.id,
-        status: 'PUBLISHED',
+        ...(!isOwnerOrAdmin && { status: 'PUBLISHED' }),
       },
       include: {
         lessonProgress: {
