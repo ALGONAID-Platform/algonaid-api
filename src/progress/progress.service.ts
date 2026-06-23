@@ -105,8 +105,6 @@ export class ProgressService {
         totalLessons: 0, 
         completedLessons: 0, 
         progressPercentage: 0,
-        lessons: [],
-        completedLessonsData: [],
       };
     }
 
@@ -158,8 +156,6 @@ export class ProgressService {
       totalLessons: lessons.length,
       completedLessons: completedLessonsCount,
       progressPercentage: Math.round(progressPercentage),
-      lessons,
-      completedLessonsData,
     };
   }
 

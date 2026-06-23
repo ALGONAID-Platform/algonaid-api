@@ -55,7 +55,6 @@ export class LessonsService {
     }
 
     let studentId: number | undefined;
-    let isOwnerOrAdmin = false;
 
     if (userId) {
       const user = await this.prisma.user.findUnique({
@@ -63,13 +62,12 @@ export class LessonsService {
         include: { studentProfile: true }
       });
       studentId = user?.studentProfile?.id;
-      isOwnerOrAdmin = user?.role === Role.OWNER || user?.role === Role.STUDENT || user?.role === Role.ADMIN;
     }
 
     return await this.prisma.lesson.findMany({
       where: { 
         moduleId,
-        ...((!isOwnerOrAdmin || user?.role === Role.STUDENT) && { status: LessonStatus.PUBLISHED })
+        status: LessonStatus.PUBLISHED,
       },
       include: {
         lessonProgress: studentId ? {

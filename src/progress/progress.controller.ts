@@ -73,7 +73,7 @@ export class ProgressController {
   @ApiOperation({ summary: 'Get exam grades and average percentage for a course' })
   getCourseGrades(@Param('courseId', ParseIntPipe) courseId: number, @CurrentUser() user: types.JwtPayloadType) {
     return this.progressService.getCourseGrades(user.id, courseId);
-  }
+  }https://algonaid-api.onrender.com/api/v1/lessons/module/1
 
   @Get('total-points')
   @userRoles(Role.STUDENT)
