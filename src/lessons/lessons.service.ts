@@ -63,7 +63,7 @@ export class LessonsService {
         include: { studentProfile: true }
       });
       studentId = user?.studentProfile?.id;
-      isOwnerOrAdmin = user?.role === Role.OWNER || user?.role === Role.STUDENT || user?.role === Role.ADMIN;
+      isOwnerOrAdmin = user?.role === Role.OWNER || user?.role === Role.ADMIN;
     }
 
     return await this.prisma.lesson.findMany({
