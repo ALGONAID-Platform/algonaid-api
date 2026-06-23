@@ -63,13 +63,13 @@ export class LessonsService {
         include: { studentProfile: true }
       });
       studentId = user?.studentProfile?.id;
-      isOwnerOrAdmin = user?.role === Role.OWNER || user?.role === Role.ADMIN;
+      isOwnerOrAdmin = user?.role === Role.OWNER || user?.role === Role.STUDENT || user?.role === Role.ADMIN;
     }
 
     return await this.prisma.lesson.findMany({
       where: { 
         moduleId,
-        ...(!isOwnerOrAdmin && { status: LessonStatus.PUBLISHED })
+        ...((!isOwnerOrAdmin || user?.role === Role.STUDENT) && { status: LessonStatus.PUBLISHED })
       },
       include: {
         lessonProgress: studentId ? {
