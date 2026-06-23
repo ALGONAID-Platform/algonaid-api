@@ -42,9 +42,11 @@ export class ModulesController {
   }
 
   @Get(':id')
+  @UseGuards(AuthRollGuard)
+  @userRoles(Role.STUDENT, Role.ADMIN, Role.OWNER)
   @ApiOperation({ summary: 'Get a specific module by ID' })
-  findOne(@Param('id', ParseIntPipe) id: number) {
-    return this.modulesService.findOne(id);
+  findOne(@Param('id', ParseIntPipe) id: number, @CurrentUser() user: types.JwtPayloadType) {
+    return this.modulesService.findOne(id, user.id);
   }
 
   @Patch(':id')

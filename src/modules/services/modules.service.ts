@@ -168,11 +168,26 @@ export class ModulesService {
     });
   }
 
-  async findOne(id: number) {
+  async findOne(id: number, userId?: number) {
+    let isOwnerOrAdmin = false;
+    let isStudent = false;
+
+    if (userId) {
+      const user = await this.prisma.user.findUnique({
+        where: { id: userId },
+      });
+      isOwnerOrAdmin = user?.role === Role.OWNER || user?.role === Role.STUDENT || user?.role === Role.ADMIN;
+      isStudent = user?.role === Role.STUDENT;
+    }
+
     const module = await this.prisma.module.findUnique({
       where: { id },
       include: {
-        lessons: true,
+        lessons: {
+          where: {
+            ...((!isOwnerOrAdmin || isStudent) && { status: LessonStatus.PUBLISHED })
+          }
+        },
         course: {
           include: {
             teacher: true
