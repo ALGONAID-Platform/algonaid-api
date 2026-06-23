@@ -310,6 +310,7 @@ export class AuthService {
 
             return this.validateGoogleUser(googleUser);
         } catch (error: any) {
+            console.error("❌ Google Mobile Login Error Details:", error);
             if (error instanceof UnauthorizedException) {
                 throw error;
             }

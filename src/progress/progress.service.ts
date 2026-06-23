@@ -76,6 +76,7 @@ export class ProgressService {
 
     const lessons = await this.prisma.lesson.findMany({
       where: {
+        status: 'PUBLISHED',
         module: {
           courseId: courseId,
         },
@@ -199,6 +200,7 @@ export class ProgressService {
     const lessons = await this.prisma.lesson.findMany({
       where: {
         moduleId: module.id,
+        status: 'PUBLISHED',
       },
       include: {
         lessonProgress: {

@@ -2,6 +2,7 @@ import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, ParseIntP
 import { CoursesService } from './courses.service';
 import { CreateCourseDto } from './dto/create-course.dto';
 import { AuthRollGuard } from 'src/auth/guards/auth-roll.guard';
+import { OptionalAuthGuard } from 'src/auth/guards/optional-auth.guard';
 import { userRoles } from 'src/auth/decorators/user_roll.decorator';
 import { Role } from 'src/prisma/client/enums';
 import { CurrentUser } from 'src/auth/decorators/current-user.decorator';
@@ -27,6 +28,7 @@ export class CoursesController {
 
   @Get()
   @SwaggerGetAllCourses()
+  @UseGuards(OptionalAuthGuard)
   findAll(@CurrentUser() user?: types.JwtPayloadType) {
     return this.coursesService.findAll(user?.id);
   }
@@ -41,6 +43,7 @@ export class CoursesController {
 
   @Get('search')
   @SwaggerSearchCourses()
+  @UseGuards(OptionalAuthGuard)
   search(@Query('q') query: string, @CurrentUser() user?: types.JwtPayloadType) {
     return this.coursesService.search(query || '', user?.id);
   }

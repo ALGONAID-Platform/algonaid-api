@@ -133,6 +133,7 @@ export class UsersService {
     let maxLessonsInOneDay = 0;
     const lessonsPerDay: Record<string, number> = {};
     const nightOwlDays = new Set<string>();
+    const earlyBirdDays = new Set<string>();
     let earlyBirdProgress = 0;
     let reviewerProgress = 0;
 
@@ -151,7 +152,7 @@ export class UsersService {
       }
 
       if (hour >= 5 && hour <= 9) {
-        earlyBirdProgress = 1;
+        earlyBirdDays.add(dateStr);
       }
 
       if ((a as any).watchCount >= 2) {
@@ -162,6 +163,29 @@ export class UsersService {
     });
     
     const nightOwlProgress = nightOwlDays.size;
+
+    const uniqueEarlyBirdDates = [...earlyBirdDays].sort();
+    let currentEarlyBirdStreak = 0;
+    let lastEarlyBirdDate: Date | null = null;
+
+    for (const dateStr of uniqueEarlyBirdDates) {
+      const date = new Date(dateStr);
+      if (!lastEarlyBirdDate) {
+        currentEarlyBirdStreak = 1;
+      } else {
+        const diffDays = Math.round((date.getTime() - lastEarlyBirdDate.getTime()) / (1000 * 60 * 60 * 24));
+        if (diffDays === 1) {
+          currentEarlyBirdStreak++;
+        } else if (diffDays > 1) {
+          currentEarlyBirdStreak = 1;
+        }
+      }
+      if (currentEarlyBirdStreak > earlyBirdProgress) {
+        earlyBirdProgress = currentEarlyBirdStreak;
+      }
+      lastEarlyBirdDate = date;
+    }
+
     const uniqueDates = [...new Set(dates)].sort();
 
     const passedExamsCount = await this.prisma.examAttempt.count({
@@ -301,10 +325,10 @@ export class UsersService {
       {
         id: 10,
         key: "early_bird",
-        isUnlocked: earlyBirdProgress >= 1,
-        progress: Math.min(earlyBirdProgress, 1),
-        target: 1,
-        tier: getTier(earlyBirdProgress >= 1)
+        isUnlocked: earlyBirdProgress >= 3,
+        progress: Math.min(earlyBirdProgress, 3),
+        target: 3,
+        tier: getTier(earlyBirdProgress >= 3)
       },
       {
         id: 11,
@@ -339,7 +363,7 @@ export class UsersService {
       { id: 7, key: "elite", isUnlocked: false, progress: 0, target: 10, tier: 'STANDARD' },
       { id: 8, key: "marathon", isUnlocked: false, progress: 0, target: 10, tier: 'STANDARD' },
       { id: 9, key: "night_owl", isUnlocked: false, progress: 0, target: 5, tier: 'STANDARD' },
-      { id: 10, key: "early_bird", isUnlocked: false, progress: 0, target: 1, tier: 'STANDARD' },
+      { id: 10, key: "early_bird", isUnlocked: false, progress: 0, target: 3, tier: 'STANDARD' },
       { id: 11, key: "reviewer", isUnlocked: false, progress: 0, target: 1, tier: 'STANDARD' }
     ];
   }

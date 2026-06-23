@@ -45,6 +45,9 @@ async findMyCourses(userId: number) {
           modules: {
             include: {
               lessons: {
+                where: {
+                  status: 'PUBLISHED',
+                },
                 include: {
                   lessonProgress: {
                     where: { studentId: student?.id },
