@@ -84,11 +84,33 @@ export class ProgressService {
           courseId: courseId,
         },
       },
+      include: {
+        lessonProgress: {
+          where: { studentId: student.id },
+        },
+        exam: {
+          include: {
+            attempts: {
+              where: { studentId: student.id, status: 'PASSED' },
+              take: 1,
+            }
+          }
+        }
+      },
     });
 
-    if (lessons.length === 0) return { progress: 0 };
+    if (lessons.length === 0) {
+      return { 
+        courseId, 
+        totalLessons: 0, 
+        completedLessons: 0, 
+        progressPercentage: 0,
+        lessons: [],
+        completedLessonsData: [],
+      };
+    }
 
-    const completedLessonsCount = await this.prisma.lesson.count({
+    const completedLessonsData = await this.prisma.lesson.findMany({
       where: {
         id: { in: lessons.map((l) => l.id) },
         OR: [
@@ -112,7 +134,22 @@ export class ProgressService {
           },
         ],
       },
+      include: {
+        lessonProgress: {
+          where: { studentId: student.id },
+        },
+        exam: {
+          include: {
+            attempts: {
+              where: { studentId: student.id, status: 'PASSED' },
+              take: 1,
+            }
+          }
+        }
+      },
     });
+
+    const completedLessonsCount = completedLessonsData.length;
 
     const progressPercentage = (completedLessonsCount / lessons.length) * 100;
 
@@ -121,6 +158,8 @@ export class ProgressService {
       totalLessons: lessons.length,
       completedLessons: completedLessonsCount,
       progressPercentage: Math.round(progressPercentage),
+      lessons,
+      completedLessonsData,
     };
   }
 
@@ -174,6 +213,7 @@ export class ProgressService {
   async getLastAccessedModuleProgress(studentUserId: number) {
     const student = await this.prisma.student.findUnique({
       where: { userId: studentUserId },
+      include: { user: true },
     });
 
     if (!student) throw new NotFoundException('Student profile not found');
