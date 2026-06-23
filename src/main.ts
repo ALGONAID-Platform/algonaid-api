@@ -9,7 +9,9 @@ import { join } from 'path';
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
   
-  app.setGlobalPrefix('api/v1');
+  app.setGlobalPrefix('api/v1', {
+    exclude: ['modulesList/:courseId', 'lessonDetails/:lessonId'],
+  });
   app.useGlobalPipes(new ValidationPipe({
     whitelist: true,
     transform: true,
