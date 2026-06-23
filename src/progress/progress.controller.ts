@@ -79,5 +79,5 @@ export class ProgressController {
   @ApiOperation({ summary: 'Get total points earned by the student across all exams' })
   getTotalEarnedPoints(@CurrentUser() user: types.JwtPayloadType) {
     return this.progressService.getTotalEarnedPoints(user.id);
-  }
+  } 
 }

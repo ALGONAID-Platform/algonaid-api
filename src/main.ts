@@ -16,6 +16,16 @@ async function bootstrap() {
     forbidNonWhitelisted: true,
   }));
 
+  app.useStaticAssets(join(__dirname, '..', 'public'), {
+    prefix: '/',
+    setHeaders: (res, path, stat) => {
+      // Ensure correct content-type for apple-app-site-association (iOS requires application/json)
+      if (path.endsWith('apple-app-site-association')) {
+        res.set('Content-Type', 'application/json');
+      }
+    }
+  });
+
   app.enableCors({
     // origin: "http://localhost:5000"
     origin: true,
