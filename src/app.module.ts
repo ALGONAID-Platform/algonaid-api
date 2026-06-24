@@ -12,6 +12,7 @@ import { ModulesModule } from './modules/modules.module';
 import { ExamsModule } from './exams/exams.module';
 import { ProgressModule } from './progress/progress.module';
 import { UsersModule } from './users/users.module';
+import { UploadcareStorageService } from './utils/uploadcare-storage.service';
 
 @Module({
   imports: [
@@ -38,6 +39,6 @@ import { UsersModule } from './users/users.module';
     UsersModule,
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [AppService, UploadcareStorageService],
 })
 export class AppModule { }

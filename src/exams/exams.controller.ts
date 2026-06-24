@@ -1,4 +1,4 @@
-import { Controller, Post, Body, Param, Get, Patch, Delete, UseGuards, ParseIntPipe } from '@nestjs/common';
+import { Controller, Post, Body, Param, Get, Patch, Delete, UseGuards, ParseIntPipe, UseInterceptors, UploadedFile } from '@nestjs/common';
 import { ExamsService } from './exams.service';
 import { SubmitExamDto } from './dto/exam-submission.dto';
 import { CreateExamDto } from './dto/create-exam.dto';
@@ -7,15 +7,37 @@ import { AuthRollGuard } from 'src/auth/guards/auth-roll.guard';
 import { userRoles } from 'src/auth/decorators/user_roll.decorator';
 import { Role } from 'src/prisma/client/enums';
 import { CurrentUser } from 'src/auth/decorators/current-user.decorator';
-import { ApiTags, ApiBearerAuth, ApiOperation, ApiResponse, ApiParam, ApiBody } from '@nestjs/swagger';
+import { ApiTags, ApiBearerAuth, ApiOperation, ApiResponse, ApiParam, ApiBody, ApiConsumes } from '@nestjs/swagger';
 import * as types from 'src/utils/types';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { UploadcareStorageService } from 'src/utils/uploadcare-storage.service';
 
 @ApiTags('exams')
 @ApiBearerAuth('JWT-auth')
 @Controller('exams')
 @UseGuards(AuthRollGuard)
 export class ExamsController {
-  constructor(private readonly examsService: ExamsService) {}
+  constructor(
+    private readonly examsService: ExamsService,
+    private readonly uploadcareStorageService: UploadcareStorageService,
+  ) {}
+
+  @Get()
+  @userRoles(Role.STUDENT, Role.ADMIN, Role.OWNER)
+  @ApiOperation({ summary: 'Get all exams' })
+  findAll(@CurrentUser() user: types.JwtPayloadType) {
+    return this.examsService.findAll(user.id, user.role);
+  }
+
+  @Post('upload-image')
+  @userRoles(Role.ADMIN, Role.OWNER)
+  @UseInterceptors(FileInterceptor('image'))
+  @ApiOperation({ summary: 'Upload an image for an exam' })
+  @ApiConsumes('multipart/form-data')
+  async uploadImage(@UploadedFile() file: Express.Multer.File) {
+    const imageUrl = await this.uploadcareStorageService.upload(file);
+    return { imageUrl };
+  }
 
   @Post()
   @userRoles(Role.ADMIN, Role.OWNER)

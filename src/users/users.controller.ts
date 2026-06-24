@@ -49,10 +49,16 @@ export class UsersController {
   ) {
     if (files?.avatar?.[0]) {
       updateProfileDto.avatar = await this.uploadcareStorageService.upload(files.avatar[0]);
+    } else if (updateProfileDto.avatarUrl) {
+      updateProfileDto.avatar = updateProfileDto.avatarUrl;
     }
     if (files?.background?.[0]) {
       updateProfileDto.background = await this.uploadcareStorageService.upload(files.background[0]);
     }
+    
+    // Clean up avatarUrl before sending to service as it's not in Prisma schema
+    delete updateProfileDto.avatarUrl;
+
     return this.usersService.updateProfile(user.id, updateProfileDto, user.role);
   }
 }

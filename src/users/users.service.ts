@@ -21,6 +21,7 @@ export class UsersService {
     
     return {
       ...userWithoutPassword,
+      avatarUrl: userWithoutPassword.avatar,
       ...(studentProfile ? {
         academicId: studentProfile.academicId,
         grade: studentProfile.grade,
@@ -87,8 +88,9 @@ export class UsersService {
 
     return {
       message: 'Profile updated successfully',
-      user: {
+      data: {
         ...userWithoutPassword,
+        avatarUrl: userWithoutPassword.avatar,
         ...(studentProfile ? {
           academicId: studentProfile.academicId,
           grade: studentProfile.grade,

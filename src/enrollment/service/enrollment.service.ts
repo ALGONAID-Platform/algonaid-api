@@ -13,7 +13,7 @@ async isUserEnrolled(userId: number, courseId: number) {
       where: { userId: userId },
     });
 
-    if (!student) return { enrolled: false };
+    if (!student) return { isEnrolled: false };
 
     const enrollment = await this.prisma.enrollment.findUnique({
       where: {
@@ -25,7 +25,7 @@ async isUserEnrolled(userId: number, courseId: number) {
       },
     });
 
-    return { enrolled: !!enrollment };
+    return { isEnrolled: !!enrollment };
   }
     async craete(userId: number, enrollmentDto: CreateEnrollmentDto) {
         const { courseId } = enrollmentDto;

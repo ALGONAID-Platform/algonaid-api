@@ -21,7 +21,6 @@ export class CoursesController {
   @SwaggerCreateCourse()
   @UseGuards(AuthRollGuard)
   @userRoles(Role.ADMIN, Role.OWNER)
-  @userRoles(Role.STUDENT)
   create(@Body() createCourseDto: CreateCourseDto, @CurrentUser() user: types.JwtPayloadType) {
     return this.coursesService.create(createCourseDto, user.id);
   }

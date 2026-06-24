@@ -32,6 +32,26 @@ export class ExamsService {
     return exam;
   }
 
+  async findAll(userId: number, role: Role) {
+    if (role === Role.ADMIN) {
+      const teacher = await this.prisma.teacher.findUnique({ where: { userId } });
+      if (!teacher) return [];
+      return this.prisma.exam.findMany({
+        where: { lesson: { module: { course: { instructorId: teacher.id } } } },
+        include: { lesson: { include: { module: { include: { course: true } } } }, questions: true }
+      });
+    } else if (role === Role.OWNER) {
+      return this.prisma.exam.findMany({
+        include: { lesson: { include: { module: { include: { course: true } } } }, questions: true }
+      });
+    } else {
+      return this.prisma.exam.findMany({
+        where: { lesson: { status: LessonStatus.PUBLISHED } },
+        include: { lesson: { include: { module: { include: { course: true } } } }, questions: true }
+      });
+    }
+  }
+
   async updateExam(userId: number, role: Role, examId: number, updateExamDto: UpdateExamDto) {
     await this.checkExamPermission(userId, role, examId);
 

@@ -261,6 +261,7 @@ export class AuthService {
             name: user.name,
             role: user.role,
             avatar: user.avatar,
+            avatarUrl: user.avatar,
             background: user.background,
             createdAt: user.createdAt,
             updatedAt: user.updatedAt,

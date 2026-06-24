@@ -12,6 +12,11 @@ export class UpdateProfileDto {
   @IsString()
   avatar?: string;
 
+  @ApiProperty({ description: 'Avatar URL alias from frontend', required: false })
+  @IsOptional()
+  @IsString()
+  avatarUrl?: string;
+
   @ApiProperty({ description: 'Background image URL', example: 'https://example.com/bg.png', required: false })
   @IsOptional()
   @IsString()
