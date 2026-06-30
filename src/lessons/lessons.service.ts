@@ -45,7 +45,7 @@ export class LessonsService {
     });
   }
 
-  async findAllByModule(moduleId: number, userId?: number) {
+  async findAllByModule(moduleId: number, page: number = 1, limit: number = 8, userId?: number) {
     const module = await this.prisma.module.findUnique({
       where: { id: moduleId },
     });
@@ -64,18 +64,40 @@ export class LessonsService {
       studentId = user?.studentProfile?.id;
     }
 
-    return await this.prisma.lesson.findMany({
-      where: { 
-        moduleId,
-        status: LessonStatus.PUBLISHED,
-      },
-      include: {
-        lessonProgress: studentId ? {
-          where: { studentId },
-        } : false,
-      },
-      orderBy: { order: 'asc' },
-    });
+    const skip = (page - 1) * limit;
+
+    const [lessons, total] = await Promise.all([
+      this.prisma.lesson.findMany({
+        where: { 
+          moduleId,
+          status: LessonStatus.PUBLISHED,
+        },
+        include: {
+          lessonProgress: studentId ? {
+            where: { studentId },
+          } : false,
+        },
+        orderBy: { order: 'asc' },
+        skip,
+        take: limit,
+      }),
+      this.prisma.lesson.count({
+        where: { 
+          moduleId,
+          status: LessonStatus.PUBLISHED,
+        }
+      })
+    ]);
+
+    return {
+      data: lessons,
+      meta: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
+      }
+    };
   }
 
   async findOne(id: number, userId?: number) {

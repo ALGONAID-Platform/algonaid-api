@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, ParseIntPipe, UseInterceptors, UploadedFile, BadRequestException, ParseFilePipe, MaxFileSizeValidator, FileTypeValidator } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, ParseIntPipe, UseInterceptors, UploadedFile, BadRequestException, ParseFilePipe, MaxFileSizeValidator, FileTypeValidator, Query } from '@nestjs/common';
 import { LessonsService } from './lessons.service';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { AuthRollGuard } from 'src/auth/guards/auth-roll.guard';
@@ -53,9 +53,11 @@ export class LessonsController {
   @SwaggerGetAllLessonsByModule()
   findAllByModule(
     @Param('moduleId', ParseIntPipe) moduleId: number,
+    @Query('page') page: string = '1',
+    @Query('limit') limit: string = '8',
     @CurrentUser() user: types.JwtPayloadType
   ) {
-    return this.lessonsService.findAllByModule(moduleId, user.id);
+    return this.lessonsService.findAllByModule(moduleId, +page, +limit, user.id);
   }
 
   @Get(':id')
