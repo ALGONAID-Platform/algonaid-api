@@ -7,7 +7,6 @@
 
 generator client {
   provider = "prisma-client-js"
-  output   = "../src/prisma/client"
 }
 
 datasource db {
@@ -58,6 +57,7 @@ model Teacher {
   userId         Int      @unique
   user           User     @relation(fields: [userId], references: [id])
   courses        Course[]
+  practiceExams  PracticeExam[]
 }
 
 model Enrollment {
@@ -89,6 +89,7 @@ model Course {
   instructorId Int
   teacher      Teacher  @relation(fields: [instructorId], references: [id])
   modules      Module[]
+  practiceExams PracticeExam[]
 }
 
 model Module {
@@ -115,6 +116,7 @@ model Lesson {
   videoUrl    String?
   pdfUrl      String?
   status      LessonStatus @default(DRAFT)
+  isReading      Boolean          @default(false)
   order       Int     @default(0)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -220,4 +222,18 @@ model TokenBlacklist {
   id        Int      @id @default(autoincrement())
   token     String   @unique
   expiresAt DateTime
+}
+
+model PracticeExam {
+  id          Int      @id @default(autoincrement())
+  title       String
+  description String?  @db.Text
+  pdfUrl      String?
+  grade       String?
+  courseId    Int?
+  course      Course?  @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  teacherId   Int
+  teacher     Teacher  @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 }

@@ -7,7 +7,7 @@ import { JwtPayloadType } from "src/utils/types";
 import { AuthService } from "../services/auth.services";
 import { UserRole } from "../enums/userRole";
 import { CURRENT_USER_KEY } from "src/utils/conistants";
-import { Role } from "src/prisma/client/enums";
+import { Role } from "@prisma/client";
 import { MESSAGES } from "src/utils/messages";
 
 

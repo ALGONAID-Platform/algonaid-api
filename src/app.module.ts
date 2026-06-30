@@ -13,6 +13,7 @@ import { ExamsModule } from './exams/exams.module';
 import { ProgressModule } from './progress/progress.module';
 import { UsersModule } from './users/users.module';
 import { UploadcareStorageService } from './utils/uploadcare-storage.service';
+import { PracticeExamsModule } from './practice-exams/practice-exams.module';
 
 @Module({
   imports: [
@@ -37,6 +38,7 @@ import { UploadcareStorageService } from './utils/uploadcare-storage.service';
     ExamsModule,
     ProgressModule,
     UsersModule,
+    PracticeExamsModule,
   ],
   controllers: [AppController],
   providers: [AppService, UploadcareStorageService],

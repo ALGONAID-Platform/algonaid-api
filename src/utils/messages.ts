@@ -57,5 +57,12 @@ export const MESSAGES = {
         STUDENT_PROFILE_NOT_FOUND: 'الملف الشخصي للطالب غير موجود',
         ENROLLED_SUCCESSFULLY: 'تم التسجيل في الدورة بنجاح',
         ENROLLMENT_COMPLETED: 'تم التسجيل بنجاح',
+    },
+    PRACTICE_EXAMS: {
+        NOT_FOUND: (id: number) => `نموذج الاختبار برقم ${id} غير موجود`,
+        UNAUTHORIZED_ADD: 'غير مصرح لك بإضافة نموذج اختبار لهذا الكورس',
+        UNAUTHORIZED_UPDATE: 'غير مصرح لك بتحديث هذا النموذج',
+        UNAUTHORIZED_DELETE: 'غير مصرح لك بحذف هذا النموذج',
+        DELETED: 'تم حذف نموذج الاختبار بنجاح',
     }
 };

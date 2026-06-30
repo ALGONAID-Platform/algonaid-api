@@ -3,7 +3,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { CreateLessonDto } from './dto/create-lesson.dto';
 import { UpdateLessonDto } from './dto/update-lesson.dto';
 import { MESSAGES } from 'src/utils/messages';
-import { LessonStatus, Role } from 'src/prisma/client/enums';
+import { LessonStatus, Role } from '@prisma/client';
 
 @Injectable()
 export class LessonsService {
@@ -41,7 +41,7 @@ export class LessonsService {
       data: {
         ...lessonData,
         moduleId,
-      },
+      }, 
     });
   }
 

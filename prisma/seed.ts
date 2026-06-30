@@ -1,6 +1,6 @@
 import * as bcrypt from 'bcrypt';
-import { EnrollmentStatus, Role, QuestionType } from "../src/prisma/client/enums";
-import { PrismaClient } from "../src/prisma/client/client";
+import { EnrollmentStatus, Role, QuestionType } from "@prisma/client";
+import { PrismaClient } from "@prisma/client";
 import { PrismaPg } from '@prisma/adapter-pg';
 import { Pool } from 'pg';
 

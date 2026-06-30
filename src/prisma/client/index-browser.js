@@ -252,6 +252,18 @@ exports.Prisma.TokenBlacklistScalarFieldEnum = {
   expiresAt: 'expiresAt'
 };
 
+exports.Prisma.PracticeExamScalarFieldEnum = {
+  id: 'id',
+  title: 'title',
+  description: 'description',
+  pdfUrl: 'pdfUrl',
+  grade: 'grade',
+  courseId: 'courseId',
+  teacherId: 'teacherId',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
 exports.Prisma.SortOrder = {
   asc: 'asc',
   desc: 'desc'
@@ -309,7 +321,8 @@ exports.Prisma.ModelName = {
   ExamAttempt: 'ExamAttempt',
   UserAnswer: 'UserAnswer',
   LessonProgress: 'LessonProgress',
-  TokenBlacklist: 'TokenBlacklist'
+  TokenBlacklist: 'TokenBlacklist',
+  PracticeExam: 'PracticeExam'
 };
 
 /**

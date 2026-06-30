@@ -3,7 +3,7 @@ import { CreateModuleDto } from '../dto/create-module.dto';
 import { UpdateModuleDto } from '../dto/update-module.dto';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { MESSAGES } from 'src/utils/messages';
-import { LessonStatus, Role } from 'src/prisma/client/enums';
+import { LessonStatus, Role } from '@prisma/client';
 
 @Injectable()
 export class ModulesService {

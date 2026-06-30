@@ -1,7 +1,7 @@
 import { IsString, IsNotEmpty, IsOptional, IsInt, Min, Max, IsArray, ValidateNested, IsBoolean, IsEnum, ArrayMinSize } from 'class-validator';
 import { Type } from 'class-transformer';
 import { ApiProperty } from '@nestjs/swagger';
-import { QuestionType } from 'src/prisma/client/enums';
+import { QuestionType } from '@prisma/client';
 
 export class CreateOptionDto {
   @ApiProperty()

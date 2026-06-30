@@ -2,7 +2,7 @@ import { Controller, Post, Param, Get, UseGuards, ParseIntPipe, Body } from '@ne
 import { ProgressService } from './progress.service';
 import { AuthRollGuard } from 'src/auth/guards/auth-roll.guard';
 import { userRoles } from 'src/auth/decorators/user_roll.decorator';
-import { Role } from 'src/prisma/client/enums';
+import { Role } from '@prisma/client';
 import { CurrentUser } from 'src/auth/decorators/current-user.decorator';
 import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
 import * as types from 'src/utils/types';

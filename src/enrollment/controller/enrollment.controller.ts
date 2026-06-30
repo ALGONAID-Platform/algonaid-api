@@ -5,7 +5,7 @@ import { CurrentUser } from 'src/auth/decorators/current-user.decorator';
 import * as types from 'src/utils/types';
 import { AuthRollGuard } from 'src/auth/guards/auth-roll.guard';
 import { UserRole } from 'src/auth/enums/userRole';
-import { Role } from 'src/prisma/client/enums';
+import { Role } from '@prisma/client';
 import { userRoles } from 'src/auth/decorators/user_roll.decorator';
 import { SwaggerEnrollInCourse } from '../decorators/enrollment.decorator';
 import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';

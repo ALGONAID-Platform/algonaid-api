@@ -83,6 +83,11 @@ export type LessonProgress = $Result.DefaultSelection<Prisma.$LessonProgressPayl
  * 
  */
 export type TokenBlacklist = $Result.DefaultSelection<Prisma.$TokenBlacklistPayload>
+/**
+ * Model PracticeExam
+ * 
+ */
+export type PracticeExam = $Result.DefaultSelection<Prisma.$PracticeExamPayload>
 
 /**
  * Enums
@@ -413,6 +418,16 @@ export class PrismaClient<
     * ```
     */
   get tokenBlacklist(): Prisma.TokenBlacklistDelegate<ExtArgs, ClientOptions>;
+
+  /**
+   * `prisma.practiceExam`: Exposes CRUD operations for the **PracticeExam** model.
+    * Example usage:
+    * ```ts
+    * // Fetch zero or more PracticeExams
+    * const practiceExams = await prisma.practiceExam.findMany()
+    * ```
+    */
+  get practiceExam(): Prisma.PracticeExamDelegate<ExtArgs, ClientOptions>;
 }
 
 export namespace Prisma {
@@ -860,7 +875,8 @@ export namespace Prisma {
     ExamAttempt: 'ExamAttempt',
     UserAnswer: 'UserAnswer',
     LessonProgress: 'LessonProgress',
-    TokenBlacklist: 'TokenBlacklist'
+    TokenBlacklist: 'TokenBlacklist',
+    PracticeExam: 'PracticeExam'
   };
 
   export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -876,7 +892,7 @@ export namespace Prisma {
       omit: GlobalOmitOptions
     }
     meta: {
-      modelProps: "user" | "student" | "teacher" | "enrollment" | "course" | "module" | "lesson" | "exam" | "question" | "option" | "examAttempt" | "userAnswer" | "lessonProgress" | "tokenBlacklist"
+      modelProps: "user" | "student" | "teacher" | "enrollment" | "course" | "module" | "lesson" | "exam" | "question" | "option" | "examAttempt" | "userAnswer" | "lessonProgress" | "tokenBlacklist" | "practiceExam"
       txIsolationLevel: Prisma.TransactionIsolationLevel
     }
     model: {
@@ -1916,6 +1932,80 @@ export namespace Prisma {
           }
         }
       }
+      PracticeExam: {
+        payload: Prisma.$PracticeExamPayload<ExtArgs>
+        fields: Prisma.PracticeExamFieldRefs
+        operations: {
+          findUnique: {
+            args: Prisma.PracticeExamFindUniqueArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$PracticeExamPayload> | null
+          }
+          findUniqueOrThrow: {
+            args: Prisma.PracticeExamFindUniqueOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$PracticeExamPayload>
+          }
+          findFirst: {
+            args: Prisma.PracticeExamFindFirstArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$PracticeExamPayload> | null
+          }
+          findFirstOrThrow: {
+            args: Prisma.PracticeExamFindFirstOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$PracticeExamPayload>
+          }
+          findMany: {
+            args: Prisma.PracticeExamFindManyArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$PracticeExamPayload>[]
+          }
+          create: {
+            args: Prisma.PracticeExamCreateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$PracticeExamPayload>
+          }
+          createMany: {
+            args: Prisma.PracticeExamCreateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          createManyAndReturn: {
+            args: Prisma.PracticeExamCreateManyAndReturnArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$PracticeExamPayload>[]
+          }
+          delete: {
+            args: Prisma.PracticeExamDeleteArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$PracticeExamPayload>
+          }
+          update: {
+            args: Prisma.PracticeExamUpdateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$PracticeExamPayload>
+          }
+          deleteMany: {
+            args: Prisma.PracticeExamDeleteManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateMany: {
+            args: Prisma.PracticeExamUpdateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateManyAndReturn: {
+            args: Prisma.PracticeExamUpdateManyAndReturnArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$PracticeExamPayload>[]
+          }
+          upsert: {
+            args: Prisma.PracticeExamUpsertArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$PracticeExamPayload>
+          }
+          aggregate: {
+            args: Prisma.PracticeExamAggregateArgs<ExtArgs>
+            result: $Utils.Optional<AggregatePracticeExam>
+          }
+          groupBy: {
+            args: Prisma.PracticeExamGroupByArgs<ExtArgs>
+            result: $Utils.Optional<PracticeExamGroupByOutputType>[]
+          }
+          count: {
+            args: Prisma.PracticeExamCountArgs<ExtArgs>
+            result: $Utils.Optional<PracticeExamCountAggregateOutputType> | number
+          }
+        }
+      }
     }
   } & {
     other: {
@@ -2038,6 +2128,7 @@ export namespace Prisma {
     userAnswer?: UserAnswerOmit
     lessonProgress?: LessonProgressOmit
     tokenBlacklist?: TokenBlacklistOmit
+    practiceExam?: PracticeExamOmit
   }
 
   /* Types for Logging */
@@ -2168,10 +2259,12 @@ export namespace Prisma {
 
   export type TeacherCountOutputType = {
     courses: number
+    practiceExams: number
   }
 
   export type TeacherCountOutputTypeSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     courses?: boolean | TeacherCountOutputTypeCountCoursesArgs
+    practiceExams?: boolean | TeacherCountOutputTypeCountPracticeExamsArgs
   }
 
   // Custom InputTypes
@@ -2192,6 +2285,13 @@ export namespace Prisma {
     where?: CourseWhereInput
   }
 
+  /**
+   * TeacherCountOutputType without action
+   */
+  export type TeacherCountOutputTypeCountPracticeExamsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: PracticeExamWhereInput
+  }
+
 
   /**
    * Count Type CourseCountOutputType
@@ -2200,11 +2300,13 @@ export namespace Prisma {
   export type CourseCountOutputType = {
     enrollments: number
     modules: number
+    practiceExams: number
   }
 
   export type CourseCountOutputTypeSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     enrollments?: boolean | CourseCountOutputTypeCountEnrollmentsArgs
     modules?: boolean | CourseCountOutputTypeCountModulesArgs
+    practiceExams?: boolean | CourseCountOutputTypeCountPracticeExamsArgs
   }
 
   // Custom InputTypes
@@ -2230,6 +2332,13 @@ export namespace Prisma {
    */
   export type CourseCountOutputTypeCountModulesArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     where?: ModuleWhereInput
+  }
+
+  /**
+   * CourseCountOutputType without action
+   */
+  export type CourseCountOutputTypeCountPracticeExamsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: PracticeExamWhereInput
   }
 
 
@@ -5065,6 +5174,7 @@ export namespace Prisma {
     userId?: boolean
     user?: boolean | UserDefaultArgs<ExtArgs>
     courses?: boolean | Teacher$coursesArgs<ExtArgs>
+    practiceExams?: boolean | Teacher$practiceExamsArgs<ExtArgs>
     _count?: boolean | TeacherCountOutputTypeDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["teacher"]>
 
@@ -5098,6 +5208,7 @@ export namespace Prisma {
   export type TeacherInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     user?: boolean | UserDefaultArgs<ExtArgs>
     courses?: boolean | Teacher$coursesArgs<ExtArgs>
+    practiceExams?: boolean | Teacher$practiceExamsArgs<ExtArgs>
     _count?: boolean | TeacherCountOutputTypeDefaultArgs<ExtArgs>
   }
   export type TeacherIncludeCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
@@ -5112,6 +5223,7 @@ export namespace Prisma {
     objects: {
       user: Prisma.$UserPayload<ExtArgs>
       courses: Prisma.$CoursePayload<ExtArgs>[]
+      practiceExams: Prisma.$PracticeExamPayload<ExtArgs>[]
     }
     scalars: $Extensions.GetPayloadResult<{
       id: number
@@ -5515,6 +5627,7 @@ export namespace Prisma {
     readonly [Symbol.toStringTag]: "PrismaPromise"
     user<T extends UserDefaultArgs<ExtArgs> = {}>(args?: Subset<T, UserDefaultArgs<ExtArgs>>): Prisma__UserClient<$Result.GetResult<Prisma.$UserPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
     courses<T extends Teacher$coursesArgs<ExtArgs> = {}>(args?: Subset<T, Teacher$coursesArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$CoursePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+    practiceExams<T extends Teacher$practiceExamsArgs<ExtArgs> = {}>(args?: Subset<T, Teacher$practiceExamsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$PracticeExamPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     /**
      * Attaches callbacks for the resolution and/or rejection of the Promise.
      * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -5971,6 +6084,30 @@ export namespace Prisma {
     take?: number
     skip?: number
     distinct?: CourseScalarFieldEnum | CourseScalarFieldEnum[]
+  }
+
+  /**
+   * Teacher.practiceExams
+   */
+  export type Teacher$practiceExamsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PracticeExam
+     */
+    select?: PracticeExamSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the PracticeExam
+     */
+    omit?: PracticeExamOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: PracticeExamInclude<ExtArgs> | null
+    where?: PracticeExamWhereInput
+    orderBy?: PracticeExamOrderByWithRelationInput | PracticeExamOrderByWithRelationInput[]
+    cursor?: PracticeExamWhereUniqueInput
+    take?: number
+    skip?: number
+    distinct?: PracticeExamScalarFieldEnum | PracticeExamScalarFieldEnum[]
   }
 
   /**
@@ -7339,6 +7476,7 @@ export namespace Prisma {
     enrollments?: boolean | Course$enrollmentsArgs<ExtArgs>
     teacher?: boolean | TeacherDefaultArgs<ExtArgs>
     modules?: boolean | Course$modulesArgs<ExtArgs>
+    practiceExams?: boolean | Course$practiceExamsArgs<ExtArgs>
     _count?: boolean | CourseCountOutputTypeDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["course"]>
 
@@ -7379,6 +7517,7 @@ export namespace Prisma {
     enrollments?: boolean | Course$enrollmentsArgs<ExtArgs>
     teacher?: boolean | TeacherDefaultArgs<ExtArgs>
     modules?: boolean | Course$modulesArgs<ExtArgs>
+    practiceExams?: boolean | Course$practiceExamsArgs<ExtArgs>
     _count?: boolean | CourseCountOutputTypeDefaultArgs<ExtArgs>
   }
   export type CourseIncludeCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
@@ -7394,6 +7533,7 @@ export namespace Prisma {
       enrollments: Prisma.$EnrollmentPayload<ExtArgs>[]
       teacher: Prisma.$TeacherPayload<ExtArgs>
       modules: Prisma.$ModulePayload<ExtArgs>[]
+      practiceExams: Prisma.$PracticeExamPayload<ExtArgs>[]
     }
     scalars: $Extensions.GetPayloadResult<{
       id: number
@@ -7800,6 +7940,7 @@ export namespace Prisma {
     enrollments<T extends Course$enrollmentsArgs<ExtArgs> = {}>(args?: Subset<T, Course$enrollmentsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$EnrollmentPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     teacher<T extends TeacherDefaultArgs<ExtArgs> = {}>(args?: Subset<T, TeacherDefaultArgs<ExtArgs>>): Prisma__TeacherClient<$Result.GetResult<Prisma.$TeacherPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
     modules<T extends Course$modulesArgs<ExtArgs> = {}>(args?: Subset<T, Course$modulesArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$ModulePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+    practiceExams<T extends Course$practiceExamsArgs<ExtArgs> = {}>(args?: Subset<T, Course$practiceExamsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$PracticeExamPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     /**
      * Attaches callbacks for the resolution and/or rejection of the Promise.
      * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -8282,6 +8423,30 @@ export namespace Prisma {
     take?: number
     skip?: number
     distinct?: ModuleScalarFieldEnum | ModuleScalarFieldEnum[]
+  }
+
+  /**
+   * Course.practiceExams
+   */
+  export type Course$practiceExamsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PracticeExam
+     */
+    select?: PracticeExamSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the PracticeExam
+     */
+    omit?: PracticeExamOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: PracticeExamInclude<ExtArgs> | null
+    where?: PracticeExamWhereInput
+    orderBy?: PracticeExamOrderByWithRelationInput | PracticeExamOrderByWithRelationInput[]
+    cursor?: PracticeExamWhereUniqueInput
+    take?: number
+    skip?: number
+    distinct?: PracticeExamScalarFieldEnum | PracticeExamScalarFieldEnum[]
   }
 
   /**
@@ -18594,6 +18759,1190 @@ export namespace Prisma {
 
 
   /**
+   * Model PracticeExam
+   */
+
+  export type AggregatePracticeExam = {
+    _count: PracticeExamCountAggregateOutputType | null
+    _avg: PracticeExamAvgAggregateOutputType | null
+    _sum: PracticeExamSumAggregateOutputType | null
+    _min: PracticeExamMinAggregateOutputType | null
+    _max: PracticeExamMaxAggregateOutputType | null
+  }
+
+  export type PracticeExamAvgAggregateOutputType = {
+    id: number | null
+    courseId: number | null
+    teacherId: number | null
+  }
+
+  export type PracticeExamSumAggregateOutputType = {
+    id: number | null
+    courseId: number | null
+    teacherId: number | null
+  }
+
+  export type PracticeExamMinAggregateOutputType = {
+    id: number | null
+    title: string | null
+    description: string | null
+    pdfUrl: string | null
+    grade: string | null
+    courseId: number | null
+    teacherId: number | null
+    createdAt: Date | null
+    updatedAt: Date | null
+  }
+
+  export type PracticeExamMaxAggregateOutputType = {
+    id: number | null
+    title: string | null
+    description: string | null
+    pdfUrl: string | null
+    grade: string | null
+    courseId: number | null
+    teacherId: number | null
+    createdAt: Date | null
+    updatedAt: Date | null
+  }
+
+  export type PracticeExamCountAggregateOutputType = {
+    id: number
+    title: number
+    description: number
+    pdfUrl: number
+    grade: number
+    courseId: number
+    teacherId: number
+    createdAt: number
+    updatedAt: number
+    _all: number
+  }
+
+
+  export type PracticeExamAvgAggregateInputType = {
+    id?: true
+    courseId?: true
+    teacherId?: true
+  }
+
+  export type PracticeExamSumAggregateInputType = {
+    id?: true
+    courseId?: true
+    teacherId?: true
+  }
+
+  export type PracticeExamMinAggregateInputType = {
+    id?: true
+    title?: true
+    description?: true
+    pdfUrl?: true
+    grade?: true
+    courseId?: true
+    teacherId?: true
+    createdAt?: true
+    updatedAt?: true
+  }
+
+  export type PracticeExamMaxAggregateInputType = {
+    id?: true
+    title?: true
+    description?: true
+    pdfUrl?: true
+    grade?: true
+    courseId?: true
+    teacherId?: true
+    createdAt?: true
+    updatedAt?: true
+  }
+
+  export type PracticeExamCountAggregateInputType = {
+    id?: true
+    title?: true
+    description?: true
+    pdfUrl?: true
+    grade?: true
+    courseId?: true
+    teacherId?: true
+    createdAt?: true
+    updatedAt?: true
+    _all?: true
+  }
+
+  export type PracticeExamAggregateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which PracticeExam to aggregate.
+     */
+    where?: PracticeExamWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of PracticeExams to fetch.
+     */
+    orderBy?: PracticeExamOrderByWithRelationInput | PracticeExamOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the start position
+     */
+    cursor?: PracticeExamWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` PracticeExams from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` PracticeExams.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Count returned PracticeExams
+    **/
+    _count?: true | PracticeExamCountAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to average
+    **/
+    _avg?: PracticeExamAvgAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to sum
+    **/
+    _sum?: PracticeExamSumAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the minimum value
+    **/
+    _min?: PracticeExamMinAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the maximum value
+    **/
+    _max?: PracticeExamMaxAggregateInputType
+  }
+
+  export type GetPracticeExamAggregateType<T extends PracticeExamAggregateArgs> = {
+        [P in keyof T & keyof AggregatePracticeExam]: P extends '_count' | 'count'
+      ? T[P] extends true
+        ? number
+        : GetScalarType<T[P], AggregatePracticeExam[P]>
+      : GetScalarType<T[P], AggregatePracticeExam[P]>
+  }
+
+
+
+
+  export type PracticeExamGroupByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: PracticeExamWhereInput
+    orderBy?: PracticeExamOrderByWithAggregationInput | PracticeExamOrderByWithAggregationInput[]
+    by: PracticeExamScalarFieldEnum[] | PracticeExamScalarFieldEnum
+    having?: PracticeExamScalarWhereWithAggregatesInput
+    take?: number
+    skip?: number
+    _count?: PracticeExamCountAggregateInputType | true
+    _avg?: PracticeExamAvgAggregateInputType
+    _sum?: PracticeExamSumAggregateInputType
+    _min?: PracticeExamMinAggregateInputType
+    _max?: PracticeExamMaxAggregateInputType
+  }
+
+  export type PracticeExamGroupByOutputType = {
+    id: number
+    title: string
+    description: string | null
+    pdfUrl: string | null
+    grade: string | null
+    courseId: number | null
+    teacherId: number
+    createdAt: Date
+    updatedAt: Date
+    _count: PracticeExamCountAggregateOutputType | null
+    _avg: PracticeExamAvgAggregateOutputType | null
+    _sum: PracticeExamSumAggregateOutputType | null
+    _min: PracticeExamMinAggregateOutputType | null
+    _max: PracticeExamMaxAggregateOutputType | null
+  }
+
+  type GetPracticeExamGroupByPayload<T extends PracticeExamGroupByArgs> = Prisma.PrismaPromise<
+    Array<
+      PickEnumerable<PracticeExamGroupByOutputType, T['by']> &
+        {
+          [P in ((keyof T) & (keyof PracticeExamGroupByOutputType))]: P extends '_count'
+            ? T[P] extends boolean
+              ? number
+              : GetScalarType<T[P], PracticeExamGroupByOutputType[P]>
+            : GetScalarType<T[P], PracticeExamGroupByOutputType[P]>
+        }
+      >
+    >
+
+
+  export type PracticeExamSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    title?: boolean
+    description?: boolean
+    pdfUrl?: boolean
+    grade?: boolean
+    courseId?: boolean
+    teacherId?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+    course?: boolean | PracticeExam$courseArgs<ExtArgs>
+    teacher?: boolean | TeacherDefaultArgs<ExtArgs>
+  }, ExtArgs["result"]["practiceExam"]>
+
+  export type PracticeExamSelectCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    title?: boolean
+    description?: boolean
+    pdfUrl?: boolean
+    grade?: boolean
+    courseId?: boolean
+    teacherId?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+    course?: boolean | PracticeExam$courseArgs<ExtArgs>
+    teacher?: boolean | TeacherDefaultArgs<ExtArgs>
+  }, ExtArgs["result"]["practiceExam"]>
+
+  export type PracticeExamSelectUpdateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    title?: boolean
+    description?: boolean
+    pdfUrl?: boolean
+    grade?: boolean
+    courseId?: boolean
+    teacherId?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+    course?: boolean | PracticeExam$courseArgs<ExtArgs>
+    teacher?: boolean | TeacherDefaultArgs<ExtArgs>
+  }, ExtArgs["result"]["practiceExam"]>
+
+  export type PracticeExamSelectScalar = {
+    id?: boolean
+    title?: boolean
+    description?: boolean
+    pdfUrl?: boolean
+    grade?: boolean
+    courseId?: boolean
+    teacherId?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+  }
+
+  export type PracticeExamOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "title" | "description" | "pdfUrl" | "grade" | "courseId" | "teacherId" | "createdAt" | "updatedAt", ExtArgs["result"]["practiceExam"]>
+  export type PracticeExamInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    course?: boolean | PracticeExam$courseArgs<ExtArgs>
+    teacher?: boolean | TeacherDefaultArgs<ExtArgs>
+  }
+  export type PracticeExamIncludeCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    course?: boolean | PracticeExam$courseArgs<ExtArgs>
+    teacher?: boolean | TeacherDefaultArgs<ExtArgs>
+  }
+  export type PracticeExamIncludeUpdateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    course?: boolean | PracticeExam$courseArgs<ExtArgs>
+    teacher?: boolean | TeacherDefaultArgs<ExtArgs>
+  }
+
+  export type $PracticeExamPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    name: "PracticeExam"
+    objects: {
+      course: Prisma.$CoursePayload<ExtArgs> | null
+      teacher: Prisma.$TeacherPayload<ExtArgs>
+    }
+    scalars: $Extensions.GetPayloadResult<{
+      id: number
+      title: string
+      description: string | null
+      pdfUrl: string | null
+      grade: string | null
+      courseId: number | null
+      teacherId: number
+      createdAt: Date
+      updatedAt: Date
+    }, ExtArgs["result"]["practiceExam"]>
+    composites: {}
+  }
+
+  type PracticeExamGetPayload<S extends boolean | null | undefined | PracticeExamDefaultArgs> = $Result.GetResult<Prisma.$PracticeExamPayload, S>
+
+  type PracticeExamCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> =
+    Omit<PracticeExamFindManyArgs, 'select' | 'include' | 'distinct' | 'omit'> & {
+      select?: PracticeExamCountAggregateInputType | true
+    }
+
+  export interface PracticeExamDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> {
+    [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['PracticeExam'], meta: { name: 'PracticeExam' } }
+    /**
+     * Find zero or one PracticeExam that matches the filter.
+     * @param {PracticeExamFindUniqueArgs} args - Arguments to find a PracticeExam
+     * @example
+     * // Get one PracticeExam
+     * const practiceExam = await prisma.practiceExam.findUnique({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUnique<T extends PracticeExamFindUniqueArgs>(args: SelectSubset<T, PracticeExamFindUniqueArgs<ExtArgs>>): Prisma__PracticeExamClient<$Result.GetResult<Prisma.$PracticeExamPayload<ExtArgs>, T, "findUnique", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find one PracticeExam that matches the filter or throw an error with `error.code='P2025'`
+     * if no matches were found.
+     * @param {PracticeExamFindUniqueOrThrowArgs} args - Arguments to find a PracticeExam
+     * @example
+     * // Get one PracticeExam
+     * const practiceExam = await prisma.practiceExam.findUniqueOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUniqueOrThrow<T extends PracticeExamFindUniqueOrThrowArgs>(args: SelectSubset<T, PracticeExamFindUniqueOrThrowArgs<ExtArgs>>): Prisma__PracticeExamClient<$Result.GetResult<Prisma.$PracticeExamPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find the first PracticeExam that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {PracticeExamFindFirstArgs} args - Arguments to find a PracticeExam
+     * @example
+     * // Get one PracticeExam
+     * const practiceExam = await prisma.practiceExam.findFirst({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirst<T extends PracticeExamFindFirstArgs>(args?: SelectSubset<T, PracticeExamFindFirstArgs<ExtArgs>>): Prisma__PracticeExamClient<$Result.GetResult<Prisma.$PracticeExamPayload<ExtArgs>, T, "findFirst", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find the first PracticeExam that matches the filter or
+     * throw `PrismaKnownClientError` with `P2025` code if no matches were found.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {PracticeExamFindFirstOrThrowArgs} args - Arguments to find a PracticeExam
+     * @example
+     * // Get one PracticeExam
+     * const practiceExam = await prisma.practiceExam.findFirstOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirstOrThrow<T extends PracticeExamFindFirstOrThrowArgs>(args?: SelectSubset<T, PracticeExamFindFirstOrThrowArgs<ExtArgs>>): Prisma__PracticeExamClient<$Result.GetResult<Prisma.$PracticeExamPayload<ExtArgs>, T, "findFirstOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find zero or more PracticeExams that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {PracticeExamFindManyArgs} args - Arguments to filter and select certain fields only.
+     * @example
+     * // Get all PracticeExams
+     * const practiceExams = await prisma.practiceExam.findMany()
+     * 
+     * // Get first 10 PracticeExams
+     * const practiceExams = await prisma.practiceExam.findMany({ take: 10 })
+     * 
+     * // Only select the `id`
+     * const practiceExamWithIdOnly = await prisma.practiceExam.findMany({ select: { id: true } })
+     * 
+     */
+    findMany<T extends PracticeExamFindManyArgs>(args?: SelectSubset<T, PracticeExamFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$PracticeExamPayload<ExtArgs>, T, "findMany", GlobalOmitOptions>>
+
+    /**
+     * Create a PracticeExam.
+     * @param {PracticeExamCreateArgs} args - Arguments to create a PracticeExam.
+     * @example
+     * // Create one PracticeExam
+     * const PracticeExam = await prisma.practiceExam.create({
+     *   data: {
+     *     // ... data to create a PracticeExam
+     *   }
+     * })
+     * 
+     */
+    create<T extends PracticeExamCreateArgs>(args: SelectSubset<T, PracticeExamCreateArgs<ExtArgs>>): Prisma__PracticeExamClient<$Result.GetResult<Prisma.$PracticeExamPayload<ExtArgs>, T, "create", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Create many PracticeExams.
+     * @param {PracticeExamCreateManyArgs} args - Arguments to create many PracticeExams.
+     * @example
+     * // Create many PracticeExams
+     * const practiceExam = await prisma.practiceExam.createMany({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     *     
+     */
+    createMany<T extends PracticeExamCreateManyArgs>(args?: SelectSubset<T, PracticeExamCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create many PracticeExams and returns the data saved in the database.
+     * @param {PracticeExamCreateManyAndReturnArgs} args - Arguments to create many PracticeExams.
+     * @example
+     * // Create many PracticeExams
+     * const practiceExam = await prisma.practiceExam.createManyAndReturn({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * 
+     * // Create many PracticeExams and only return the `id`
+     * const practiceExamWithIdOnly = await prisma.practiceExam.createManyAndReturn({
+     *   select: { id: true },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * 
+     */
+    createManyAndReturn<T extends PracticeExamCreateManyAndReturnArgs>(args?: SelectSubset<T, PracticeExamCreateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$PracticeExamPayload<ExtArgs>, T, "createManyAndReturn", GlobalOmitOptions>>
+
+    /**
+     * Delete a PracticeExam.
+     * @param {PracticeExamDeleteArgs} args - Arguments to delete one PracticeExam.
+     * @example
+     * // Delete one PracticeExam
+     * const PracticeExam = await prisma.practiceExam.delete({
+     *   where: {
+     *     // ... filter to delete one PracticeExam
+     *   }
+     * })
+     * 
+     */
+    delete<T extends PracticeExamDeleteArgs>(args: SelectSubset<T, PracticeExamDeleteArgs<ExtArgs>>): Prisma__PracticeExamClient<$Result.GetResult<Prisma.$PracticeExamPayload<ExtArgs>, T, "delete", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Update one PracticeExam.
+     * @param {PracticeExamUpdateArgs} args - Arguments to update one PracticeExam.
+     * @example
+     * // Update one PracticeExam
+     * const practiceExam = await prisma.practiceExam.update({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    update<T extends PracticeExamUpdateArgs>(args: SelectSubset<T, PracticeExamUpdateArgs<ExtArgs>>): Prisma__PracticeExamClient<$Result.GetResult<Prisma.$PracticeExamPayload<ExtArgs>, T, "update", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Delete zero or more PracticeExams.
+     * @param {PracticeExamDeleteManyArgs} args - Arguments to filter PracticeExams to delete.
+     * @example
+     * // Delete a few PracticeExams
+     * const { count } = await prisma.practiceExam.deleteMany({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     * 
+     */
+    deleteMany<T extends PracticeExamDeleteManyArgs>(args?: SelectSubset<T, PracticeExamDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more PracticeExams.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {PracticeExamUpdateManyArgs} args - Arguments to update one or more rows.
+     * @example
+     * // Update many PracticeExams
+     * const practiceExam = await prisma.practiceExam.updateMany({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    updateMany<T extends PracticeExamUpdateManyArgs>(args: SelectSubset<T, PracticeExamUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more PracticeExams and returns the data updated in the database.
+     * @param {PracticeExamUpdateManyAndReturnArgs} args - Arguments to update many PracticeExams.
+     * @example
+     * // Update many PracticeExams
+     * const practiceExam = await prisma.practiceExam.updateManyAndReturn({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * 
+     * // Update zero or more PracticeExams and only return the `id`
+     * const practiceExamWithIdOnly = await prisma.practiceExam.updateManyAndReturn({
+     *   select: { id: true },
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * 
+     */
+    updateManyAndReturn<T extends PracticeExamUpdateManyAndReturnArgs>(args: SelectSubset<T, PracticeExamUpdateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$PracticeExamPayload<ExtArgs>, T, "updateManyAndReturn", GlobalOmitOptions>>
+
+    /**
+     * Create or update one PracticeExam.
+     * @param {PracticeExamUpsertArgs} args - Arguments to update or create a PracticeExam.
+     * @example
+     * // Update or create a PracticeExam
+     * const practiceExam = await prisma.practiceExam.upsert({
+     *   create: {
+     *     // ... data to create a PracticeExam
+     *   },
+     *   update: {
+     *     // ... in case it already exists, update
+     *   },
+     *   where: {
+     *     // ... the filter for the PracticeExam we want to update
+     *   }
+     * })
+     */
+    upsert<T extends PracticeExamUpsertArgs>(args: SelectSubset<T, PracticeExamUpsertArgs<ExtArgs>>): Prisma__PracticeExamClient<$Result.GetResult<Prisma.$PracticeExamPayload<ExtArgs>, T, "upsert", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+
+    /**
+     * Count the number of PracticeExams.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {PracticeExamCountArgs} args - Arguments to filter PracticeExams to count.
+     * @example
+     * // Count the number of PracticeExams
+     * const count = await prisma.practiceExam.count({
+     *   where: {
+     *     // ... the filter for the PracticeExams we want to count
+     *   }
+     * })
+    **/
+    count<T extends PracticeExamCountArgs>(
+      args?: Subset<T, PracticeExamCountArgs>,
+    ): Prisma.PrismaPromise<
+      T extends $Utils.Record<'select', any>
+        ? T['select'] extends true
+          ? number
+          : GetScalarType<T['select'], PracticeExamCountAggregateOutputType>
+        : number
+    >
+
+    /**
+     * Allows you to perform aggregations operations on a PracticeExam.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {PracticeExamAggregateArgs} args - Select which aggregations you would like to apply and on what fields.
+     * @example
+     * // Ordered by age ascending
+     * // Where email contains prisma.io
+     * // Limited to the 10 users
+     * const aggregations = await prisma.user.aggregate({
+     *   _avg: {
+     *     age: true,
+     *   },
+     *   where: {
+     *     email: {
+     *       contains: "prisma.io",
+     *     },
+     *   },
+     *   orderBy: {
+     *     age: "asc",
+     *   },
+     *   take: 10,
+     * })
+    **/
+    aggregate<T extends PracticeExamAggregateArgs>(args: Subset<T, PracticeExamAggregateArgs>): Prisma.PrismaPromise<GetPracticeExamAggregateType<T>>
+
+    /**
+     * Group by PracticeExam.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {PracticeExamGroupByArgs} args - Group by arguments.
+     * @example
+     * // Group by city, order by createdAt, get count
+     * const result = await prisma.user.groupBy({
+     *   by: ['city', 'createdAt'],
+     *   orderBy: {
+     *     createdAt: true
+     *   },
+     *   _count: {
+     *     _all: true
+     *   },
+     * })
+     * 
+    **/
+    groupBy<
+      T extends PracticeExamGroupByArgs,
+      HasSelectOrTake extends Or<
+        Extends<'skip', Keys<T>>,
+        Extends<'take', Keys<T>>
+      >,
+      OrderByArg extends True extends HasSelectOrTake
+        ? { orderBy: PracticeExamGroupByArgs['orderBy'] }
+        : { orderBy?: PracticeExamGroupByArgs['orderBy'] },
+      OrderFields extends ExcludeUnderscoreKeys<Keys<MaybeTupleToUnion<T['orderBy']>>>,
+      ByFields extends MaybeTupleToUnion<T['by']>,
+      ByValid extends Has<ByFields, OrderFields>,
+      HavingFields extends GetHavingFields<T['having']>,
+      HavingValid extends Has<ByFields, HavingFields>,
+      ByEmpty extends T['by'] extends never[] ? True : False,
+      InputErrors extends ByEmpty extends True
+      ? `Error: "by" must not be empty.`
+      : HavingValid extends False
+      ? {
+          [P in HavingFields]: P extends ByFields
+            ? never
+            : P extends string
+            ? `Error: Field "${P}" used in "having" needs to be provided in "by".`
+            : [
+                Error,
+                'Field ',
+                P,
+                ` in "having" needs to be provided in "by"`,
+              ]
+        }[HavingFields]
+      : 'take' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "take", you also need to provide "orderBy"'
+      : 'skip' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "skip", you also need to provide "orderBy"'
+      : ByValid extends True
+      ? {}
+      : {
+          [P in OrderFields]: P extends ByFields
+            ? never
+            : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+        }[OrderFields]
+    >(args: SubsetIntersection<T, PracticeExamGroupByArgs, OrderByArg> & InputErrors): {} extends InputErrors ? GetPracticeExamGroupByPayload<T> : Prisma.PrismaPromise<InputErrors>
+  /**
+   * Fields of the PracticeExam model
+   */
+  readonly fields: PracticeExamFieldRefs;
+  }
+
+  /**
+   * The delegate class that acts as a "Promise-like" for PracticeExam.
+   * Why is this prefixed with `Prisma__`?
+   * Because we want to prevent naming conflicts as mentioned in
+   * https://github.com/prisma/prisma-client-js/issues/707
+   */
+  export interface Prisma__PracticeExamClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
+    readonly [Symbol.toStringTag]: "PrismaPromise"
+    course<T extends PracticeExam$courseArgs<ExtArgs> = {}>(args?: Subset<T, PracticeExam$courseArgs<ExtArgs>>): Prisma__CourseClient<$Result.GetResult<Prisma.$CoursePayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+    teacher<T extends TeacherDefaultArgs<ExtArgs> = {}>(args?: Subset<T, TeacherDefaultArgs<ExtArgs>>): Prisma__TeacherClient<$Result.GetResult<Prisma.$TeacherPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
+    /**
+     * Attaches callbacks for the resolution and/or rejection of the Promise.
+     * @param onfulfilled The callback to execute when the Promise is resolved.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of which ever callback is executed.
+     */
+    then<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): $Utils.JsPromise<TResult1 | TResult2>
+    /**
+     * Attaches a callback for only the rejection of the Promise.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of the callback.
+     */
+    catch<TResult = never>(onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | undefined | null): $Utils.JsPromise<T | TResult>
+    /**
+     * Attaches a callback that is invoked when the Promise is settled (fulfilled or rejected). The
+     * resolved value cannot be modified from the callback.
+     * @param onfinally The callback to execute when the Promise is settled (fulfilled or rejected).
+     * @returns A Promise for the completion of the callback.
+     */
+    finally(onfinally?: (() => void) | undefined | null): $Utils.JsPromise<T>
+  }
+
+
+
+
+  /**
+   * Fields of the PracticeExam model
+   */
+  interface PracticeExamFieldRefs {
+    readonly id: FieldRef<"PracticeExam", 'Int'>
+    readonly title: FieldRef<"PracticeExam", 'String'>
+    readonly description: FieldRef<"PracticeExam", 'String'>
+    readonly pdfUrl: FieldRef<"PracticeExam", 'String'>
+    readonly grade: FieldRef<"PracticeExam", 'String'>
+    readonly courseId: FieldRef<"PracticeExam", 'Int'>
+    readonly teacherId: FieldRef<"PracticeExam", 'Int'>
+    readonly createdAt: FieldRef<"PracticeExam", 'DateTime'>
+    readonly updatedAt: FieldRef<"PracticeExam", 'DateTime'>
+  }
+    
+
+  // Custom InputTypes
+  /**
+   * PracticeExam findUnique
+   */
+  export type PracticeExamFindUniqueArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PracticeExam
+     */
+    select?: PracticeExamSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the PracticeExam
+     */
+    omit?: PracticeExamOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: PracticeExamInclude<ExtArgs> | null
+    /**
+     * Filter, which PracticeExam to fetch.
+     */
+    where: PracticeExamWhereUniqueInput
+  }
+
+  /**
+   * PracticeExam findUniqueOrThrow
+   */
+  export type PracticeExamFindUniqueOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PracticeExam
+     */
+    select?: PracticeExamSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the PracticeExam
+     */
+    omit?: PracticeExamOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: PracticeExamInclude<ExtArgs> | null
+    /**
+     * Filter, which PracticeExam to fetch.
+     */
+    where: PracticeExamWhereUniqueInput
+  }
+
+  /**
+   * PracticeExam findFirst
+   */
+  export type PracticeExamFindFirstArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PracticeExam
+     */
+    select?: PracticeExamSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the PracticeExam
+     */
+    omit?: PracticeExamOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: PracticeExamInclude<ExtArgs> | null
+    /**
+     * Filter, which PracticeExam to fetch.
+     */
+    where?: PracticeExamWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of PracticeExams to fetch.
+     */
+    orderBy?: PracticeExamOrderByWithRelationInput | PracticeExamOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for PracticeExams.
+     */
+    cursor?: PracticeExamWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` PracticeExams from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` PracticeExams.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of PracticeExams.
+     */
+    distinct?: PracticeExamScalarFieldEnum | PracticeExamScalarFieldEnum[]
+  }
+
+  /**
+   * PracticeExam findFirstOrThrow
+   */
+  export type PracticeExamFindFirstOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PracticeExam
+     */
+    select?: PracticeExamSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the PracticeExam
+     */
+    omit?: PracticeExamOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: PracticeExamInclude<ExtArgs> | null
+    /**
+     * Filter, which PracticeExam to fetch.
+     */
+    where?: PracticeExamWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of PracticeExams to fetch.
+     */
+    orderBy?: PracticeExamOrderByWithRelationInput | PracticeExamOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for PracticeExams.
+     */
+    cursor?: PracticeExamWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` PracticeExams from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` PracticeExams.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of PracticeExams.
+     */
+    distinct?: PracticeExamScalarFieldEnum | PracticeExamScalarFieldEnum[]
+  }
+
+  /**
+   * PracticeExam findMany
+   */
+  export type PracticeExamFindManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PracticeExam
+     */
+    select?: PracticeExamSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the PracticeExam
+     */
+    omit?: PracticeExamOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: PracticeExamInclude<ExtArgs> | null
+    /**
+     * Filter, which PracticeExams to fetch.
+     */
+    where?: PracticeExamWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of PracticeExams to fetch.
+     */
+    orderBy?: PracticeExamOrderByWithRelationInput | PracticeExamOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for listing PracticeExams.
+     */
+    cursor?: PracticeExamWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` PracticeExams from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` PracticeExams.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of PracticeExams.
+     */
+    distinct?: PracticeExamScalarFieldEnum | PracticeExamScalarFieldEnum[]
+  }
+
+  /**
+   * PracticeExam create
+   */
+  export type PracticeExamCreateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PracticeExam
+     */
+    select?: PracticeExamSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the PracticeExam
+     */
+    omit?: PracticeExamOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: PracticeExamInclude<ExtArgs> | null
+    /**
+     * The data needed to create a PracticeExam.
+     */
+    data: XOR<PracticeExamCreateInput, PracticeExamUncheckedCreateInput>
+  }
+
+  /**
+   * PracticeExam createMany
+   */
+  export type PracticeExamCreateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to create many PracticeExams.
+     */
+    data: PracticeExamCreateManyInput | PracticeExamCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * PracticeExam createManyAndReturn
+   */
+  export type PracticeExamCreateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PracticeExam
+     */
+    select?: PracticeExamSelectCreateManyAndReturn<ExtArgs> | null
+    /**
+     * Omit specific fields from the PracticeExam
+     */
+    omit?: PracticeExamOmit<ExtArgs> | null
+    /**
+     * The data used to create many PracticeExams.
+     */
+    data: PracticeExamCreateManyInput | PracticeExamCreateManyInput[]
+    skipDuplicates?: boolean
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: PracticeExamIncludeCreateManyAndReturn<ExtArgs> | null
+  }
+
+  /**
+   * PracticeExam update
+   */
+  export type PracticeExamUpdateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PracticeExam
+     */
+    select?: PracticeExamSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the PracticeExam
+     */
+    omit?: PracticeExamOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: PracticeExamInclude<ExtArgs> | null
+    /**
+     * The data needed to update a PracticeExam.
+     */
+    data: XOR<PracticeExamUpdateInput, PracticeExamUncheckedUpdateInput>
+    /**
+     * Choose, which PracticeExam to update.
+     */
+    where: PracticeExamWhereUniqueInput
+  }
+
+  /**
+   * PracticeExam updateMany
+   */
+  export type PracticeExamUpdateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to update PracticeExams.
+     */
+    data: XOR<PracticeExamUpdateManyMutationInput, PracticeExamUncheckedUpdateManyInput>
+    /**
+     * Filter which PracticeExams to update
+     */
+    where?: PracticeExamWhereInput
+    /**
+     * Limit how many PracticeExams to update.
+     */
+    limit?: number
+  }
+
+  /**
+   * PracticeExam updateManyAndReturn
+   */
+  export type PracticeExamUpdateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PracticeExam
+     */
+    select?: PracticeExamSelectUpdateManyAndReturn<ExtArgs> | null
+    /**
+     * Omit specific fields from the PracticeExam
+     */
+    omit?: PracticeExamOmit<ExtArgs> | null
+    /**
+     * The data used to update PracticeExams.
+     */
+    data: XOR<PracticeExamUpdateManyMutationInput, PracticeExamUncheckedUpdateManyInput>
+    /**
+     * Filter which PracticeExams to update
+     */
+    where?: PracticeExamWhereInput
+    /**
+     * Limit how many PracticeExams to update.
+     */
+    limit?: number
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: PracticeExamIncludeUpdateManyAndReturn<ExtArgs> | null
+  }
+
+  /**
+   * PracticeExam upsert
+   */
+  export type PracticeExamUpsertArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PracticeExam
+     */
+    select?: PracticeExamSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the PracticeExam
+     */
+    omit?: PracticeExamOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: PracticeExamInclude<ExtArgs> | null
+    /**
+     * The filter to search for the PracticeExam to update in case it exists.
+     */
+    where: PracticeExamWhereUniqueInput
+    /**
+     * In case the PracticeExam found by the `where` argument doesn't exist, create a new PracticeExam with this data.
+     */
+    create: XOR<PracticeExamCreateInput, PracticeExamUncheckedCreateInput>
+    /**
+     * In case the PracticeExam was found with the provided `where` argument, update it with this data.
+     */
+    update: XOR<PracticeExamUpdateInput, PracticeExamUncheckedUpdateInput>
+  }
+
+  /**
+   * PracticeExam delete
+   */
+  export type PracticeExamDeleteArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PracticeExam
+     */
+    select?: PracticeExamSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the PracticeExam
+     */
+    omit?: PracticeExamOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: PracticeExamInclude<ExtArgs> | null
+    /**
+     * Filter which PracticeExam to delete.
+     */
+    where: PracticeExamWhereUniqueInput
+  }
+
+  /**
+   * PracticeExam deleteMany
+   */
+  export type PracticeExamDeleteManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which PracticeExams to delete
+     */
+    where?: PracticeExamWhereInput
+    /**
+     * Limit how many PracticeExams to delete.
+     */
+    limit?: number
+  }
+
+  /**
+   * PracticeExam.course
+   */
+  export type PracticeExam$courseArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Course
+     */
+    select?: CourseSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the Course
+     */
+    omit?: CourseOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: CourseInclude<ExtArgs> | null
+    where?: CourseWhereInput
+  }
+
+  /**
+   * PracticeExam without action
+   */
+  export type PracticeExamDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PracticeExam
+     */
+    select?: PracticeExamSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the PracticeExam
+     */
+    omit?: PracticeExamOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: PracticeExamInclude<ExtArgs> | null
+  }
+
+
+  /**
    * Enums
    */
 
@@ -18779,6 +20128,21 @@ export namespace Prisma {
   };
 
   export type TokenBlacklistScalarFieldEnum = (typeof TokenBlacklistScalarFieldEnum)[keyof typeof TokenBlacklistScalarFieldEnum]
+
+
+  export const PracticeExamScalarFieldEnum: {
+    id: 'id',
+    title: 'title',
+    description: 'description',
+    pdfUrl: 'pdfUrl',
+    grade: 'grade',
+    courseId: 'courseId',
+    teacherId: 'teacherId',
+    createdAt: 'createdAt',
+    updatedAt: 'updatedAt'
+  };
+
+  export type PracticeExamScalarFieldEnum = (typeof PracticeExamScalarFieldEnum)[keyof typeof PracticeExamScalarFieldEnum]
 
 
   export const SortOrder: {
@@ -19123,6 +20487,7 @@ export namespace Prisma {
     userId?: IntFilter<"Teacher"> | number
     user?: XOR<UserScalarRelationFilter, UserWhereInput>
     courses?: CourseListRelationFilter
+    practiceExams?: PracticeExamListRelationFilter
   }
 
   export type TeacherOrderByWithRelationInput = {
@@ -19133,6 +20498,7 @@ export namespace Prisma {
     userId?: SortOrder
     user?: UserOrderByWithRelationInput
     courses?: CourseOrderByRelationAggregateInput
+    practiceExams?: PracticeExamOrderByRelationAggregateInput
   }
 
   export type TeacherWhereUniqueInput = Prisma.AtLeast<{
@@ -19146,6 +20512,7 @@ export namespace Prisma {
     experience?: IntFilter<"Teacher"> | number
     user?: XOR<UserScalarRelationFilter, UserWhereInput>
     courses?: CourseListRelationFilter
+    practiceExams?: PracticeExamListRelationFilter
   }, "id" | "userId">
 
   export type TeacherOrderByWithAggregationInput = {
@@ -19252,6 +20619,7 @@ export namespace Prisma {
     enrollments?: EnrollmentListRelationFilter
     teacher?: XOR<TeacherScalarRelationFilter, TeacherWhereInput>
     modules?: ModuleListRelationFilter
+    practiceExams?: PracticeExamListRelationFilter
   }
 
   export type CourseOrderByWithRelationInput = {
@@ -19265,6 +20633,7 @@ export namespace Prisma {
     enrollments?: EnrollmentOrderByRelationAggregateInput
     teacher?: TeacherOrderByWithRelationInput
     modules?: ModuleOrderByRelationAggregateInput
+    practiceExams?: PracticeExamOrderByRelationAggregateInput
   }
 
   export type CourseWhereUniqueInput = Prisma.AtLeast<{
@@ -19281,6 +20650,7 @@ export namespace Prisma {
     enrollments?: EnrollmentListRelationFilter
     teacher?: XOR<TeacherScalarRelationFilter, TeacherWhereInput>
     modules?: ModuleListRelationFilter
+    practiceExams?: PracticeExamListRelationFilter
   }, "id">
 
   export type CourseOrderByWithAggregationInput = {
@@ -19906,6 +21276,86 @@ export namespace Prisma {
     expiresAt?: DateTimeWithAggregatesFilter<"TokenBlacklist"> | Date | string
   }
 
+  export type PracticeExamWhereInput = {
+    AND?: PracticeExamWhereInput | PracticeExamWhereInput[]
+    OR?: PracticeExamWhereInput[]
+    NOT?: PracticeExamWhereInput | PracticeExamWhereInput[]
+    id?: IntFilter<"PracticeExam"> | number
+    title?: StringFilter<"PracticeExam"> | string
+    description?: StringNullableFilter<"PracticeExam"> | string | null
+    pdfUrl?: StringNullableFilter<"PracticeExam"> | string | null
+    grade?: StringNullableFilter<"PracticeExam"> | string | null
+    courseId?: IntNullableFilter<"PracticeExam"> | number | null
+    teacherId?: IntFilter<"PracticeExam"> | number
+    createdAt?: DateTimeFilter<"PracticeExam"> | Date | string
+    updatedAt?: DateTimeFilter<"PracticeExam"> | Date | string
+    course?: XOR<CourseNullableScalarRelationFilter, CourseWhereInput> | null
+    teacher?: XOR<TeacherScalarRelationFilter, TeacherWhereInput>
+  }
+
+  export type PracticeExamOrderByWithRelationInput = {
+    id?: SortOrder
+    title?: SortOrder
+    description?: SortOrderInput | SortOrder
+    pdfUrl?: SortOrderInput | SortOrder
+    grade?: SortOrderInput | SortOrder
+    courseId?: SortOrderInput | SortOrder
+    teacherId?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+    course?: CourseOrderByWithRelationInput
+    teacher?: TeacherOrderByWithRelationInput
+  }
+
+  export type PracticeExamWhereUniqueInput = Prisma.AtLeast<{
+    id?: number
+    AND?: PracticeExamWhereInput | PracticeExamWhereInput[]
+    OR?: PracticeExamWhereInput[]
+    NOT?: PracticeExamWhereInput | PracticeExamWhereInput[]
+    title?: StringFilter<"PracticeExam"> | string
+    description?: StringNullableFilter<"PracticeExam"> | string | null
+    pdfUrl?: StringNullableFilter<"PracticeExam"> | string | null
+    grade?: StringNullableFilter<"PracticeExam"> | string | null
+    courseId?: IntNullableFilter<"PracticeExam"> | number | null
+    teacherId?: IntFilter<"PracticeExam"> | number
+    createdAt?: DateTimeFilter<"PracticeExam"> | Date | string
+    updatedAt?: DateTimeFilter<"PracticeExam"> | Date | string
+    course?: XOR<CourseNullableScalarRelationFilter, CourseWhereInput> | null
+    teacher?: XOR<TeacherScalarRelationFilter, TeacherWhereInput>
+  }, "id">
+
+  export type PracticeExamOrderByWithAggregationInput = {
+    id?: SortOrder
+    title?: SortOrder
+    description?: SortOrderInput | SortOrder
+    pdfUrl?: SortOrderInput | SortOrder
+    grade?: SortOrderInput | SortOrder
+    courseId?: SortOrderInput | SortOrder
+    teacherId?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+    _count?: PracticeExamCountOrderByAggregateInput
+    _avg?: PracticeExamAvgOrderByAggregateInput
+    _max?: PracticeExamMaxOrderByAggregateInput
+    _min?: PracticeExamMinOrderByAggregateInput
+    _sum?: PracticeExamSumOrderByAggregateInput
+  }
+
+  export type PracticeExamScalarWhereWithAggregatesInput = {
+    AND?: PracticeExamScalarWhereWithAggregatesInput | PracticeExamScalarWhereWithAggregatesInput[]
+    OR?: PracticeExamScalarWhereWithAggregatesInput[]
+    NOT?: PracticeExamScalarWhereWithAggregatesInput | PracticeExamScalarWhereWithAggregatesInput[]
+    id?: IntWithAggregatesFilter<"PracticeExam"> | number
+    title?: StringWithAggregatesFilter<"PracticeExam"> | string
+    description?: StringNullableWithAggregatesFilter<"PracticeExam"> | string | null
+    pdfUrl?: StringNullableWithAggregatesFilter<"PracticeExam"> | string | null
+    grade?: StringNullableWithAggregatesFilter<"PracticeExam"> | string | null
+    courseId?: IntNullableWithAggregatesFilter<"PracticeExam"> | number | null
+    teacherId?: IntWithAggregatesFilter<"PracticeExam"> | number
+    createdAt?: DateTimeWithAggregatesFilter<"PracticeExam"> | Date | string
+    updatedAt?: DateTimeWithAggregatesFilter<"PracticeExam"> | Date | string
+  }
+
   export type UserCreateInput = {
     name: string
     email: string
@@ -20093,6 +21543,7 @@ export namespace Prisma {
     experience?: number
     user: UserCreateNestedOneWithoutTeacherProfileInput
     courses?: CourseCreateNestedManyWithoutTeacherInput
+    practiceExams?: PracticeExamCreateNestedManyWithoutTeacherInput
   }
 
   export type TeacherUncheckedCreateInput = {
@@ -20102,6 +21553,7 @@ export namespace Prisma {
     experience?: number
     userId: number
     courses?: CourseUncheckedCreateNestedManyWithoutTeacherInput
+    practiceExams?: PracticeExamUncheckedCreateNestedManyWithoutTeacherInput
   }
 
   export type TeacherUpdateInput = {
@@ -20110,6 +21562,7 @@ export namespace Prisma {
     experience?: IntFieldUpdateOperationsInput | number
     user?: UserUpdateOneRequiredWithoutTeacherProfileNestedInput
     courses?: CourseUpdateManyWithoutTeacherNestedInput
+    practiceExams?: PracticeExamUpdateManyWithoutTeacherNestedInput
   }
 
   export type TeacherUncheckedUpdateInput = {
@@ -20119,6 +21572,7 @@ export namespace Prisma {
     experience?: IntFieldUpdateOperationsInput | number
     userId?: IntFieldUpdateOperationsInput | number
     courses?: CourseUncheckedUpdateManyWithoutTeacherNestedInput
+    practiceExams?: PracticeExamUncheckedUpdateManyWithoutTeacherNestedInput
   }
 
   export type TeacherCreateManyInput = {
@@ -20210,6 +21664,7 @@ export namespace Prisma {
     enrollments?: EnrollmentCreateNestedManyWithoutCourseInput
     teacher: TeacherCreateNestedOneWithoutCoursesInput
     modules?: ModuleCreateNestedManyWithoutCourseInput
+    practiceExams?: PracticeExamCreateNestedManyWithoutCourseInput
   }
 
   export type CourseUncheckedCreateInput = {
@@ -20222,6 +21677,7 @@ export namespace Prisma {
     instructorId: number
     enrollments?: EnrollmentUncheckedCreateNestedManyWithoutCourseInput
     modules?: ModuleUncheckedCreateNestedManyWithoutCourseInput
+    practiceExams?: PracticeExamUncheckedCreateNestedManyWithoutCourseInput
   }
 
   export type CourseUpdateInput = {
@@ -20233,6 +21689,7 @@ export namespace Prisma {
     enrollments?: EnrollmentUpdateManyWithoutCourseNestedInput
     teacher?: TeacherUpdateOneRequiredWithoutCoursesNestedInput
     modules?: ModuleUpdateManyWithoutCourseNestedInput
+    practiceExams?: PracticeExamUpdateManyWithoutCourseNestedInput
   }
 
   export type CourseUncheckedUpdateInput = {
@@ -20245,6 +21702,7 @@ export namespace Prisma {
     instructorId?: IntFieldUpdateOperationsInput | number
     enrollments?: EnrollmentUncheckedUpdateManyWithoutCourseNestedInput
     modules?: ModuleUncheckedUpdateManyWithoutCourseNestedInput
+    practiceExams?: PracticeExamUncheckedUpdateManyWithoutCourseNestedInput
   }
 
   export type CourseCreateManyInput = {
@@ -20840,6 +22298,85 @@ export namespace Prisma {
     expiresAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
+  export type PracticeExamCreateInput = {
+    title: string
+    description?: string | null
+    pdfUrl?: string | null
+    grade?: string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    course?: CourseCreateNestedOneWithoutPracticeExamsInput
+    teacher: TeacherCreateNestedOneWithoutPracticeExamsInput
+  }
+
+  export type PracticeExamUncheckedCreateInput = {
+    id?: number
+    title: string
+    description?: string | null
+    pdfUrl?: string | null
+    grade?: string | null
+    courseId?: number | null
+    teacherId: number
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type PracticeExamUpdateInput = {
+    title?: StringFieldUpdateOperationsInput | string
+    description?: NullableStringFieldUpdateOperationsInput | string | null
+    pdfUrl?: NullableStringFieldUpdateOperationsInput | string | null
+    grade?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    course?: CourseUpdateOneWithoutPracticeExamsNestedInput
+    teacher?: TeacherUpdateOneRequiredWithoutPracticeExamsNestedInput
+  }
+
+  export type PracticeExamUncheckedUpdateInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    title?: StringFieldUpdateOperationsInput | string
+    description?: NullableStringFieldUpdateOperationsInput | string | null
+    pdfUrl?: NullableStringFieldUpdateOperationsInput | string | null
+    grade?: NullableStringFieldUpdateOperationsInput | string | null
+    courseId?: NullableIntFieldUpdateOperationsInput | number | null
+    teacherId?: IntFieldUpdateOperationsInput | number
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type PracticeExamCreateManyInput = {
+    id?: number
+    title: string
+    description?: string | null
+    pdfUrl?: string | null
+    grade?: string | null
+    courseId?: number | null
+    teacherId: number
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type PracticeExamUpdateManyMutationInput = {
+    title?: StringFieldUpdateOperationsInput | string
+    description?: NullableStringFieldUpdateOperationsInput | string | null
+    pdfUrl?: NullableStringFieldUpdateOperationsInput | string | null
+    grade?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type PracticeExamUncheckedUpdateManyInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    title?: StringFieldUpdateOperationsInput | string
+    description?: NullableStringFieldUpdateOperationsInput | string | null
+    pdfUrl?: NullableStringFieldUpdateOperationsInput | string | null
+    grade?: NullableStringFieldUpdateOperationsInput | string | null
+    courseId?: NullableIntFieldUpdateOperationsInput | number | null
+    teacherId?: IntFieldUpdateOperationsInput | number
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
   export type IntFilter<$PrismaModel = never> = {
     equals?: number | IntFieldRefInput<$PrismaModel>
     in?: number[] | ListIntFieldRefInput<$PrismaModel>
@@ -21146,7 +22683,17 @@ export namespace Prisma {
     none?: CourseWhereInput
   }
 
+  export type PracticeExamListRelationFilter = {
+    every?: PracticeExamWhereInput
+    some?: PracticeExamWhereInput
+    none?: PracticeExamWhereInput
+  }
+
   export type CourseOrderByRelationAggregateInput = {
+    _count?: SortOrder
+  }
+
+  export type PracticeExamOrderByRelationAggregateInput = {
     _count?: SortOrder
   }
 
@@ -21807,6 +23354,86 @@ export namespace Prisma {
     id?: SortOrder
   }
 
+  export type IntNullableFilter<$PrismaModel = never> = {
+    equals?: number | IntFieldRefInput<$PrismaModel> | null
+    in?: number[] | ListIntFieldRefInput<$PrismaModel> | null
+    notIn?: number[] | ListIntFieldRefInput<$PrismaModel> | null
+    lt?: number | IntFieldRefInput<$PrismaModel>
+    lte?: number | IntFieldRefInput<$PrismaModel>
+    gt?: number | IntFieldRefInput<$PrismaModel>
+    gte?: number | IntFieldRefInput<$PrismaModel>
+    not?: NestedIntNullableFilter<$PrismaModel> | number | null
+  }
+
+  export type CourseNullableScalarRelationFilter = {
+    is?: CourseWhereInput | null
+    isNot?: CourseWhereInput | null
+  }
+
+  export type PracticeExamCountOrderByAggregateInput = {
+    id?: SortOrder
+    title?: SortOrder
+    description?: SortOrder
+    pdfUrl?: SortOrder
+    grade?: SortOrder
+    courseId?: SortOrder
+    teacherId?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type PracticeExamAvgOrderByAggregateInput = {
+    id?: SortOrder
+    courseId?: SortOrder
+    teacherId?: SortOrder
+  }
+
+  export type PracticeExamMaxOrderByAggregateInput = {
+    id?: SortOrder
+    title?: SortOrder
+    description?: SortOrder
+    pdfUrl?: SortOrder
+    grade?: SortOrder
+    courseId?: SortOrder
+    teacherId?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type PracticeExamMinOrderByAggregateInput = {
+    id?: SortOrder
+    title?: SortOrder
+    description?: SortOrder
+    pdfUrl?: SortOrder
+    grade?: SortOrder
+    courseId?: SortOrder
+    teacherId?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type PracticeExamSumOrderByAggregateInput = {
+    id?: SortOrder
+    courseId?: SortOrder
+    teacherId?: SortOrder
+  }
+
+  export type IntNullableWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: number | IntFieldRefInput<$PrismaModel> | null
+    in?: number[] | ListIntFieldRefInput<$PrismaModel> | null
+    notIn?: number[] | ListIntFieldRefInput<$PrismaModel> | null
+    lt?: number | IntFieldRefInput<$PrismaModel>
+    lte?: number | IntFieldRefInput<$PrismaModel>
+    gt?: number | IntFieldRefInput<$PrismaModel>
+    gte?: number | IntFieldRefInput<$PrismaModel>
+    not?: NestedIntNullableWithAggregatesFilter<$PrismaModel> | number | null
+    _count?: NestedIntNullableFilter<$PrismaModel>
+    _avg?: NestedFloatNullableFilter<$PrismaModel>
+    _sum?: NestedIntNullableFilter<$PrismaModel>
+    _min?: NestedIntNullableFilter<$PrismaModel>
+    _max?: NestedIntNullableFilter<$PrismaModel>
+  }
+
   export type StudentCreateNestedOneWithoutUserInput = {
     create?: XOR<StudentCreateWithoutUserInput, StudentUncheckedCreateWithoutUserInput>
     connectOrCreate?: StudentCreateOrConnectWithoutUserInput
@@ -22052,11 +23679,25 @@ export namespace Prisma {
     connect?: CourseWhereUniqueInput | CourseWhereUniqueInput[]
   }
 
+  export type PracticeExamCreateNestedManyWithoutTeacherInput = {
+    create?: XOR<PracticeExamCreateWithoutTeacherInput, PracticeExamUncheckedCreateWithoutTeacherInput> | PracticeExamCreateWithoutTeacherInput[] | PracticeExamUncheckedCreateWithoutTeacherInput[]
+    connectOrCreate?: PracticeExamCreateOrConnectWithoutTeacherInput | PracticeExamCreateOrConnectWithoutTeacherInput[]
+    createMany?: PracticeExamCreateManyTeacherInputEnvelope
+    connect?: PracticeExamWhereUniqueInput | PracticeExamWhereUniqueInput[]
+  }
+
   export type CourseUncheckedCreateNestedManyWithoutTeacherInput = {
     create?: XOR<CourseCreateWithoutTeacherInput, CourseUncheckedCreateWithoutTeacherInput> | CourseCreateWithoutTeacherInput[] | CourseUncheckedCreateWithoutTeacherInput[]
     connectOrCreate?: CourseCreateOrConnectWithoutTeacherInput | CourseCreateOrConnectWithoutTeacherInput[]
     createMany?: CourseCreateManyTeacherInputEnvelope
     connect?: CourseWhereUniqueInput | CourseWhereUniqueInput[]
+  }
+
+  export type PracticeExamUncheckedCreateNestedManyWithoutTeacherInput = {
+    create?: XOR<PracticeExamCreateWithoutTeacherInput, PracticeExamUncheckedCreateWithoutTeacherInput> | PracticeExamCreateWithoutTeacherInput[] | PracticeExamUncheckedCreateWithoutTeacherInput[]
+    connectOrCreate?: PracticeExamCreateOrConnectWithoutTeacherInput | PracticeExamCreateOrConnectWithoutTeacherInput[]
+    createMany?: PracticeExamCreateManyTeacherInputEnvelope
+    connect?: PracticeExamWhereUniqueInput | PracticeExamWhereUniqueInput[]
   }
 
   export type UserUpdateOneRequiredWithoutTeacherProfileNestedInput = {
@@ -22081,6 +23722,20 @@ export namespace Prisma {
     deleteMany?: CourseScalarWhereInput | CourseScalarWhereInput[]
   }
 
+  export type PracticeExamUpdateManyWithoutTeacherNestedInput = {
+    create?: XOR<PracticeExamCreateWithoutTeacherInput, PracticeExamUncheckedCreateWithoutTeacherInput> | PracticeExamCreateWithoutTeacherInput[] | PracticeExamUncheckedCreateWithoutTeacherInput[]
+    connectOrCreate?: PracticeExamCreateOrConnectWithoutTeacherInput | PracticeExamCreateOrConnectWithoutTeacherInput[]
+    upsert?: PracticeExamUpsertWithWhereUniqueWithoutTeacherInput | PracticeExamUpsertWithWhereUniqueWithoutTeacherInput[]
+    createMany?: PracticeExamCreateManyTeacherInputEnvelope
+    set?: PracticeExamWhereUniqueInput | PracticeExamWhereUniqueInput[]
+    disconnect?: PracticeExamWhereUniqueInput | PracticeExamWhereUniqueInput[]
+    delete?: PracticeExamWhereUniqueInput | PracticeExamWhereUniqueInput[]
+    connect?: PracticeExamWhereUniqueInput | PracticeExamWhereUniqueInput[]
+    update?: PracticeExamUpdateWithWhereUniqueWithoutTeacherInput | PracticeExamUpdateWithWhereUniqueWithoutTeacherInput[]
+    updateMany?: PracticeExamUpdateManyWithWhereWithoutTeacherInput | PracticeExamUpdateManyWithWhereWithoutTeacherInput[]
+    deleteMany?: PracticeExamScalarWhereInput | PracticeExamScalarWhereInput[]
+  }
+
   export type CourseUncheckedUpdateManyWithoutTeacherNestedInput = {
     create?: XOR<CourseCreateWithoutTeacherInput, CourseUncheckedCreateWithoutTeacherInput> | CourseCreateWithoutTeacherInput[] | CourseUncheckedCreateWithoutTeacherInput[]
     connectOrCreate?: CourseCreateOrConnectWithoutTeacherInput | CourseCreateOrConnectWithoutTeacherInput[]
@@ -22093,6 +23748,20 @@ export namespace Prisma {
     update?: CourseUpdateWithWhereUniqueWithoutTeacherInput | CourseUpdateWithWhereUniqueWithoutTeacherInput[]
     updateMany?: CourseUpdateManyWithWhereWithoutTeacherInput | CourseUpdateManyWithWhereWithoutTeacherInput[]
     deleteMany?: CourseScalarWhereInput | CourseScalarWhereInput[]
+  }
+
+  export type PracticeExamUncheckedUpdateManyWithoutTeacherNestedInput = {
+    create?: XOR<PracticeExamCreateWithoutTeacherInput, PracticeExamUncheckedCreateWithoutTeacherInput> | PracticeExamCreateWithoutTeacherInput[] | PracticeExamUncheckedCreateWithoutTeacherInput[]
+    connectOrCreate?: PracticeExamCreateOrConnectWithoutTeacherInput | PracticeExamCreateOrConnectWithoutTeacherInput[]
+    upsert?: PracticeExamUpsertWithWhereUniqueWithoutTeacherInput | PracticeExamUpsertWithWhereUniqueWithoutTeacherInput[]
+    createMany?: PracticeExamCreateManyTeacherInputEnvelope
+    set?: PracticeExamWhereUniqueInput | PracticeExamWhereUniqueInput[]
+    disconnect?: PracticeExamWhereUniqueInput | PracticeExamWhereUniqueInput[]
+    delete?: PracticeExamWhereUniqueInput | PracticeExamWhereUniqueInput[]
+    connect?: PracticeExamWhereUniqueInput | PracticeExamWhereUniqueInput[]
+    update?: PracticeExamUpdateWithWhereUniqueWithoutTeacherInput | PracticeExamUpdateWithWhereUniqueWithoutTeacherInput[]
+    updateMany?: PracticeExamUpdateManyWithWhereWithoutTeacherInput | PracticeExamUpdateManyWithWhereWithoutTeacherInput[]
+    deleteMany?: PracticeExamScalarWhereInput | PracticeExamScalarWhereInput[]
   }
 
   export type StudentCreateNestedOneWithoutEnrollmentsInput = {
@@ -22147,6 +23816,13 @@ export namespace Prisma {
     connect?: ModuleWhereUniqueInput | ModuleWhereUniqueInput[]
   }
 
+  export type PracticeExamCreateNestedManyWithoutCourseInput = {
+    create?: XOR<PracticeExamCreateWithoutCourseInput, PracticeExamUncheckedCreateWithoutCourseInput> | PracticeExamCreateWithoutCourseInput[] | PracticeExamUncheckedCreateWithoutCourseInput[]
+    connectOrCreate?: PracticeExamCreateOrConnectWithoutCourseInput | PracticeExamCreateOrConnectWithoutCourseInput[]
+    createMany?: PracticeExamCreateManyCourseInputEnvelope
+    connect?: PracticeExamWhereUniqueInput | PracticeExamWhereUniqueInput[]
+  }
+
   export type EnrollmentUncheckedCreateNestedManyWithoutCourseInput = {
     create?: XOR<EnrollmentCreateWithoutCourseInput, EnrollmentUncheckedCreateWithoutCourseInput> | EnrollmentCreateWithoutCourseInput[] | EnrollmentUncheckedCreateWithoutCourseInput[]
     connectOrCreate?: EnrollmentCreateOrConnectWithoutCourseInput | EnrollmentCreateOrConnectWithoutCourseInput[]
@@ -22159,6 +23835,13 @@ export namespace Prisma {
     connectOrCreate?: ModuleCreateOrConnectWithoutCourseInput | ModuleCreateOrConnectWithoutCourseInput[]
     createMany?: ModuleCreateManyCourseInputEnvelope
     connect?: ModuleWhereUniqueInput | ModuleWhereUniqueInput[]
+  }
+
+  export type PracticeExamUncheckedCreateNestedManyWithoutCourseInput = {
+    create?: XOR<PracticeExamCreateWithoutCourseInput, PracticeExamUncheckedCreateWithoutCourseInput> | PracticeExamCreateWithoutCourseInput[] | PracticeExamUncheckedCreateWithoutCourseInput[]
+    connectOrCreate?: PracticeExamCreateOrConnectWithoutCourseInput | PracticeExamCreateOrConnectWithoutCourseInput[]
+    createMany?: PracticeExamCreateManyCourseInputEnvelope
+    connect?: PracticeExamWhereUniqueInput | PracticeExamWhereUniqueInput[]
   }
 
   export type EnrollmentUpdateManyWithoutCourseNestedInput = {
@@ -22197,6 +23880,20 @@ export namespace Prisma {
     deleteMany?: ModuleScalarWhereInput | ModuleScalarWhereInput[]
   }
 
+  export type PracticeExamUpdateManyWithoutCourseNestedInput = {
+    create?: XOR<PracticeExamCreateWithoutCourseInput, PracticeExamUncheckedCreateWithoutCourseInput> | PracticeExamCreateWithoutCourseInput[] | PracticeExamUncheckedCreateWithoutCourseInput[]
+    connectOrCreate?: PracticeExamCreateOrConnectWithoutCourseInput | PracticeExamCreateOrConnectWithoutCourseInput[]
+    upsert?: PracticeExamUpsertWithWhereUniqueWithoutCourseInput | PracticeExamUpsertWithWhereUniqueWithoutCourseInput[]
+    createMany?: PracticeExamCreateManyCourseInputEnvelope
+    set?: PracticeExamWhereUniqueInput | PracticeExamWhereUniqueInput[]
+    disconnect?: PracticeExamWhereUniqueInput | PracticeExamWhereUniqueInput[]
+    delete?: PracticeExamWhereUniqueInput | PracticeExamWhereUniqueInput[]
+    connect?: PracticeExamWhereUniqueInput | PracticeExamWhereUniqueInput[]
+    update?: PracticeExamUpdateWithWhereUniqueWithoutCourseInput | PracticeExamUpdateWithWhereUniqueWithoutCourseInput[]
+    updateMany?: PracticeExamUpdateManyWithWhereWithoutCourseInput | PracticeExamUpdateManyWithWhereWithoutCourseInput[]
+    deleteMany?: PracticeExamScalarWhereInput | PracticeExamScalarWhereInput[]
+  }
+
   export type EnrollmentUncheckedUpdateManyWithoutCourseNestedInput = {
     create?: XOR<EnrollmentCreateWithoutCourseInput, EnrollmentUncheckedCreateWithoutCourseInput> | EnrollmentCreateWithoutCourseInput[] | EnrollmentUncheckedCreateWithoutCourseInput[]
     connectOrCreate?: EnrollmentCreateOrConnectWithoutCourseInput | EnrollmentCreateOrConnectWithoutCourseInput[]
@@ -22223,6 +23920,20 @@ export namespace Prisma {
     update?: ModuleUpdateWithWhereUniqueWithoutCourseInput | ModuleUpdateWithWhereUniqueWithoutCourseInput[]
     updateMany?: ModuleUpdateManyWithWhereWithoutCourseInput | ModuleUpdateManyWithWhereWithoutCourseInput[]
     deleteMany?: ModuleScalarWhereInput | ModuleScalarWhereInput[]
+  }
+
+  export type PracticeExamUncheckedUpdateManyWithoutCourseNestedInput = {
+    create?: XOR<PracticeExamCreateWithoutCourseInput, PracticeExamUncheckedCreateWithoutCourseInput> | PracticeExamCreateWithoutCourseInput[] | PracticeExamUncheckedCreateWithoutCourseInput[]
+    connectOrCreate?: PracticeExamCreateOrConnectWithoutCourseInput | PracticeExamCreateOrConnectWithoutCourseInput[]
+    upsert?: PracticeExamUpsertWithWhereUniqueWithoutCourseInput | PracticeExamUpsertWithWhereUniqueWithoutCourseInput[]
+    createMany?: PracticeExamCreateManyCourseInputEnvelope
+    set?: PracticeExamWhereUniqueInput | PracticeExamWhereUniqueInput[]
+    disconnect?: PracticeExamWhereUniqueInput | PracticeExamWhereUniqueInput[]
+    delete?: PracticeExamWhereUniqueInput | PracticeExamWhereUniqueInput[]
+    connect?: PracticeExamWhereUniqueInput | PracticeExamWhereUniqueInput[]
+    update?: PracticeExamUpdateWithWhereUniqueWithoutCourseInput | PracticeExamUpdateWithWhereUniqueWithoutCourseInput[]
+    updateMany?: PracticeExamUpdateManyWithWhereWithoutCourseInput | PracticeExamUpdateManyWithWhereWithoutCourseInput[]
+    deleteMany?: PracticeExamScalarWhereInput | PracticeExamScalarWhereInput[]
   }
 
   export type CourseCreateNestedOneWithoutModulesInput = {
@@ -22777,6 +24488,44 @@ export namespace Prisma {
     update?: XOR<XOR<LessonUpdateToOneWithWhereWithoutLessonProgressInput, LessonUpdateWithoutLessonProgressInput>, LessonUncheckedUpdateWithoutLessonProgressInput>
   }
 
+  export type CourseCreateNestedOneWithoutPracticeExamsInput = {
+    create?: XOR<CourseCreateWithoutPracticeExamsInput, CourseUncheckedCreateWithoutPracticeExamsInput>
+    connectOrCreate?: CourseCreateOrConnectWithoutPracticeExamsInput
+    connect?: CourseWhereUniqueInput
+  }
+
+  export type TeacherCreateNestedOneWithoutPracticeExamsInput = {
+    create?: XOR<TeacherCreateWithoutPracticeExamsInput, TeacherUncheckedCreateWithoutPracticeExamsInput>
+    connectOrCreate?: TeacherCreateOrConnectWithoutPracticeExamsInput
+    connect?: TeacherWhereUniqueInput
+  }
+
+  export type CourseUpdateOneWithoutPracticeExamsNestedInput = {
+    create?: XOR<CourseCreateWithoutPracticeExamsInput, CourseUncheckedCreateWithoutPracticeExamsInput>
+    connectOrCreate?: CourseCreateOrConnectWithoutPracticeExamsInput
+    upsert?: CourseUpsertWithoutPracticeExamsInput
+    disconnect?: CourseWhereInput | boolean
+    delete?: CourseWhereInput | boolean
+    connect?: CourseWhereUniqueInput
+    update?: XOR<XOR<CourseUpdateToOneWithWhereWithoutPracticeExamsInput, CourseUpdateWithoutPracticeExamsInput>, CourseUncheckedUpdateWithoutPracticeExamsInput>
+  }
+
+  export type TeacherUpdateOneRequiredWithoutPracticeExamsNestedInput = {
+    create?: XOR<TeacherCreateWithoutPracticeExamsInput, TeacherUncheckedCreateWithoutPracticeExamsInput>
+    connectOrCreate?: TeacherCreateOrConnectWithoutPracticeExamsInput
+    upsert?: TeacherUpsertWithoutPracticeExamsInput
+    connect?: TeacherWhereUniqueInput
+    update?: XOR<XOR<TeacherUpdateToOneWithWhereWithoutPracticeExamsInput, TeacherUpdateWithoutPracticeExamsInput>, TeacherUncheckedUpdateWithoutPracticeExamsInput>
+  }
+
+  export type NullableIntFieldUpdateOperationsInput = {
+    set?: number | null
+    increment?: number
+    decrement?: number
+    multiply?: number
+    divide?: number
+  }
+
   export type NestedIntFilter<$PrismaModel = never> = {
     equals?: number | IntFieldRefInput<$PrismaModel>
     in?: number[] | ListIntFieldRefInput<$PrismaModel>
@@ -23036,6 +24785,33 @@ export namespace Prisma {
     _max?: NestedEnumExamStatusFilter<$PrismaModel>
   }
 
+  export type NestedIntNullableWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: number | IntFieldRefInput<$PrismaModel> | null
+    in?: number[] | ListIntFieldRefInput<$PrismaModel> | null
+    notIn?: number[] | ListIntFieldRefInput<$PrismaModel> | null
+    lt?: number | IntFieldRefInput<$PrismaModel>
+    lte?: number | IntFieldRefInput<$PrismaModel>
+    gt?: number | IntFieldRefInput<$PrismaModel>
+    gte?: number | IntFieldRefInput<$PrismaModel>
+    not?: NestedIntNullableWithAggregatesFilter<$PrismaModel> | number | null
+    _count?: NestedIntNullableFilter<$PrismaModel>
+    _avg?: NestedFloatNullableFilter<$PrismaModel>
+    _sum?: NestedIntNullableFilter<$PrismaModel>
+    _min?: NestedIntNullableFilter<$PrismaModel>
+    _max?: NestedIntNullableFilter<$PrismaModel>
+  }
+
+  export type NestedFloatNullableFilter<$PrismaModel = never> = {
+    equals?: number | FloatFieldRefInput<$PrismaModel> | null
+    in?: number[] | ListFloatFieldRefInput<$PrismaModel> | null
+    notIn?: number[] | ListFloatFieldRefInput<$PrismaModel> | null
+    lt?: number | FloatFieldRefInput<$PrismaModel>
+    lte?: number | FloatFieldRefInput<$PrismaModel>
+    gt?: number | FloatFieldRefInput<$PrismaModel>
+    gte?: number | FloatFieldRefInput<$PrismaModel>
+    not?: NestedFloatNullableFilter<$PrismaModel> | number | null
+  }
+
   export type StudentCreateWithoutUserInput = {
     academicId: string
     grade?: string | null
@@ -23067,6 +24843,7 @@ export namespace Prisma {
     bio?: string | null
     experience?: number
     courses?: CourseCreateNestedManyWithoutTeacherInput
+    practiceExams?: PracticeExamCreateNestedManyWithoutTeacherInput
   }
 
   export type TeacherUncheckedCreateWithoutUserInput = {
@@ -23075,6 +24852,7 @@ export namespace Prisma {
     bio?: string | null
     experience?: number
     courses?: CourseUncheckedCreateNestedManyWithoutTeacherInput
+    practiceExams?: PracticeExamUncheckedCreateNestedManyWithoutTeacherInput
   }
 
   export type TeacherCreateOrConnectWithoutUserInput = {
@@ -23130,6 +24908,7 @@ export namespace Prisma {
     bio?: NullableStringFieldUpdateOperationsInput | string | null
     experience?: IntFieldUpdateOperationsInput | number
     courses?: CourseUpdateManyWithoutTeacherNestedInput
+    practiceExams?: PracticeExamUpdateManyWithoutTeacherNestedInput
   }
 
   export type TeacherUncheckedUpdateWithoutUserInput = {
@@ -23138,6 +24917,7 @@ export namespace Prisma {
     bio?: NullableStringFieldUpdateOperationsInput | string | null
     experience?: IntFieldUpdateOperationsInput | number
     courses?: CourseUncheckedUpdateManyWithoutTeacherNestedInput
+    practiceExams?: PracticeExamUncheckedUpdateManyWithoutTeacherNestedInput
   }
 
   export type UserCreateWithoutStudentProfileInput = {
@@ -23426,6 +25206,7 @@ export namespace Prisma {
     updatedAt?: Date | string
     enrollments?: EnrollmentCreateNestedManyWithoutCourseInput
     modules?: ModuleCreateNestedManyWithoutCourseInput
+    practiceExams?: PracticeExamCreateNestedManyWithoutCourseInput
   }
 
   export type CourseUncheckedCreateWithoutTeacherInput = {
@@ -23437,6 +25218,7 @@ export namespace Prisma {
     updatedAt?: Date | string
     enrollments?: EnrollmentUncheckedCreateNestedManyWithoutCourseInput
     modules?: ModuleUncheckedCreateNestedManyWithoutCourseInput
+    practiceExams?: PracticeExamUncheckedCreateNestedManyWithoutCourseInput
   }
 
   export type CourseCreateOrConnectWithoutTeacherInput = {
@@ -23446,6 +25228,37 @@ export namespace Prisma {
 
   export type CourseCreateManyTeacherInputEnvelope = {
     data: CourseCreateManyTeacherInput | CourseCreateManyTeacherInput[]
+    skipDuplicates?: boolean
+  }
+
+  export type PracticeExamCreateWithoutTeacherInput = {
+    title: string
+    description?: string | null
+    pdfUrl?: string | null
+    grade?: string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    course?: CourseCreateNestedOneWithoutPracticeExamsInput
+  }
+
+  export type PracticeExamUncheckedCreateWithoutTeacherInput = {
+    id?: number
+    title: string
+    description?: string | null
+    pdfUrl?: string | null
+    grade?: string | null
+    courseId?: number | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type PracticeExamCreateOrConnectWithoutTeacherInput = {
+    where: PracticeExamWhereUniqueInput
+    create: XOR<PracticeExamCreateWithoutTeacherInput, PracticeExamUncheckedCreateWithoutTeacherInput>
+  }
+
+  export type PracticeExamCreateManyTeacherInputEnvelope = {
+    data: PracticeExamCreateManyTeacherInput | PracticeExamCreateManyTeacherInput[]
     skipDuplicates?: boolean
   }
 
@@ -23520,6 +25333,37 @@ export namespace Prisma {
     instructorId?: IntFilter<"Course"> | number
   }
 
+  export type PracticeExamUpsertWithWhereUniqueWithoutTeacherInput = {
+    where: PracticeExamWhereUniqueInput
+    update: XOR<PracticeExamUpdateWithoutTeacherInput, PracticeExamUncheckedUpdateWithoutTeacherInput>
+    create: XOR<PracticeExamCreateWithoutTeacherInput, PracticeExamUncheckedCreateWithoutTeacherInput>
+  }
+
+  export type PracticeExamUpdateWithWhereUniqueWithoutTeacherInput = {
+    where: PracticeExamWhereUniqueInput
+    data: XOR<PracticeExamUpdateWithoutTeacherInput, PracticeExamUncheckedUpdateWithoutTeacherInput>
+  }
+
+  export type PracticeExamUpdateManyWithWhereWithoutTeacherInput = {
+    where: PracticeExamScalarWhereInput
+    data: XOR<PracticeExamUpdateManyMutationInput, PracticeExamUncheckedUpdateManyWithoutTeacherInput>
+  }
+
+  export type PracticeExamScalarWhereInput = {
+    AND?: PracticeExamScalarWhereInput | PracticeExamScalarWhereInput[]
+    OR?: PracticeExamScalarWhereInput[]
+    NOT?: PracticeExamScalarWhereInput | PracticeExamScalarWhereInput[]
+    id?: IntFilter<"PracticeExam"> | number
+    title?: StringFilter<"PracticeExam"> | string
+    description?: StringNullableFilter<"PracticeExam"> | string | null
+    pdfUrl?: StringNullableFilter<"PracticeExam"> | string | null
+    grade?: StringNullableFilter<"PracticeExam"> | string | null
+    courseId?: IntNullableFilter<"PracticeExam"> | number | null
+    teacherId?: IntFilter<"PracticeExam"> | number
+    createdAt?: DateTimeFilter<"PracticeExam"> | Date | string
+    updatedAt?: DateTimeFilter<"PracticeExam"> | Date | string
+  }
+
   export type StudentCreateWithoutEnrollmentsInput = {
     academicId: string
     grade?: string | null
@@ -23554,6 +25398,7 @@ export namespace Prisma {
     updatedAt?: Date | string
     teacher: TeacherCreateNestedOneWithoutCoursesInput
     modules?: ModuleCreateNestedManyWithoutCourseInput
+    practiceExams?: PracticeExamCreateNestedManyWithoutCourseInput
   }
 
   export type CourseUncheckedCreateWithoutEnrollmentsInput = {
@@ -23565,6 +25410,7 @@ export namespace Prisma {
     updatedAt?: Date | string
     instructorId: number
     modules?: ModuleUncheckedCreateNestedManyWithoutCourseInput
+    practiceExams?: PracticeExamUncheckedCreateNestedManyWithoutCourseInput
   }
 
   export type CourseCreateOrConnectWithoutEnrollmentsInput = {
@@ -23623,6 +25469,7 @@ export namespace Prisma {
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     teacher?: TeacherUpdateOneRequiredWithoutCoursesNestedInput
     modules?: ModuleUpdateManyWithoutCourseNestedInput
+    practiceExams?: PracticeExamUpdateManyWithoutCourseNestedInput
   }
 
   export type CourseUncheckedUpdateWithoutEnrollmentsInput = {
@@ -23634,6 +25481,7 @@ export namespace Prisma {
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     instructorId?: IntFieldUpdateOperationsInput | number
     modules?: ModuleUncheckedUpdateManyWithoutCourseNestedInput
+    practiceExams?: PracticeExamUncheckedUpdateManyWithoutCourseNestedInput
   }
 
   export type EnrollmentCreateWithoutCourseInput = {
@@ -23666,6 +25514,7 @@ export namespace Prisma {
     bio?: string | null
     experience?: number
     user: UserCreateNestedOneWithoutTeacherProfileInput
+    practiceExams?: PracticeExamCreateNestedManyWithoutTeacherInput
   }
 
   export type TeacherUncheckedCreateWithoutCoursesInput = {
@@ -23674,6 +25523,7 @@ export namespace Prisma {
     bio?: string | null
     experience?: number
     userId: number
+    practiceExams?: PracticeExamUncheckedCreateNestedManyWithoutTeacherInput
   }
 
   export type TeacherCreateOrConnectWithoutCoursesInput = {
@@ -23705,6 +25555,37 @@ export namespace Prisma {
 
   export type ModuleCreateManyCourseInputEnvelope = {
     data: ModuleCreateManyCourseInput | ModuleCreateManyCourseInput[]
+    skipDuplicates?: boolean
+  }
+
+  export type PracticeExamCreateWithoutCourseInput = {
+    title: string
+    description?: string | null
+    pdfUrl?: string | null
+    grade?: string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    teacher: TeacherCreateNestedOneWithoutPracticeExamsInput
+  }
+
+  export type PracticeExamUncheckedCreateWithoutCourseInput = {
+    id?: number
+    title: string
+    description?: string | null
+    pdfUrl?: string | null
+    grade?: string | null
+    teacherId: number
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type PracticeExamCreateOrConnectWithoutCourseInput = {
+    where: PracticeExamWhereUniqueInput
+    create: XOR<PracticeExamCreateWithoutCourseInput, PracticeExamUncheckedCreateWithoutCourseInput>
+  }
+
+  export type PracticeExamCreateManyCourseInputEnvelope = {
+    data: PracticeExamCreateManyCourseInput | PracticeExamCreateManyCourseInput[]
     skipDuplicates?: boolean
   }
 
@@ -23740,6 +25621,7 @@ export namespace Prisma {
     bio?: NullableStringFieldUpdateOperationsInput | string | null
     experience?: IntFieldUpdateOperationsInput | number
     user?: UserUpdateOneRequiredWithoutTeacherProfileNestedInput
+    practiceExams?: PracticeExamUpdateManyWithoutTeacherNestedInput
   }
 
   export type TeacherUncheckedUpdateWithoutCoursesInput = {
@@ -23748,6 +25630,7 @@ export namespace Prisma {
     bio?: NullableStringFieldUpdateOperationsInput | string | null
     experience?: IntFieldUpdateOperationsInput | number
     userId?: IntFieldUpdateOperationsInput | number
+    practiceExams?: PracticeExamUncheckedUpdateManyWithoutTeacherNestedInput
   }
 
   export type ModuleUpsertWithWhereUniqueWithoutCourseInput = {
@@ -23778,6 +25661,22 @@ export namespace Prisma {
     courseId?: IntFilter<"Module"> | number
   }
 
+  export type PracticeExamUpsertWithWhereUniqueWithoutCourseInput = {
+    where: PracticeExamWhereUniqueInput
+    update: XOR<PracticeExamUpdateWithoutCourseInput, PracticeExamUncheckedUpdateWithoutCourseInput>
+    create: XOR<PracticeExamCreateWithoutCourseInput, PracticeExamUncheckedCreateWithoutCourseInput>
+  }
+
+  export type PracticeExamUpdateWithWhereUniqueWithoutCourseInput = {
+    where: PracticeExamWhereUniqueInput
+    data: XOR<PracticeExamUpdateWithoutCourseInput, PracticeExamUncheckedUpdateWithoutCourseInput>
+  }
+
+  export type PracticeExamUpdateManyWithWhereWithoutCourseInput = {
+    where: PracticeExamScalarWhereInput
+    data: XOR<PracticeExamUpdateManyMutationInput, PracticeExamUncheckedUpdateManyWithoutCourseInput>
+  }
+
   export type CourseCreateWithoutModulesInput = {
     title: string
     description?: string | null
@@ -23786,6 +25685,7 @@ export namespace Prisma {
     updatedAt?: Date | string
     enrollments?: EnrollmentCreateNestedManyWithoutCourseInput
     teacher: TeacherCreateNestedOneWithoutCoursesInput
+    practiceExams?: PracticeExamCreateNestedManyWithoutCourseInput
   }
 
   export type CourseUncheckedCreateWithoutModulesInput = {
@@ -23797,6 +25697,7 @@ export namespace Prisma {
     updatedAt?: Date | string
     instructorId: number
     enrollments?: EnrollmentUncheckedCreateNestedManyWithoutCourseInput
+    practiceExams?: PracticeExamUncheckedCreateNestedManyWithoutCourseInput
   }
 
   export type CourseCreateOrConnectWithoutModulesInput = {
@@ -23862,6 +25763,7 @@ export namespace Prisma {
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     enrollments?: EnrollmentUpdateManyWithoutCourseNestedInput
     teacher?: TeacherUpdateOneRequiredWithoutCoursesNestedInput
+    practiceExams?: PracticeExamUpdateManyWithoutCourseNestedInput
   }
 
   export type CourseUncheckedUpdateWithoutModulesInput = {
@@ -23873,6 +25775,7 @@ export namespace Prisma {
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     instructorId?: IntFieldUpdateOperationsInput | number
     enrollments?: EnrollmentUncheckedUpdateManyWithoutCourseNestedInput
+    practiceExams?: PracticeExamUncheckedUpdateManyWithoutCourseNestedInput
   }
 
   export type LessonUpsertWithWhereUniqueWithoutModuleInput = {
@@ -24914,6 +26817,118 @@ export namespace Prisma {
     exam?: ExamUncheckedUpdateOneWithoutLessonNestedInput
   }
 
+  export type CourseCreateWithoutPracticeExamsInput = {
+    title: string
+    description?: string | null
+    thumbnail?: string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    enrollments?: EnrollmentCreateNestedManyWithoutCourseInput
+    teacher: TeacherCreateNestedOneWithoutCoursesInput
+    modules?: ModuleCreateNestedManyWithoutCourseInput
+  }
+
+  export type CourseUncheckedCreateWithoutPracticeExamsInput = {
+    id?: number
+    title: string
+    description?: string | null
+    thumbnail?: string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    instructorId: number
+    enrollments?: EnrollmentUncheckedCreateNestedManyWithoutCourseInput
+    modules?: ModuleUncheckedCreateNestedManyWithoutCourseInput
+  }
+
+  export type CourseCreateOrConnectWithoutPracticeExamsInput = {
+    where: CourseWhereUniqueInput
+    create: XOR<CourseCreateWithoutPracticeExamsInput, CourseUncheckedCreateWithoutPracticeExamsInput>
+  }
+
+  export type TeacherCreateWithoutPracticeExamsInput = {
+    specialization: string
+    bio?: string | null
+    experience?: number
+    user: UserCreateNestedOneWithoutTeacherProfileInput
+    courses?: CourseCreateNestedManyWithoutTeacherInput
+  }
+
+  export type TeacherUncheckedCreateWithoutPracticeExamsInput = {
+    id?: number
+    specialization: string
+    bio?: string | null
+    experience?: number
+    userId: number
+    courses?: CourseUncheckedCreateNestedManyWithoutTeacherInput
+  }
+
+  export type TeacherCreateOrConnectWithoutPracticeExamsInput = {
+    where: TeacherWhereUniqueInput
+    create: XOR<TeacherCreateWithoutPracticeExamsInput, TeacherUncheckedCreateWithoutPracticeExamsInput>
+  }
+
+  export type CourseUpsertWithoutPracticeExamsInput = {
+    update: XOR<CourseUpdateWithoutPracticeExamsInput, CourseUncheckedUpdateWithoutPracticeExamsInput>
+    create: XOR<CourseCreateWithoutPracticeExamsInput, CourseUncheckedCreateWithoutPracticeExamsInput>
+    where?: CourseWhereInput
+  }
+
+  export type CourseUpdateToOneWithWhereWithoutPracticeExamsInput = {
+    where?: CourseWhereInput
+    data: XOR<CourseUpdateWithoutPracticeExamsInput, CourseUncheckedUpdateWithoutPracticeExamsInput>
+  }
+
+  export type CourseUpdateWithoutPracticeExamsInput = {
+    title?: StringFieldUpdateOperationsInput | string
+    description?: NullableStringFieldUpdateOperationsInput | string | null
+    thumbnail?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    enrollments?: EnrollmentUpdateManyWithoutCourseNestedInput
+    teacher?: TeacherUpdateOneRequiredWithoutCoursesNestedInput
+    modules?: ModuleUpdateManyWithoutCourseNestedInput
+  }
+
+  export type CourseUncheckedUpdateWithoutPracticeExamsInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    title?: StringFieldUpdateOperationsInput | string
+    description?: NullableStringFieldUpdateOperationsInput | string | null
+    thumbnail?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    instructorId?: IntFieldUpdateOperationsInput | number
+    enrollments?: EnrollmentUncheckedUpdateManyWithoutCourseNestedInput
+    modules?: ModuleUncheckedUpdateManyWithoutCourseNestedInput
+  }
+
+  export type TeacherUpsertWithoutPracticeExamsInput = {
+    update: XOR<TeacherUpdateWithoutPracticeExamsInput, TeacherUncheckedUpdateWithoutPracticeExamsInput>
+    create: XOR<TeacherCreateWithoutPracticeExamsInput, TeacherUncheckedCreateWithoutPracticeExamsInput>
+    where?: TeacherWhereInput
+  }
+
+  export type TeacherUpdateToOneWithWhereWithoutPracticeExamsInput = {
+    where?: TeacherWhereInput
+    data: XOR<TeacherUpdateWithoutPracticeExamsInput, TeacherUncheckedUpdateWithoutPracticeExamsInput>
+  }
+
+  export type TeacherUpdateWithoutPracticeExamsInput = {
+    specialization?: StringFieldUpdateOperationsInput | string
+    bio?: NullableStringFieldUpdateOperationsInput | string | null
+    experience?: IntFieldUpdateOperationsInput | number
+    user?: UserUpdateOneRequiredWithoutTeacherProfileNestedInput
+    courses?: CourseUpdateManyWithoutTeacherNestedInput
+  }
+
+  export type TeacherUncheckedUpdateWithoutPracticeExamsInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    specialization?: StringFieldUpdateOperationsInput | string
+    bio?: NullableStringFieldUpdateOperationsInput | string | null
+    experience?: IntFieldUpdateOperationsInput | number
+    userId?: IntFieldUpdateOperationsInput | number
+    courses?: CourseUncheckedUpdateManyWithoutTeacherNestedInput
+  }
+
   export type EnrollmentCreateManyStudentInput = {
     id?: number
     createdAt?: Date | string
@@ -25022,6 +27037,17 @@ export namespace Prisma {
     updatedAt?: Date | string
   }
 
+  export type PracticeExamCreateManyTeacherInput = {
+    id?: number
+    title: string
+    description?: string | null
+    pdfUrl?: string | null
+    grade?: string | null
+    courseId?: number | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
   export type CourseUpdateWithoutTeacherInput = {
     title?: StringFieldUpdateOperationsInput | string
     description?: NullableStringFieldUpdateOperationsInput | string | null
@@ -25030,6 +27056,7 @@ export namespace Prisma {
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     enrollments?: EnrollmentUpdateManyWithoutCourseNestedInput
     modules?: ModuleUpdateManyWithoutCourseNestedInput
+    practiceExams?: PracticeExamUpdateManyWithoutCourseNestedInput
   }
 
   export type CourseUncheckedUpdateWithoutTeacherInput = {
@@ -25041,6 +27068,7 @@ export namespace Prisma {
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     enrollments?: EnrollmentUncheckedUpdateManyWithoutCourseNestedInput
     modules?: ModuleUncheckedUpdateManyWithoutCourseNestedInput
+    practiceExams?: PracticeExamUncheckedUpdateManyWithoutCourseNestedInput
   }
 
   export type CourseUncheckedUpdateManyWithoutTeacherInput = {
@@ -25048,6 +27076,38 @@ export namespace Prisma {
     title?: StringFieldUpdateOperationsInput | string
     description?: NullableStringFieldUpdateOperationsInput | string | null
     thumbnail?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type PracticeExamUpdateWithoutTeacherInput = {
+    title?: StringFieldUpdateOperationsInput | string
+    description?: NullableStringFieldUpdateOperationsInput | string | null
+    pdfUrl?: NullableStringFieldUpdateOperationsInput | string | null
+    grade?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    course?: CourseUpdateOneWithoutPracticeExamsNestedInput
+  }
+
+  export type PracticeExamUncheckedUpdateWithoutTeacherInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    title?: StringFieldUpdateOperationsInput | string
+    description?: NullableStringFieldUpdateOperationsInput | string | null
+    pdfUrl?: NullableStringFieldUpdateOperationsInput | string | null
+    grade?: NullableStringFieldUpdateOperationsInput | string | null
+    courseId?: NullableIntFieldUpdateOperationsInput | number | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type PracticeExamUncheckedUpdateManyWithoutTeacherInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    title?: StringFieldUpdateOperationsInput | string
+    description?: NullableStringFieldUpdateOperationsInput | string | null
+    pdfUrl?: NullableStringFieldUpdateOperationsInput | string | null
+    grade?: NullableStringFieldUpdateOperationsInput | string | null
+    courseId?: NullableIntFieldUpdateOperationsInput | number | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
@@ -25064,6 +27124,17 @@ export namespace Prisma {
     id?: number
     title: string
     description?: string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type PracticeExamCreateManyCourseInput = {
+    id?: number
+    title: string
+    description?: string | null
+    pdfUrl?: string | null
+    grade?: string | null
+    teacherId: number
     createdAt?: Date | string
     updatedAt?: Date | string
   }
@@ -25112,6 +27183,38 @@ export namespace Prisma {
     id?: IntFieldUpdateOperationsInput | number
     title?: StringFieldUpdateOperationsInput | string
     description?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type PracticeExamUpdateWithoutCourseInput = {
+    title?: StringFieldUpdateOperationsInput | string
+    description?: NullableStringFieldUpdateOperationsInput | string | null
+    pdfUrl?: NullableStringFieldUpdateOperationsInput | string | null
+    grade?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    teacher?: TeacherUpdateOneRequiredWithoutPracticeExamsNestedInput
+  }
+
+  export type PracticeExamUncheckedUpdateWithoutCourseInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    title?: StringFieldUpdateOperationsInput | string
+    description?: NullableStringFieldUpdateOperationsInput | string | null
+    pdfUrl?: NullableStringFieldUpdateOperationsInput | string | null
+    grade?: NullableStringFieldUpdateOperationsInput | string | null
+    teacherId?: IntFieldUpdateOperationsInput | number
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type PracticeExamUncheckedUpdateManyWithoutCourseInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    title?: StringFieldUpdateOperationsInput | string
+    description?: NullableStringFieldUpdateOperationsInput | string | null
+    pdfUrl?: NullableStringFieldUpdateOperationsInput | string | null
+    grade?: NullableStringFieldUpdateOperationsInput | string | null
+    teacherId?: IntFieldUpdateOperationsInput | number
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }

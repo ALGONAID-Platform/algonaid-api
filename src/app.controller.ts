@@ -4,7 +4,7 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { UploadcareStorageService } from './utils/uploadcare-storage.service';
 import { AuthRollGuard } from './auth/guards/auth-roll.guard';
 import { userRoles } from './auth/decorators/user_roll.decorator';
-import { Role } from './prisma/client/enums';
+import { Role } from '@prisma/client';
 import { ApiBearerAuth, ApiOperation, ApiTags, ApiConsumes } from '@nestjs/swagger';
 
 @ApiTags('app')

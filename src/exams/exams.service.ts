@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException, BadRequestException, ForbiddenException } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
-import { ExamStatus, LessonStatus, Role } from 'src/prisma/client/enums';
+import { ExamStatus, LessonStatus, Role } from '@prisma/client';
 import { SubmitExamDto } from './dto/exam-submission.dto';
 import { CreateExamDto, CreateQuestionDto, CreateOptionDto } from './dto/create-exam.dto';
 import { UpdateExamDto } from './dto/update-exam.dto';
