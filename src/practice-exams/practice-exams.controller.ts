@@ -38,6 +38,13 @@ export class PracticeExamsController {
     return this.practiceExamsService.findOne(id);
   }
 
+  @Get('course/:courseId')
+  @ApiOperation({ summary: 'Get all practice exams for a specific course' })
+  @UseGuards(OptionalAuthGuard)
+  findByCourse(@Param('courseId', ParseIntPipe) courseId: number) {
+    return this.practiceExamsService.findAll(courseId);
+  }
+
   @Patch(':id')
   @ApiOperation({ summary: 'Update a practice exam by ID' })
   @UseGuards(AuthRollGuard)
