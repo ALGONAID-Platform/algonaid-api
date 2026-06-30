@@ -51,34 +51,25 @@ export class PracticeExamsService {
   }
 
   async findAll(courseId?: number) {
+    const selectFields = {
+      id: true,
+      title: true,
+      description: true,
+      pdfUrl: true,
+      grade: true,
+      courseId: true,
+      createdAt: true,
+    };
+
     if (courseId) {
       return this.prisma.practiceExam.findMany({
         where: { courseId },
-        include: {
-          teacher: {
-            include: {
-              user: {
-                select: { name: true },
-              },
-            },
-          },
-        },
+        select: selectFields,
       });
     }
 
     return this.prisma.practiceExam.findMany({
-      include: {
-        teacher: {
-          include: {
-            user: {
-              select: { name: true },
-            },
-          },
-        },
-        course: {
-          select: { title: true },
-        },
-      },
+      select: selectFields,
     });
   }
 
