@@ -144,7 +144,7 @@ async findAll(userId?: number) {
 
   async search(query: string, userId?: number) {
     if (!query) {
-      return { courses: [], modules: [], lessons: [] };
+      return { courses: [], modules: [], lessons: [], practiceExams: [] };
     }
 
     const student = userId ? await this.prisma.student.findUnique({ where: { userId } }) : null;
@@ -243,10 +243,36 @@ async findAll(userId?: number) {
       courseId: lesson.module?.courseId,
     }));
 
+    const practiceExamsData = await this.prisma.practiceExam.findMany({
+      where: { title: { contains: query, mode: 'insensitive' } },
+      select: {
+        id: true,
+        title: true,
+        grade: true,
+        pdfUrl: true,
+        courseId: true,
+        course: {
+          select: {
+            title: true,
+          },
+        },
+      },
+    });
+
+    const practiceExams = practiceExamsData.map((exam) => ({
+      id: exam.id,
+      title: exam.title,
+      grade: exam.grade,
+      pdfUrl: exam.pdfUrl,
+      courseId: exam.courseId,
+      courseTitle: exam.course?.title,
+    }));
+
     return {
       courses,
       modules,
       lessons,
+      practiceExams,
     };
   }
 
