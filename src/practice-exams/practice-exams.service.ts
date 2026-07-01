@@ -4,6 +4,15 @@ import { UpdatePracticeExamDto } from './dto/update-practice-exam.dto';
 import { MESSAGES } from 'src/utils/messages';
 import { Role } from '@prisma/client';
 import { PrismaService } from 'src/prisma/prisma.service';
+const practiceExamSelectFields = {
+  id: true,
+  title: true,
+  description: true,
+  pdfUrl: true,
+  grade: true,
+  courseId: true,
+  createdAt: true,
+};
 
 @Injectable()
 export class PracticeExamsService {
@@ -47,47 +56,27 @@ export class PracticeExamsService {
         courseId,
         teacherId: teacher.id,
       },
+      select: practiceExamSelectFields,
     }); 
   }
 
   async findAll(courseId?: number) {
-    const selectFields = {
-      id: true,
-      title: true,
-      description: true,
-      pdfUrl: true,
-      grade: true,
-      courseId: true,
-      createdAt: true,
-    };
-
     if (courseId) {
       return this.prisma.practiceExam.findMany({
         where: { courseId },
-        select: selectFields,
+        select: practiceExamSelectFields,
       });
     }
 
     return this.prisma.practiceExam.findMany({
-      select: selectFields,
+      select: practiceExamSelectFields,
     });
   }
 
   async findOne(id: number) {
     const exam = await this.prisma.practiceExam.findUnique({
       where: { id },
-      include: {
-        teacher: {
-          include: {
-            user: {
-              select: { name: true },
-            },
-          },
-        },
-        course: {
-          select: { title: true },
-        },
-      },
+      select: practiceExamSelectFields,
     });
 
     if (!exam) {
@@ -98,7 +87,10 @@ export class PracticeExamsService {
   }
 
   async update(id: number, updatePracticeExamDto: UpdatePracticeExamDto, userId: number) {
-    const exam = await this.findOne(id);
+    const exam = await this.prisma.practiceExam.findUnique({ where: { id } });
+    if (!exam) {
+      throw new NotFoundException(MESSAGES.PRACTICE_EXAMS.NOT_FOUND(id));
+    }
 
     const teacher = await this.prisma.teacher.findUnique({
       where: { userId },
@@ -137,11 +129,15 @@ export class PracticeExamsService {
         ...updateData,
         ...(courseId && { courseId }),
       },
+      select: practiceExamSelectFields,
     });
   }
 
   async remove(id: number, userId: number) {
-    const exam = await this.findOne(id);
+    const exam = await this.prisma.practiceExam.findUnique({ where: { id } });
+    if (!exam) {
+      throw new NotFoundException(MESSAGES.PRACTICE_EXAMS.NOT_FOUND(id));
+    }
 
     const teacher = await this.prisma.teacher.findUnique({
       where: { userId },
