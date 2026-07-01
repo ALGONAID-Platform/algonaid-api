@@ -146,12 +146,12 @@ model Question {
   type        QuestionType @default(MULTIPLE_CHOICE)
   points      Int          @default(1)
   examId      Int
-  exam   swer[]
+  exam        Exam         @relation(fields: [examId], references: [id], onDelete: Cascade)
+  options     Option[]
+  userAnswers UserAnswer[]
 }
 
-enum QuestionType {     Exam         @relation(fields: [examId], references: [id], onDelete: Cascade)
-  options     Option[]
-  userAnswers UserAn
+enum QuestionType {
   MULTIPLE_CHOICE
   TRUE_FALSE
 }
