@@ -31,18 +31,18 @@ export class PracticeExamsController {
     return this.practiceExamsService.findAll(courseId ? +courseId : undefined);
   }
 
-  @Get(':id')
-  @ApiOperation({ summary: 'Get a specific practice exam by ID' })
-  @UseGuards(OptionalAuthGuard)
-  findOne(@Param('id', ParseIntPipe) id: number) {
-    return this.practiceExamsService.findOne(id);
-  }
-
   @Get('course/:courseId')
   @ApiOperation({ summary: 'Get all practice exams for a specific course' })
   @UseGuards(OptionalAuthGuard)
   findByCourse(@Param('courseId', ParseIntPipe) courseId: number) {
     return this.practiceExamsService.findAll(courseId);
+  }
+
+  @Get(':id')
+  @ApiOperation({ summary: 'Get a specific practice exam by ID' })
+  @UseGuards(OptionalAuthGuard)
+  findOne(@Param('id', ParseIntPipe) id: number) {
+    return this.practiceExamsService.findOne(id);
   }
 
   @Patch(':id')
