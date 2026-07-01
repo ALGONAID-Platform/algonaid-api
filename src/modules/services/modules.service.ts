@@ -63,6 +63,7 @@ export class ModulesService {
             ...(!isOwnerOrAdmin && { status: LessonStatus.PUBLISHED })
           },
           include: {
+            exam: { select: { id: true } },
             lessonProgress: studentId ? {
               where: { studentId },
             } : false,
@@ -126,6 +127,7 @@ export class ModulesService {
             ...(!isOwnerOrAdmin && { status: LessonStatus.PUBLISHED })
           },
           include: {
+            exam: { select: { id: true } },
             lessonProgress: studentId ? {
               where: { studentId },
             } : false,
@@ -186,6 +188,9 @@ export class ModulesService {
         lessons: {
           where: {
             ...((!isOwnerOrAdmin || isStudent) && { status: LessonStatus.PUBLISHED })
+          },
+          include: {
+            exam: { select: { id: true } }
           }
         },
         course: {
