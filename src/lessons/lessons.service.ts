@@ -76,6 +76,9 @@ export class LessonsService {
           lessonProgress: studentId ? {
             where: { studentId },
           } : false,
+          exam: {
+            select: { id: true }
+          }
         },
         orderBy: { order: 'asc' },
         skip,
@@ -89,8 +92,16 @@ export class LessonsService {
       })
     ]);
 
+    const mappedLessons = lessons.map(lesson => {
+      const { exam, ...rest } = lesson;
+      return {
+        ...rest,
+        hasTest: !!exam,
+      };
+    });
+
     return {
-      data: lessons,
+      data: mappedLessons,
       meta: {
         total,
         page,
