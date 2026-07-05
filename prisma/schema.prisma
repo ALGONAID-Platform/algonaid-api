@@ -145,6 +145,7 @@ model Question {
   text        String       @db.Text
   type        QuestionType @default(MULTIPLE_CHOICE)
   points      Int          @default(1)
+  imageUrl    String?
   examId      Int
   exam        Exam         @relation(fields: [examId], references: [id], onDelete: Cascade)
   options     Option[]

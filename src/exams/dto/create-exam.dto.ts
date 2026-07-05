@@ -20,6 +20,11 @@ export class CreateQuestionDto {
   @IsNotEmpty()
   text: string;
 
+  @ApiProperty({ required: false })
+  @IsString()
+  @IsOptional()
+  imageUrl?: string;
+
   @ApiProperty({ enum: QuestionType, default: QuestionType.MULTIPLE_CHOICE })
   @IsEnum(QuestionType)
   type: QuestionType;

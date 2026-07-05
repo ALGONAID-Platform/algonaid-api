@@ -74,6 +74,7 @@ export class ExamsService {
                 text: q.text,
                 type: q.type,
                 points: q.points,
+                imageUrl: q.imageUrl,
                 options: {
                   create: q.options.map((o: CreateOptionDto) => ({
                     text: o.text,
@@ -139,6 +140,7 @@ export class ExamsService {
             text: q.text,
             type: q.type,
             points: q.points,
+            imageUrl: q.imageUrl,
             options: {
               create: q.options.map((o: CreateOptionDto) => ({
                 text: o.text,
@@ -169,6 +171,7 @@ export class ExamsService {
             text: true,
             type: true,
             points: true,
+            imageUrl: true,
             options: {
               select: {
                 id: true,
@@ -242,6 +245,7 @@ export class ExamsService {
           id: true,
           text: true,
           type: true,
+          imageUrl: true,
           options: {
             select: { id: true, text: true },
           },
