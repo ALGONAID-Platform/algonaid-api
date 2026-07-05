@@ -26,7 +26,7 @@ import { PracticeExamsModule } from './practice-exams/practice-exams.module';
       inject: [ConfigService],
       useFactory: (config: ConfigService) => ({
         secret: config.get<string>('JWT_SECRET') || 'defaultSecret',
-        signOptions: { expiresIn: (config.get<string>('JWT_EXPIRES_SECRET') || '1d') as any },
+        signOptions: { expiresIn: (config.get<string>('JWT_EXPIRES_SECRET') || '30d') as any },
       }),
     }),
     AuthModule,
