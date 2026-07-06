@@ -125,10 +125,10 @@ export class AuthService {
           name,
           password: hashedPassword,
           role: prismaRole,
-          // حقول التحقق
-          emailVerified: false,
-          verificationToken,
-          verificationTokenExpiry,
+          // حقول التحقق (تم تفعيلها تلقائياً لتخطي التحقق مؤقتاً)
+          emailVerified: true,
+          verificationToken: null,
+          verificationTokenExpiry: null,
 
           ...(prismaRole === Role.STUDENT
             ? {
@@ -151,21 +151,20 @@ export class AuthService {
         include: { studentProfile: true, teacherProfile: true },
       });
 
-      // ===== إرسال بريد التحقق =====
-      // نرسل في الخلفية ولا نوقف عملية التسجيل إذا فشل الإرسال
+      // ===== إرسال بريد التحقق (تم تعطيله مؤقتاً لتجنب مشاكل SMTP في الاستضافة) =====
+      /*
       this.mailService
         .sendVerificationEmail(email, verificationToken)
         .catch((err) => {
           console.error('⚠️ Failed to send verification email:', err);
         });
+      */
 
-      // نُعيد بيانات المستخدم بدون access_token
-      // لأن المستخدم يجب أن يؤكد بريده أولاً قبل تسجيل الدخول
+      // نُعيد بيانات المستخدم
       return {
         message: MESSAGES.AUTH.USER_REGISTERED,
         user: this.formatUserResponse(user),
-        // لا نُعيد access_token حتى يتم التحقق من البريد
-        requiresEmailVerification: true,
+        requiresEmailVerification: false,
       };
     } catch (error: any) {
       if (error.code === 'P2002') {

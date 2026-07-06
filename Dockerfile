@@ -11,5 +11,5 @@ RUN npm install
 
 COPY . .
 
-# عند تشغيل الحاوية سيقوم بالتأكد من الـ generate ثم تشغيل سيرفر التطوير
-CMD npx prisma generate && npm run start:dev
+# عند تشغيل الحاوية: تطبيق الـ Migrations أولاً ثم تشغيل السيرفر
+CMD npx prisma migrate deploy && npx prisma generate && npm run start:dev
