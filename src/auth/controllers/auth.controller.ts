@@ -71,6 +71,56 @@ export class AuthController {
     return await this.authService.resetPassword(resetPasswordDto);
   }
 
+  @Get('reset-password')
+  @ApiOperation({
+    summary: 'Redirect to app for resetting password',
+    description: 'Handles GET requests from browser when deep links fail to open the app',
+  })
+  @ApiQuery({
+    name: 'token',
+    required: true,
+    description: 'The reset password token',
+  })
+  resetPasswordRedirect(
+    @Query('token') token: string,
+    @Res() res: Response,
+  ) {
+    if (!token) {
+      throw new BadRequestException('Token is required');
+    }
+    const html = `
+      <!DOCTYPE html>
+      <html lang="ar" dir="rtl">
+      <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>استعادة كلمة المرور</title>
+        <style>
+          body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; text-align: center; padding: 50px; background-color: #f4f4f9; }
+          .container { background: white; padding: 40px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); max-width: 400px; margin: 0 auto; }
+          h1 { color: #333; font-size: 24px; margin-bottom: 10px; }
+          p { color: #666; margin-bottom: 30px; font-size: 16px; line-height: 1.5; }
+          .btn { background: #4caf50; color: white; text-decoration: none; padding: 14px 28px; border-radius: 8px; font-size: 16px; font-weight: bold; display: inline-block; transition: background 0.3s; }
+          .btn:hover { background: #43a047; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <h1>إعادة تعيين كلمة المرور</h1>
+          <p>إذا لم يفتح التطبيق تلقائياً، يرجى الضغط على الزر أدناه لإكمال العملية داخل تطبيق منصة الجنيد.</p>
+          <a href="intent://algonaid-api.onrender.com/reset-password?token=\${token}#Intent;scheme=https;package=com.algonaid.app;end" class="btn">فتح في التطبيق</a>
+        </div>
+        <script>
+          setTimeout(function() {
+            window.location.href = "intent://algonaid-api.onrender.com/reset-password?token=\${token}#Intent;scheme=https;package=com.algonaid.app;end";
+          }, 500);
+        </script>
+      </body>
+      </html>
+    `;
+    res.type('text/html').send(html);
+  }
+
   // ==================== Verify Email ====================
   /**
    * GET /auth/verify-email?token=TOKEN

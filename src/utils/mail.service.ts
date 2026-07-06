@@ -1,17 +1,22 @@
 import { Injectable, InternalServerErrorException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { Resend } from 'resend';
+import * as nodemailer from 'nodemailer';
 
 @Injectable()
 export class MailService {
-  private resend: Resend;
+  private transporter: nodemailer.Transporter;
   private fromEmail: string;
 
   constructor(private configService: ConfigService) {
-    const apiKey = this.configService.get<string>('RESEND_API_KEY');
-    this.resend = new Resend(apiKey);
+    this.transporter = nodemailer.createTransport({
+      service: 'gmail',
+      auth: {
+        user: this.configService.get<string>('SMTP_USER'),
+        pass: this.configService.get<string>('SMTP_PASSWORD'),
+      },
+    });
     this.fromEmail =
-      this.configService.get<string>('EMAIL_FROM') || 'onboarding@resend.dev';
+      this.configService.get<string>('EMAIL_FROM') || 'no-reply@algonaid.com';
   }
 
   // ==================== Password Reset Email ====================
@@ -19,9 +24,9 @@ export class MailService {
     const resetLink = `${this.configService.get<string>('FRONTEND_URL') || 'http://localhost:5000'}/reset-password?token=${token}`;
 
     try {
-      const { data, error } = await this.resend.emails.send({
+      const info = await this.transporter.sendMail({
         from: this.fromEmail,
-        to: [email],
+        to: email,
         subject: 'إعادة تعيين كلمة المرور - منصة الجنيد',
         html: `
           <div dir="rtl" style="font-family: 'Segoe UI', Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto;">
@@ -47,12 +52,7 @@ export class MailService {
         `,
       });
 
-      if (error) {
-        console.error('Resend Error:', error);
-        throw new InternalServerErrorException('Failed to send email');
-      }
-
-      return data;
+      return info;
     } catch (err) {
       console.error('Mail Service Error:', err);
       throw new InternalServerErrorException(
@@ -74,9 +74,9 @@ export class MailService {
     const verificationLink = `${baseUrl}/auth/verify-email?token=${token}`;
 
     try {
-      const { data, error } = await this.resend.emails.send({
+      const info = await this.transporter.sendMail({
         from: this.fromEmail,
-        to: [email],
+        to: email,
         subject: '✅ تأكيد البريد الإلكتروني - منصة الجنيد',
         html: `
           <!DOCTYPE html>
@@ -144,14 +144,7 @@ export class MailService {
         `,
       });
 
-      if (error) {
-        console.error('Resend Verification Email Error:', error);
-        throw new InternalServerErrorException(
-          'Failed to send verification email',
-        );
-      }
-
-      return data;
+      return info;
     } catch (err) {
       console.error('Mail Service Error (Verification):', err);
       throw new InternalServerErrorException(
