@@ -49,7 +49,6 @@ export class LessonsController {
 
   @Get('module/:moduleId')
   @UseGuards(AuthRollGuard)
-  @userRoles(Role.STUDENT, Role.ADMIN, Role.OWNER)
   @SwaggerGetAllLessonsByModule()
   findAllByModule(
     @Param('moduleId', ParseIntPipe) moduleId: number,

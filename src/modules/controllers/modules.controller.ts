@@ -35,7 +35,6 @@ export class ModulesController {
 
   @Get('course/:courseId')
   @UseGuards(AuthRollGuard)
-  @userRoles(Role.STUDENT, Role.ADMIN, Role.OWNER)
   @ApiOperation({ summary: 'Get all modules for a specific course' })
   findByCourse(@Param('courseId', ParseIntPipe) courseId: number, @CurrentUser() user: types.JwtPayloadType) {
     return this.modulesService.findByCourse(courseId, user.id);
