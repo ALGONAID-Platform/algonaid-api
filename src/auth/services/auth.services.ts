@@ -291,9 +291,16 @@ export class AuthService {
 
             const payload = await response.json();
 
-            // Verify audience matches our Web Client ID
-            const expectedClientId = this.configService.get<string>('GOOGLE_CLIENT_ID');
-            if (payload.aud !== expectedClientId) {
+            // Verify audience matches one of our allowed Client IDs
+            // The idToken's 'aud' can be the Web Client ID or any Android Client ID
+            // depending on the signing key (debug, upload, or Play App Signing)
+            const webClientId = this.configService.get<string>('GOOGLE_CLIENT_ID');
+            const androidClientIds = this.configService.get<string>('GOOGLE_ANDROID_CLIENT_IDS')?.split(',') || [];
+            const allowedClientIds = [webClientId, ...androidClientIds].filter(Boolean);
+            
+            if (!allowedClientIds.includes(payload.aud)) {
+                console.error(`❌ Token audience mismatch. Received aud: ${payload.aud}`);
+                console.error(`   Allowed client IDs: ${allowedClientIds.join(', ')}`);
                 throw new UnauthorizedException('Invalid Google ID Token audience');
             }
 
