@@ -25,7 +25,8 @@ export class AuthService {
     ) { }
 
     async forgotPassword(forgotPasswordDto: ForgotPasswordDto) {
-        const { email } = forgotPasswordDto;
+        let { email } = forgotPasswordDto;
+        email = email.toLowerCase().trim();
 
         const user = await this.prisma.user.findUnique({
             where: { email }
@@ -87,7 +88,8 @@ export class AuthService {
     }
 
     async register(userDto: UserRegisterDto) {
-        const { email, password, name, role } = userDto;
+        let { email, password, name, role } = userDto;
+        email = email.toLowerCase().trim();
 
         const existingUser = await this.prisma.user.findUnique({
             where: { email }
@@ -106,42 +108,49 @@ export class AuthService {
         if (role === UserRole.OWNER) prismaRole = Role.OWNER;
 
 
-        const user = await this.prisma.user.create({
-            data: {
-                email,
-                name,
-                password: hashedPassword,
-                role: prismaRole,
+        try {
+            const user = await this.prisma.user.create({
+                data: {
+                    email,
+                    name,
+                    password: hashedPassword,
+                    role: prismaRole,
 
-                ...(prismaRole === Role.STUDENT ? {
-                    studentProfile: {
-                        create: {
-                            academicId: `STU-${Date.now()}`
+                    ...(prismaRole === Role.STUDENT ? {
+                        studentProfile: {
+                            create: {
+                                academicId: `STU-${Date.now()}`
+                            }
                         }
-                    }
-                } : prismaRole === Role.ADMIN ? {
-                    teacherProfile: {
-                        create: {
-                            specialization: 'General'
+                    } : prismaRole === Role.ADMIN ? {
+                        teacherProfile: {
+                            create: {
+                                specialization: 'General'
+                            }
                         }
-                    }
-                } : {})
-            },
-            include: { studentProfile: true, teacherProfile: true }
-        });
+                    } : {})
+                },
+                include: { studentProfile: true, teacherProfile: true }
+            });
 
+            const token = await this.generateToken(user.id, user.email, user.role);
 
-        const token = await this.generateToken(user.id, user.email, user.role);
-
-        return {
-            message: MESSAGES.AUTH.USER_REGISTERED,
-            user: this.formatUserResponse(user),
-            access_token: token
-        };
+            return {
+                message: MESSAGES.AUTH.USER_REGISTERED,
+                user: this.formatUserResponse(user),
+                access_token: token
+            };
+        } catch (error: any) {
+            if (error.code === 'P2002') {
+                throw new ConflictException(MESSAGES.AUTH.EMAIL_ALREADY_REGISTERED);
+            }
+            throw error;
+        }
     }
 
     async login(userDto: UserLoginDto) {
-        const { email, password } = userDto;
+        let { email, password } = userDto;
+        email = email.toLowerCase().trim();
 
 
         const user = await this.prisma.user.findUnique({

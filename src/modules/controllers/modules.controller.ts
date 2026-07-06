@@ -71,3 +71,4 @@ export class ModulesController {
     return this.modulesService.remove(id, user.id);
   }
 }
+ 
