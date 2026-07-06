@@ -3,7 +3,7 @@ export const MESSAGES = {
         EMAIL_ALREADY_REGISTERED: 'البريد الإلكتروني مسجل مسبقاً',
         INVALID_CREDENTIALS: 'بيانات الدخول غير صحيحة',
         USER_NOT_EXIST: (id: number) => `المستخدم برقم ${id} غير موجود`,
-        USER_REGISTERED: 'تم تسجيل المستخدم بنجاح',
+        USER_REGISTERED: 'تم إنشاء الحساب بنجاح، يرجى تأكيد بريدك الإلكتروني للمتابعة',
         LOGGED_IN: 'تم تسجيل الدخول بنجاح',
         INVALID_TOKEN: 'تم رفض الوصول، رمز الدخول غير صالح',
         NO_TOKEN_PROVIDED: 'تم رفض الوصول، لم يتم تقديم رمز الدخول',
@@ -15,6 +15,14 @@ export const MESSAGES = {
         EMAIL_NOT_FOUND: 'البريد الإلكتروني غير موجود',
         ACCOUNT_NOT_FOUND: 'هذا الحساب غير موجود، يرجى إنشاء حساب جديد',
         GOOGLE_ACCOUNT_LOGIN_REQUIRED: 'عذراً، هذا الحساب مسجل عبر جوجل. يرجى المتابعة باستخدام حساب جوجل.',
+        // Email Verification Messages
+        EMAIL_NOT_VERIFIED: 'يرجى تأكيد بريدك الإلكتروني أولاً قبل تسجيل الدخول. تحقق من صندوق الوارد.',
+        EMAIL_ALREADY_VERIFIED: 'البريد الإلكتروني مؤكد بالفعل',
+        VERIFICATION_EMAIL_SENT: 'تم إرسال رابط التحقق إلى بريدك الإلكتروني',
+        VERIFICATION_TOKEN_INVALID: 'رابط التحقق غير صالح',
+        VERIFICATION_TOKEN_EXPIRED: 'انتهت صلاحية رابط التحقق، يرجى طلب رابط جديد',
+        VERIFICATION_TOKEN_USED: 'تم استخدام هذا الرابط مسبقاً أو انتهت صلاحيته',
+        EMAIL_VERIFIED_SUCCESS: 'تم تأكيد بريدك الإلكتروني بنجاح! يمكنك الآن تسجيل الدخول.',
     },
     VALIDATION: {
         NAME_REQUIRED: 'الاسم مطلوب',
