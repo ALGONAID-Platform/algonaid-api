@@ -49,14 +49,25 @@ export class LessonsController {
 
   @Get('module/:moduleId')
   @UseGuards(AuthRollGuard)
+  @userRoles(Role.STUDENT, Role.ADMIN, Role.OWNER)
   @SwaggerGetAllLessonsByModule()
   findAllByModule(
     @Param('moduleId', ParseIntPipe) moduleId: number,
     @Query('page') page: string = '1',
     @Query('limit') limit: string = '8',
-    @CurrentUser() user?: types.JwtPayloadType
+    @CurrentUser() user: types.JwtPayloadType
   ) {
-    return this.lessonsService.findAllByModule(moduleId, +page, +limit, user?.id);
+    return this.lessonsService.findAllByModule(moduleId, +page, +limit, user.id);
+  }
+
+  @Get('module/:moduleId/guest')
+  @SwaggerGetAllLessonsByModule()
+  findAllByModuleGuest(
+    @Param('moduleId', ParseIntPipe) moduleId: number,
+    @Query('page') page: string = '1',
+    @Query('limit') limit: string = '8'
+  ) {
+    return this.lessonsService.findAllByModule(moduleId, +page, +limit);
   }
 
   @Get(':id')
