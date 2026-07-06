@@ -13,6 +13,8 @@ export const MESSAGES = {
         PASSWORD_RESET_SUCCESS: 'تم إعادة تعيين كلمة المرور بنجاح',
         INVALID_OR_EXPIRED_TOKEN: 'الرمز غير صحيح أو منتهي الصلاحية',
         EMAIL_NOT_FOUND: 'البريد الإلكتروني غير موجود',
+        ACCOUNT_NOT_FOUND: 'هذا الحساب غير موجود، يرجى إنشاء حساب جديد',
+        GOOGLE_ACCOUNT_LOGIN_REQUIRED: 'عذراً، هذا الحساب مسجل عبر جوجل. يرجى المتابعة باستخدام حساب جوجل.',
     },
     VALIDATION: {
         NAME_REQUIRED: 'الاسم مطلوب',

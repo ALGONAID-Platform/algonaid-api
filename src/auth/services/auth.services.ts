@@ -158,8 +158,12 @@ export class AuthService {
             include: { studentProfile: true, teacherProfile: true }
         });
 
-        if (!user || !user.password) {
-            throw new UnauthorizedException(MESSAGES.AUTH.INVALID_CREDENTIALS);
+        if (!user) {
+            throw new NotFoundException(MESSAGES.AUTH.ACCOUNT_NOT_FOUND);
+        }
+
+        if (!user.password) {
+            throw new UnauthorizedException(MESSAGES.AUTH.GOOGLE_ACCOUNT_LOGIN_REQUIRED);
         }
 
 
