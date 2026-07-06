@@ -54,9 +54,9 @@ export class LessonsController {
     @Param('moduleId', ParseIntPipe) moduleId: number,
     @Query('page') page: string = '1',
     @Query('limit') limit: string = '8',
-    @CurrentUser() user: types.JwtPayloadType
+    @CurrentUser() user?: types.JwtPayloadType
   ) {
-    return this.lessonsService.findAllByModule(moduleId, +page, +limit, user.id);
+    return this.lessonsService.findAllByModule(moduleId, +page, +limit, user?.id);
   }
 
   @Get(':id')
