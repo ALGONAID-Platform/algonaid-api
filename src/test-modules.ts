@@ -5,7 +5,7 @@ import { Pool } from 'pg';
 const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 const adapter = new PrismaPg(pool);
 const prisma = new PrismaClient({ adapter });
-
+ 
 async function main() {
   const modules = await prisma.module.findMany();
   console.log('--- MODULES IN DATABASE ---');

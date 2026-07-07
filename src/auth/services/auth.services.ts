@@ -160,10 +160,13 @@ export class AuthService {
         });
       */
 
-      // نُعيد بيانات المستخدم
+      // توليد التوكن وإعادة بيانات المستخدم مع تسجيل الدخول مباشرةً
+      const token = await this.generateToken(user.id, user.email, user.role);
+
       return {
         message: MESSAGES.AUTH.USER_REGISTERED,
         user: this.formatUserResponse(user),
+        access_token: token,
         requiresEmailVerification: false,
       };
     } catch (error: any) {
@@ -387,50 +390,23 @@ export class AuthService {
   async loginWithGoogleMobile(idToken: string) {
     try {
       console.log('======login======');
-
-      const response = await fetch(
-        `https://oauth2.googleapis.com/tokeninfo?id_token=${idToken}`,
-      );
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new UnauthorizedException(
-          errorData.error_description || 'Invalid Google ID Token',
-        );
+      const { getAuth } = require('firebase-admin/auth');
+      
+      // Verify the Firebase ID Token
+      const decodedToken = await getAuth().verifyIdToken(idToken);
+      
+      const email = decodedToken.email;
+      if (!email) {
+         throw new UnauthorizedException('No email found in Firebase ID Token');
       }
-
-      const payload = await response.json();
-
-      // Verify audience matches one of our allowed Client IDs
-      const webClientId = this.configService.get<string>('GOOGLE_CLIENT_ID');
-      const androidClientIds =
-        this.configService
-          .get<string>('GOOGLE_ANDROID_CLIENT_IDS')
-          ?.split(',') || [];
-      const allowedClientIds = [webClientId, ...androidClientIds].filter(
-        Boolean,
-      );
-
-      if (!allowedClientIds.includes(payload.aud)) {
-        console.error(
-          `❌ Token audience mismatch. Received aud: ${payload.aud}`,
-        );
-        console.error(`   Allowed client IDs: ${allowedClientIds.join(', ')}`);
-        throw new UnauthorizedException('Invalid Google ID Token audience');
-      }
-
-      // Verify token expiration
-      const currentTimestamp = Math.floor(Date.now() / 1000);
-      if (Number(payload.exp) < currentTimestamp) {
-        throw new UnauthorizedException('Google ID Token has expired');
-      }
+      
+      const name = decodedToken.name || email.split('@')[0];
+      const googleId = decodedToken.uid;
 
       const googleUser = {
-        email: payload.email,
-        name:
-          payload.name ||
-          `${payload.given_name || ''} ${payload.family_name || ''}`.trim() ||
-          payload.email.split('@')[0],
-        googleId: payload.sub,
+        email,
+        name,
+        googleId,
       };
 
       return this.validateGoogleUser(googleUser);

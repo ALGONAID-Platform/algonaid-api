@@ -50,3 +50,7 @@ uploads/
 
 # TypeScript
 *.tsbuildinfo
+
+# Firebase Service Account (sensitive - do not commit)
+firebase-service-account.json
+*-firebase-adminsdk-*.json

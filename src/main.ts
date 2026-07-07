@@ -5,18 +5,28 @@ import { swaggerConfig } from './config/swagger/swagger.config';
 import { ValidationPipe } from '@nestjs/common';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import { join } from 'path';
-import { initializeApp, applicationDefault } from 'firebase-admin/app';
+import { initializeApp, getApps, applicationDefault, cert } from 'firebase-admin/app';
+
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
   
   // Initialize Firebase Admin
   try {
-    initializeApp({
-      credential: applicationDefault(),
-    });
-    console.log('Firebase Admin initialized successfully');
+    if (!getApps().length) {
+      const serviceAccountJson = process.env.FIREBASE_SERVICE_ACCOUNT_JSON;
+
+      if (serviceAccountJson) {
+        // Render hosting: read from env variable (JSON string)
+        const serviceAccount = JSON.parse(serviceAccountJson);
+        initializeApp({ credential: cert(serviceAccount) });
+      } else {
+        // Local development: read from file via GOOGLE_APPLICATION_CREDENTIALS
+        initializeApp({ credential: applicationDefault() });
+      }
+      console.log('✅ Firebase Admin initialized successfully');
+    }
   } catch (error) {
-    console.error('Failed to initialize Firebase Admin', error);
+    console.error('❌ Failed to initialize Firebase Admin', error);
   }
 
   app.setGlobalPrefix('api/v1', {
