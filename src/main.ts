@@ -5,10 +5,20 @@ import { swaggerConfig } from './config/swagger/swagger.config';
 import { ValidationPipe } from '@nestjs/common';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import { join } from 'path';
-
+import { initializeApp, applicationDefault } from 'firebase-admin/app';
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
   
+  // Initialize Firebase Admin
+  try {
+    initializeApp({
+      credential: applicationDefault(),
+    });
+    console.log('Firebase Admin initialized successfully');
+  } catch (error) {
+    console.error('Failed to initialize Firebase Admin', error);
+  }
+
   app.setGlobalPrefix('api/v1', {
     exclude: ['modulesList/:courseId', 'lessonDetails/:lessonId'],
   });
