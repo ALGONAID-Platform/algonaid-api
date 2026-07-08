@@ -241,16 +241,23 @@ export class UsersService {
 
     let fullyCompletedCourses = 0;
     for (const enrollment of studentEnrollments) {
+      // ✅ نفس منطق getCourseProgress: نفلتر PUBLISHED فقط لتطابق ما يراه الطالب كـ 100%
       const lessons = await this.prisma.lesson.findMany({
-        where: { module: { courseId: enrollment.courseId } },
+        where: { status: 'PUBLISHED', module: { courseId: enrollment.courseId } },
         select: { id: true }
       });
       if (lessons.length === 0) continue;
 
+      const lessonIds = lessons.map((l) => l.id);
+
+      // ✅ نحسب الدروس المكتملة عبر lessonProgress أو عبر اجتياز الاختبار
       const completedCount = await this.prisma.lesson.count({
         where: {
-          id: { in: lessons.map((l) => l.id) },
-          lessonProgress: { some: { studentId: student.id, isCompleted: true } }
+          id: { in: lessonIds },
+          OR: [
+            { lessonProgress: { some: { studentId: student.id, isCompleted: true } } },
+            { exam: { attempts: { some: { studentId: student.id, status: 'PASSED' } } } },
+          ],
         },
       });
 
