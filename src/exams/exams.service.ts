@@ -21,26 +21,11 @@ export class ExamsService {
       throw new ForbiddenException('You are not authorized to manage this exam');
     }
 
-    if (role === Role.ADMIN) {
-      const teacher = await this.prisma.teacher.findUnique({
-        where: { userId },
-      });
-      if (!teacher || exam.lesson.module.course.instructorId !== teacher.id) {
-        throw new ForbiddenException('You are not authorized to manage this exam');
-      }
-    }
     return exam;
   }
 
   async findAll(userId: number, role: Role) {
-    if (role === Role.ADMIN) {
-      const teacher = await this.prisma.teacher.findUnique({ where: { userId } });
-      if (!teacher) return [];
-      return this.prisma.exam.findMany({
-        where: { lesson: { module: { course: { instructorId: teacher.id } } } },
-        include: { lesson: { include: { module: { include: { course: true } } } }, questions: true }
-      });
-    } else if (role === Role.OWNER) {
+    if (role === Role.ADMIN || role === Role.OWNER) {
       return this.prisma.exam.findMany({
         include: { lesson: { include: { module: { include: { course: true } } } }, questions: true }
       });
@@ -113,13 +98,8 @@ export class ExamsService {
 
     if (!lesson) throw new NotFoundException('Lesson not found');
 
-    if (role !== Role.OWNER) {
-      const teacher = await this.prisma.teacher.findUnique({
-        where: { userId },
-      });
-      if (!teacher || lesson.module.course.instructorId !== teacher.id) {
-        throw new ForbiddenException('You are not authorized to add an exam to this lesson');
-      }
+    if (role !== Role.OWNER && role !== Role.ADMIN) {
+      throw new ForbiddenException('You are not authorized to add an exam to this lesson');
     }
 
     // Check if exam already exists for this lesson
