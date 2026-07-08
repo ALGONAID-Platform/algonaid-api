@@ -54,6 +54,21 @@ model Student {
   enrollments    Enrollment[] // one user can have many courses  
   examAttempts   ExamAttempt[]
   lessonProgress LessonProgress[]
+  earnedBadges   EarnedBadge[]   // الأوسمة المكتسبة بشكل دائم
+}
+
+// جدول الأوسمة المكتسبة بشكل دائم
+// بمجرد إدراج سجل هنا، لا يمكن سحب الوسام حتى لو أضاف الأستاذ محتوى جديد
+model EarnedBadge {
+  id        Int      @id @default(autoincrement())
+  key       String   // مفتاح الوسام (starter, marathon, nerd, etc.)
+  tier      String   @default("STANDARD") // STANDARD | PRO | PRO_MAX
+  earnedAt  DateTime @default(now())
+
+  studentId Int
+  student   Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@unique([studentId, key]) // كل طالب لا يحصل على نفس الوسام مرتين
 }
 
 model Teacher {

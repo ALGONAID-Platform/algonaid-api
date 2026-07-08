@@ -32,7 +32,7 @@ export class UsersService {
         specialization: teacherProfile.specialization,
         bio: teacherProfile.bio,
         experience: teacherProfile.experience,
-      } : {})
+      } : {}),
     };
   }
 
@@ -101,7 +101,7 @@ export class UsersService {
           specialization: teacherProfile.specialization,
           bio: teacherProfile.bio,
           experience: teacherProfile.experience,
-        } : {})
+        } : {}),
       }
     };
   }
@@ -122,6 +122,20 @@ export class UsersService {
       };
     }
 
+    // ================================================================
+    // 1. جلب الأوسمة المكتسبة بشكل دائم من جدول EarnedBadge
+    //    هذه الأوسمة لا تتأثر أبداً بأي تغييرات مستقبلية في المحتوى
+    // ================================================================
+    const permanentlyEarnedBadges = await this.prisma.earnedBadge.findMany({
+      where: { studentId: student.id }
+    });
+    const earnedBadgeMap = new Map(
+      permanentlyEarnedBadges.map(b => [b.key, b])
+    );
+
+    // ================================================================
+    // 2. حساب الأوسمة الجديدة ديناميكياً (للأوسمة التي لم تُكتسب بعد)
+    // ================================================================
     const completedLessonsCount = await this.prisma.lesson.count({
       where: {
         lessonProgress: { some: { studentId: student.id, isCompleted: true } }
@@ -194,13 +208,6 @@ export class UsersService {
       where: { studentId: student.id, status: 'PASSED' }
     });
 
-    const getTier = (isUnlocked: boolean) => {
-      if (!isUnlocked) return 'STANDARD';
-      if (passedExamsCount >= 5) return 'PRO_MAX';
-      if (passedExamsCount > 0) return 'PRO';
-      return 'STANDARD';
-    };
-
     let maxStreak = 0;
     let currentStreak = 0;
     let lastDate: Date | null = null;
@@ -223,6 +230,10 @@ export class UsersService {
       lastDate = date;
     }
 
+    // ================================================================
+    // حساب fullyCompletedCourses للأوسمة الجديدة فقط
+    // الأوسمة المكتسبة مسبقاً (nerd, terrifying_brain, elite) ستأتي من EarnedBadge
+    // ================================================================
     const studentEnrollments = await this.prisma.enrollment.findMany({
       where: { studentId: student.id },
       select: { courseId: true }
@@ -251,96 +262,146 @@ export class UsersService {
     const totalCourses = await this.prisma.course.count();
     const effectiveTotalCourses = totalCourses > 0 ? totalCourses : 10;
 
-    const badges = [
+    // ================================================================
+    // 3. تحديد tier بناءً على الامتحانات
+    // ================================================================
+    const computeTier = (isCurrentlyUnlocked: boolean): string => {
+      if (!isCurrentlyUnlocked) return 'STANDARD';
+      if (passedExamsCount >= 5) return 'PRO_MAX';
+      if (passedExamsCount > 0) return 'PRO';
+      return 'STANDARD';
+    };
+
+    // ================================================================
+    // 4. دمج الأوسمة: المكتسبة الدائمة + الحساب الديناميكي للجديدة
+    //    القاعدة: إذا كانت الوسام محفوظة في EarnedBadge → isUnlocked: true دائماً
+    // ================================================================
+    const badgeDefinitions = [
       {
         id: 1,
         key: "starter",
-        isUnlocked: completedLessonsCount >= 1,
+        dynamicUnlocked: completedLessonsCount >= 1,
         progress: Math.min(completedLessonsCount, 1),
         target: 1,
-        tier: getTier(completedLessonsCount >= 1)
       },
       {
         id: 2,
         key: "persistence",
-        isUnlocked: maxStreak >= 3,
+        dynamicUnlocked: maxStreak >= 3,
         progress: Math.min(maxStreak, 3),
         target: 3,
-        tier: getTier(maxStreak >= 3)
       },
       {
         id: 3,
         key: "continuous",
-        isUnlocked: maxStreak >= 7,
+        dynamicUnlocked: maxStreak >= 7,
         progress: Math.min(maxStreak, 7),
         target: 7,
-        tier: getTier(maxStreak >= 7)
       },
       {
         id: 4,
         key: "explorer",
-        isUnlocked: completedLessonsCount >= 20,
+        dynamicUnlocked: completedLessonsCount >= 20,
         progress: Math.min(completedLessonsCount, 20),
         target: 20,
-        tier: getTier(completedLessonsCount >= 20)
       },
       {
         id: 5,
         key: "nerd",
-        isUnlocked: fullyCompletedCourses >= 2,
+        dynamicUnlocked: fullyCompletedCourses >= 2,
         progress: Math.min(fullyCompletedCourses, 2),
         target: 2,
-        tier: getTier(fullyCompletedCourses >= 2)
       },
       {
         id: 6,
         key: "terrifying_brain",
-        isUnlocked: fullyCompletedCourses >= 4,
+        dynamicUnlocked: fullyCompletedCourses >= 4,
         progress: Math.min(fullyCompletedCourses, 4),
         target: 4,
-        tier: getTier(fullyCompletedCourses >= 4)
       },
       {
         id: 7,
         key: "elite",
-        isUnlocked: fullyCompletedCourses >= totalCourses && totalCourses > 0,
+        dynamicUnlocked: fullyCompletedCourses >= totalCourses && totalCourses > 0,
         progress: Math.min(fullyCompletedCourses, effectiveTotalCourses),
         target: effectiveTotalCourses,
-        tier: getTier(fullyCompletedCourses >= totalCourses && totalCourses > 0)
       },
       {
         id: 8,
         key: "marathon",
-        isUnlocked: maxLessonsInOneDay >= 10,
+        dynamicUnlocked: maxLessonsInOneDay >= 10,
         progress: Math.min(maxLessonsInOneDay, 10),
         target: 10,
-        tier: getTier(maxLessonsInOneDay >= 10)
       },
       {
         id: 9,
         key: "night_owl",
-        isUnlocked: nightOwlProgress >= 5,
+        dynamicUnlocked: nightOwlProgress >= 5,
         progress: Math.min(nightOwlProgress, 5),
         target: 5,
-        tier: getTier(nightOwlProgress >= 5)
       },
       {
         id: 10,
         key: "early_bird",
-        isUnlocked: earlyBirdProgress >= 3,
+        dynamicUnlocked: earlyBirdProgress >= 3,
         progress: Math.min(earlyBirdProgress, 3),
         target: 3,
-        tier: getTier(earlyBirdProgress >= 3)
       },
       {
         id: 11,
         key: "reviewer",
-        isUnlocked: reviewerProgress >= 1,
+        dynamicUnlocked: reviewerProgress >= 1,
         progress: Math.min(reviewerProgress, 1),
         target: 1,
-        tier: getTier(reviewerProgress >= 1)
-      }
+      },
     ];
+
+    // ================================================================
+    // 5. حفظ الأوسمة المكتسبة حديثاً في EarnedBadge (مرة واحدة فقط)
+    //    upsert يضمن عدم التكرار
+    // ================================================================
+    const newlyEarnedBadgesToSave: Promise<any>[] = [];
+    for (const def of badgeDefinitions) {
+      if (def.dynamicUnlocked && !earnedBadgeMap.has(def.key)) {
+        const tier = computeTier(true);
+        newlyEarnedBadgesToSave.push(
+          this.prisma.earnedBadge.upsert({
+            where: { studentId_key: { studentId: student.id, key: def.key } },
+            create: { studentId: student.id, key: def.key, tier },
+            update: { tier }, // نحدث الـ tier فقط إذا تحسّن
+          })
+        );
+      }
+    }
+    if (newlyEarnedBadgesToSave.length > 0) {
+      await Promise.all(newlyEarnedBadgesToSave);
+      // إعادة تحميل الأوسمة المكتسبة بعد الحفظ
+      const refreshed = await this.prisma.earnedBadge.findMany({
+        where: { studentId: student.id }
+      });
+      refreshed.forEach(b => earnedBadgeMap.set(b.key, b));
+    }
+
+    // ================================================================
+    // 6. بناء قائمة الأوسمة النهائية
+    //    - isUnlocked = true  إذا كانت في EarnedBadge (دائمة) أو مكتسبة الآن
+    //    - earnedAt تُضاف للأوسمة المكتسبة لعرض تاريخ الحصول عليها
+    // ================================================================
+    const badges = badgeDefinitions.map(def => {
+      const earned = earnedBadgeMap.get(def.key);
+      const isUnlocked = !!earned || def.dynamicUnlocked;
+      const tier = earned ? earned.tier : computeTier(def.dynamicUnlocked);
+
+      return {
+        id: def.id,
+        key: def.key,
+        isUnlocked,
+        progress: def.progress,
+        target: def.target,
+        tier,
+        earnedAt: earned ? earned.earnedAt : null,
+      };
+    });
 
     badges.sort((a, b) => {
       if (a.isUnlocked === b.isUnlocked) return 0;
@@ -356,17 +417,17 @@ export class UsersService {
 
   private defaultBadges() {
     return [
-      { id: 1, key: "starter", isUnlocked: false, progress: 0, target: 1, tier: 'STANDARD' },
-      { id: 2, key: "persistence", isUnlocked: false, progress: 0, target: 3, tier: 'STANDARD' },
-      { id: 3, key: "continuous", isUnlocked: false, progress: 0, target: 7, tier: 'STANDARD' },
-      { id: 4, key: "explorer", isUnlocked: false, progress: 0, target: 20, tier: 'STANDARD' },
-      { id: 5, key: "nerd", isUnlocked: false, progress: 0, target: 2, tier: 'STANDARD' },
-      { id: 6, key: "terrifying_brain", isUnlocked: false, progress: 0, target: 4, tier: 'STANDARD' },
-      { id: 7, key: "elite", isUnlocked: false, progress: 0, target: 10, tier: 'STANDARD' },
-      { id: 8, key: "marathon", isUnlocked: false, progress: 0, target: 10, tier: 'STANDARD' },
-      { id: 9, key: "night_owl", isUnlocked: false, progress: 0, target: 5, tier: 'STANDARD' },
-      { id: 10, key: "early_bird", isUnlocked: false, progress: 0, target: 3, tier: 'STANDARD' },
-      { id: 11, key: "reviewer", isUnlocked: false, progress: 0, target: 1, tier: 'STANDARD' }
+      { id: 1, key: "starter", isUnlocked: false, progress: 0, target: 1, tier: 'STANDARD', earnedAt: null },
+      { id: 2, key: "persistence", isUnlocked: false, progress: 0, target: 3, tier: 'STANDARD', earnedAt: null },
+      { id: 3, key: "continuous", isUnlocked: false, progress: 0, target: 7, tier: 'STANDARD', earnedAt: null },
+      { id: 4, key: "explorer", isUnlocked: false, progress: 0, target: 20, tier: 'STANDARD', earnedAt: null },
+      { id: 5, key: "nerd", isUnlocked: false, progress: 0, target: 2, tier: 'STANDARD', earnedAt: null },
+      { id: 6, key: "terrifying_brain", isUnlocked: false, progress: 0, target: 4, tier: 'STANDARD', earnedAt: null },
+      { id: 7, key: "elite", isUnlocked: false, progress: 0, target: 10, tier: 'STANDARD', earnedAt: null },
+      { id: 8, key: "marathon", isUnlocked: false, progress: 0, target: 10, tier: 'STANDARD', earnedAt: null },
+      { id: 9, key: "night_owl", isUnlocked: false, progress: 0, target: 5, tier: 'STANDARD', earnedAt: null },
+      { id: 10, key: "early_bird", isUnlocked: false, progress: 0, target: 3, tier: 'STANDARD', earnedAt: null },
+      { id: 11, key: "reviewer", isUnlocked: false, progress: 0, target: 1, tier: 'STANDARD', earnedAt: null },
     ];
   }
 }
