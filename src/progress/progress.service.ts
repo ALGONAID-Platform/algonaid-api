@@ -430,6 +430,15 @@ async getExcellenceCourses(studentUserId: number) {
     throw new NotFoundException('Student profile not found');
   }
 
+  // 2.5 جلب الكورسات المميزة المحفوظة مسبقاً لهذا الطالب
+  const permanentlyEarnedAchievements = await this.prisma.earnedBadge.findMany({
+    where: { studentId: student.id, key: { startsWith: 'course_achievement_' } }
+  });
+  const earnedAchievementMap = new Map(
+    permanentlyEarnedAchievements.map(b => [b.key, b])
+  );
+  const newAchievementsToSave: Promise<any>[] = [];
+
   // جلب كافة الكورسات المتاحة في النظام
   const courses = await this.prisma.course.findMany();
   const excellenceCourses = [];
@@ -455,18 +464,43 @@ async getExcellenceCourses(studentUserId: number) {
     const hasExams = gradesResult?.examsCount > 0;
     const allExamsAttempted = hasExams && gradesResult.examDetails.every((e: any) => e.isAttempted);
 
-    // تحديد ما إذا كان الكورس يعتبر مكتملًا ومميزًا
-    // الكورس المكتمل والمميز يجب أن يكون مسجلاً فيه وحقق الشروط
-    const isCompleted = enrollment ? (allExamsAttempted && average >= 90) : false;
+    // تحديد ما إذا كان الكورس يعتبر مكتملًا ومميزًا ديناميكياً
+    const dynamicIsCompleted = enrollment ? (allExamsAttempted && average >= 90) : false;
+    
+    const achievementKey = `course_achievement_${course.id}`;
+    const earnedRecord = earnedAchievementMap.get(achievementKey);
+    
+    // الكورس مكتمل إما إذا كان محفوظاً مسبقاً في التاريخ، أو تحقق ديناميكياً الآن
+    const isCompleted = earnedRecord ? true : dynamicIsCompleted;
+    
+    if (dynamicIsCompleted && !earnedRecord) {
+      newAchievementsToSave.push(
+        this.prisma.earnedBadge.upsert({
+          where: { studentId_key: { studentId: student.id, key: achievementKey } },
+          update: {},
+          create: {
+            studentId: student.id,
+            key: achievementKey,
+            earnedAt: enrollment?.updatedAt || new Date()
+          }
+        })
+      );
+    }
 
     excellenceCourses.push({
       courseId: course.id,
       courseTitle: course.title,
       courseImage: course.thumbnail,
       averagePercentage: average,
-      completedAt: isCompleted ? enrollment?.updatedAt : null,
+      targetAverage: 90,
+      allExamsAttempted: allExamsAttempted,
+      completedAt: earnedRecord ? earnedRecord.earnedAt : (isCompleted ? enrollment?.updatedAt : null),
       isCompleted: isCompleted,
     });
+  }
+  
+  if (newAchievementsToSave.length > 0) {
+    await Promise.all(newAchievementsToSave);
   }
 
   // 4. ترتيب الكورسات بحيث تظهر المكتملة أولاً ثم ترتيب تنازلياً حسب الدرجة
@@ -529,6 +563,14 @@ async getExcellenceCourses(studentUserId: number) {
     if (!course) {
       throw new NotFoundException('Course not found');
     }
+    
+    const permanentlyEarnedAchievements = await this.prisma.earnedBadge.findMany({
+      where: { studentId: student.id, key: { startsWith: `module_achievement_${courseId}_` } }
+    });
+    const earnedAchievementMap = new Map(
+      permanentlyEarnedAchievements.map(b => [b.key, b])
+    );
+    const newAchievementsToSave: Promise<any>[] = [];
 
     const excellenceModules = [];
 
@@ -548,7 +590,26 @@ async getExcellenceCourses(studentUserId: number) {
       const hasExams = gradesResult?.examsCount > 0;
       const allExamsAttempted = hasExams && gradesResult.examDetails.every((e: any) => e.isAttempted);
 
-      const isCompleted = allExamsAttempted && average >= 85;
+      const dynamicIsCompleted = allExamsAttempted && average >= 85;
+      
+      const achievementKey = `module_achievement_${course.id}_${module.id}`;
+      const earnedRecord = earnedAchievementMap.get(achievementKey);
+      
+      const isCompleted = earnedRecord ? true : dynamicIsCompleted;
+      
+      if (dynamicIsCompleted && !earnedRecord) {
+        newAchievementsToSave.push(
+          this.prisma.earnedBadge.upsert({
+            where: { studentId_key: { studentId: student.id, key: achievementKey } },
+            update: {},
+            create: {
+              studentId: student.id,
+              key: achievementKey,
+              earnedAt: new Date()
+            }
+          })
+        );
+      }
 
       excellenceModules.push({
         moduleId: module.id,
@@ -556,8 +617,14 @@ async getExcellenceCourses(studentUserId: number) {
         courseId: course.id,
         courseTitle: course.title,
         averagePercentage: average,
+        targetAverage: 85,
+        allExamsAttempted: allExamsAttempted,
         isCompleted: isCompleted,
       });
+    }
+    
+    if (newAchievementsToSave.length > 0) {
+      await Promise.all(newAchievementsToSave);
     }
 
     excellenceModules.sort((a, b) => b.averagePercentage - a.averagePercentage);
