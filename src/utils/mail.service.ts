@@ -1,30 +1,25 @@
 import { Injectable, InternalServerErrorException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import * as nodemailer from 'nodemailer';
+import { Resend } from 'resend';
 
 @Injectable()
 export class MailService {
-  private transporter: nodemailer.Transporter;
+  private resend: Resend;
   private fromEmail: string;
 
   constructor(private configService: ConfigService) {
-    this.transporter = nodemailer.createTransport({
-      service: 'gmail',
-      auth: {
-        user: this.configService.get<string>('SMTP_USER'),
-        pass: this.configService.get<string>('SMTP_PASSWORD'),
-      },
-    });
+    this.resend = new Resend(this.configService.get<string>('RESEND_API_KEY'));
     this.fromEmail =
       this.configService.get<string>('EMAIL_FROM') || 'no-reply@algonaid.com';
   }
 
   // ==================== Password Reset Email ====================
   async sendPasswordResetEmail(email: string, token: string) {
-    const resetLink = `${this.configService.get<string>('FRONTEND_URL') || 'http://localhost:5000'}/reset-password?token=${token}`;
+    const baseUrl = this.configService.get<string>('APP_URL') || 'https://algonaid.com';
+    const resetLink = `${baseUrl}/reset-password?token=${token}`;
 
     try {
-      const info = await this.transporter.sendMail({
+      const info = await this.resend.emails.send({
         from: this.fromEmail,
         to: email,
         subject: 'إعادة تعيين كلمة المرور - منصة الجنيد',
@@ -52,6 +47,11 @@ export class MailService {
         `,
       });
 
+      if (info.error) {
+        console.error('Resend API Error:', info.error);
+        throw new InternalServerErrorException('Failed to send email via Resend API');
+      }
+
       return info;
     } catch (err) {
       console.error('Mail Service Error:', err);
@@ -64,17 +64,14 @@ export class MailService {
   // ==================== Email Verification Email ====================
   /**
    * يرسل بريد التحقق من البريد الإلكتروني مع رابط Deep Link
-   * الرابط يفتح التطبيق مباشرةً عبر Android App Links / iOS Universal Links
+   * الرابط يفتح التطبيق مباشرةً عبر Android App Links
    */
   async sendVerificationEmail(email: string, token: string) {
-    const baseUrl = this.configService.get<string>('APP_BASE_URL') || 'https://algonaid-api.onrender.com/api/v1';
-    
-    // هذا الرابط سيفتح التطبيق مباشرةً عبر Deep Links إذا كان مثبتاً
-    // ويذهب للمتصفح إذا لم يكن التطبيق مثبتاً
-    const verificationLink = `${baseUrl}/auth/verify-email?token=${token}`;
+    const baseUrl = this.configService.get<string>('APP_URL') || 'https://algonaid.com';
+    const verificationLink = `${baseUrl}/verify-email?token=${token}`;
 
     try {
-      const info = await this.transporter.sendMail({
+      const info = await this.resend.emails.send({
         from: this.fromEmail,
         to: email,
         subject: '✅ تأكيد البريد الإلكتروني - منصة الجنيد',
@@ -143,6 +140,11 @@ export class MailService {
           </html>
         `,
       });
+
+      if (info.error) {
+        console.error('Resend API Error (Verification):', info.error);
+        throw new InternalServerErrorException('Failed to send verification email via Resend API');
+      }
 
       return info;
     } catch (err) {

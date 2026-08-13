@@ -23,6 +23,7 @@ export const MESSAGES = {
         VERIFICATION_TOKEN_EXPIRED: 'انتهت صلاحية رابط التحقق، يرجى طلب رابط جديد',
         VERIFICATION_TOKEN_USED: 'تم استخدام هذا الرابط مسبقاً أو انتهت صلاحيته',
         EMAIL_VERIFIED_SUCCESS: 'تم تأكيد بريدك الإلكتروني بنجاح! يمكنك الآن تسجيل الدخول.',
+        EMAIL_NOT_VERIFIED_SENT_AGAIN: 'حسابك موجود ولكنه غير مفعل. قمنا بإرسال رابط التفعيل إلى بريدك مرة أخرى.',
     },
     VALIDATION: {
         NAME_REQUIRED: 'الاسم مطلوب',

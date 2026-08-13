@@ -71,6 +71,13 @@ export class AuthController {
     return await this.authService.resetPassword(resetPasswordDto);
   }
 
+  // ==================== Validate Reset Token ====================
+  @Get('validate-reset-token')
+  @ApiOperation({ summary: 'Validate if reset token is still valid and not used' })
+  async validateResetToken(@Query('token') token: string) {
+    return await this.authService.validateResetToken(token);
+  }
+
   @Get('reset-password')
   @ApiOperation({
     summary: 'Redirect to app for resetting password',

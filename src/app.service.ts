@@ -5,7 +5,7 @@ export class AppService {
   getHello(): string {
     return 'Hello World!';
   }
-
+ 
   getRedirectPage(type: 'course' | 'lesson', id: string): string {
     return `<!DOCTYPE html>
 <html lang="ar" dir="rtl">

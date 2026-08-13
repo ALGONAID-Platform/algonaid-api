@@ -39,22 +39,25 @@ export class AuthService {
     });
 
     if (!user) {
-      throw new NotFoundException(MESSAGES.AUTH.EMAIL_NOT_FOUND);
+      throw new NotFoundException(MESSAGES.AUTH.ACCOUNT_NOT_FOUND);
     }
 
-    const resetToken = crypto.randomBytes(32).toString('hex');
+    const rawResetToken = crypto.randomBytes(32).toString('hex');
+    const hashedResetToken = crypto.createHash('sha256').update(rawResetToken).digest('hex');
     const resetPasswordExpires = new Date(Date.now() + 3600000); // 1 hour
 
     await this.prisma.user.update({
       where: { id: user.id },
       data: {
-        resetPasswordToken: resetToken,
+        resetPasswordToken: hashedResetToken,
         resetPasswordExpires: resetPasswordExpires,
       },
     });
 
-    // Send email with resetToken using Resend
-    await this.mailService.sendPasswordResetEmail(email, resetToken);
+    // Send email with rawResetToken using Resend
+    await this.mailService.sendPasswordResetEmail(email, rawResetToken).catch((err) => {
+      console.error('⚠️ Failed to send password reset email:', err);
+    });
 
     return {
       message: MESSAGES.AUTH.RESET_PASSWORD_SENT,
@@ -64,17 +67,24 @@ export class AuthService {
   // ==================== Reset Password ====================
   async resetPassword(resetPasswordDto: ResetPasswordDto) {
     const { token, newPassword } = resetPasswordDto;
+    
+    const hashedToken = crypto.createHash('sha256').update(token.trim()).digest('hex');
+    console.log('Received raw token:', token);
+    console.log('Computed hash:', hashedToken);
 
     const user = await this.prisma.user.findFirst({
       where: {
-        resetPasswordToken: token,
-        resetPasswordExpires: {
-          gt: new Date(),
-        },
+        resetPasswordToken: hashedToken,
       },
     });
 
     if (!user) {
+      console.log('No user found with this hashedToken in the database.');
+      throw new UnauthorizedException(MESSAGES.AUTH.INVALID_OR_EXPIRED_TOKEN);
+    }
+
+    if (user.resetPasswordExpires && user.resetPasswordExpires < new Date()) {
+      console.log('Token is expired.');
       throw new UnauthorizedException(MESSAGES.AUTH.INVALID_OR_EXPIRED_TOKEN);
     }
 
@@ -94,6 +104,29 @@ export class AuthService {
     };
   }
 
+  // ==================== Validate Reset Token ====================
+  async validateResetToken(token: string) {
+    if (!token || token.trim() === '') {
+      throw new BadRequestException(MESSAGES.AUTH.VERIFICATION_TOKEN_INVALID);
+    }
+
+    const hashedToken = crypto.createHash('sha256').update(token.trim()).digest('hex');
+
+    const user = await this.prisma.user.findFirst({
+      where: { resetPasswordToken: hashedToken },
+    });
+
+    if (!user) {
+      throw new UnauthorizedException(MESSAGES.AUTH.INVALID_OR_EXPIRED_TOKEN);
+    }
+
+    if (user.resetPasswordExpires && user.resetPasswordExpires < new Date()) {
+      throw new UnauthorizedException(MESSAGES.AUTH.INVALID_OR_EXPIRED_TOKEN);
+    }
+
+    return { valid: true };
+  }
+
   // ==================== Register ====================
   async register(userDto: UserRegisterDto) {
     let { email, password, name, role } = userDto;
@@ -104,6 +137,10 @@ export class AuthService {
     });
 
     if (existingUser) {
+      if (!existingUser.emailVerified && !existingUser.googleId) {
+        await this.resendVerificationEmail({ email });
+        throw new UnauthorizedException(MESSAGES.AUTH.EMAIL_NOT_VERIFIED_SENT_AGAIN);
+      }
       throw new ConflictException(MESSAGES.AUTH.EMAIL_ALREADY_REGISTERED);
     }
 
@@ -114,7 +151,8 @@ export class AuthService {
     if (role === UserRole.OWNER) prismaRole = Role.OWNER;
 
     // ===== توليد Verification Token آمن =====
-    const verificationToken = crypto.randomBytes(32).toString('hex');
+    const rawVerificationToken = crypto.randomBytes(32).toString('hex');
+    const hashedVerificationToken = crypto.createHash('sha256').update(rawVerificationToken).digest('hex');
     // صلاحية ساعة واحدة
     const verificationTokenExpiry = new Date(Date.now() + 60 * 60 * 1000);
 
@@ -125,10 +163,10 @@ export class AuthService {
           name,
           password: hashedPassword,
           role: prismaRole,
-          // حقول التحقق (تم تفعيلها تلقائياً لتخطي التحقق مؤقتاً)
-          emailVerified: true,
-          verificationToken: null,
-          verificationTokenExpiry: null,
+          // حقول التحقق
+          emailVerified: false,
+          verificationToken: hashedVerificationToken,
+          verificationTokenExpiry,
 
           ...(prismaRole === Role.STUDENT
             ? {
@@ -151,23 +189,27 @@ export class AuthService {
         include: { studentProfile: true, teacherProfile: true },
       });
 
-      // ===== إرسال بريد التحقق (تم تعطيله مؤقتاً لتجنب مشاكل SMTP في الاستضافة) =====
-      /*
-      this.mailService
-        .sendVerificationEmail(email, verificationToken)
-        .catch((err) => {
-          console.error('⚠️ Failed to send verification email:', err);
-        });
-      */
+      // ===== إرسال بريد التحقق =====
+     console.log('📧 Starting verification email...');
+console.log('📧 Email:', email);
+console.log('📧 Token generated:', !!rawVerificationToken);
 
-      // توليد التوكن وإعادة بيانات المستخدم مع تسجيل الدخول مباشرةً
-      const token = await this.generateToken(user.id, user.email, user.role);
+try {
+  const result = await this.mailService.sendVerificationEmail(
+    email,
+    rawVerificationToken,
+  );
 
+  console.log('✅ Verification email result:', result);
+} catch (error) {
+  console.error('❌ Verification email failed:', error);
+}
+
+      // عدم توليد توكن وإلزام المستخدم بتأكيد البريد الإلكتروني أولاً
       return {
         message: MESSAGES.AUTH.USER_REGISTERED,
         user: this.formatUserResponse(user),
-        access_token: token,
-        requiresEmailVerification: false,
+        requiresEmailVerification: true,
       };
     } catch (error: any) {
       if (error.code === 'P2002') {
@@ -203,7 +245,8 @@ export class AuthService {
 
     // ===== التحقق من تأكيد البريد الإلكتروني =====
     if (!user.emailVerified) {
-      throw new UnauthorizedException(MESSAGES.AUTH.EMAIL_NOT_VERIFIED);
+      await this.resendVerificationEmail({ email });
+      throw new UnauthorizedException(MESSAGES.AUTH.EMAIL_NOT_VERIFIED_SENT_AGAIN);
     }
 
     const token = await this.generateToken(user.id, user.email, user.role);
@@ -224,10 +267,12 @@ export class AuthService {
     if (!token || token.trim() === '') {
       throw new BadRequestException(MESSAGES.AUTH.VERIFICATION_TOKEN_INVALID);
     }
+    
+    const hashedToken = crypto.createHash('sha256').update(token).digest('hex');
 
     // البحث عن المستخدم بالـ Token
     const user = await this.prisma.user.findFirst({
-      where: { verificationToken: token },
+      where: { verificationToken: hashedToken },
     });
 
     // إذا لم يوجد مستخدم بهذا الـ Token
@@ -237,7 +282,10 @@ export class AuthService {
 
     // إذا كان البريد مؤكداً بالفعل
     if (user.emailVerified) {
-      throw new BadRequestException(MESSAGES.AUTH.EMAIL_ALREADY_VERIFIED);
+      return {
+        message: MESSAGES.AUTH.EMAIL_ALREADY_VERIFIED,
+        verified: true,
+      };
     }
 
     // التحقق من انتهاء الصلاحية
@@ -249,18 +297,23 @@ export class AuthService {
     }
 
     // تحديث المستخدم: تفعيل البريد وحذف الـ Token
-    await this.prisma.user.update({
+    const updatedUser = await this.prisma.user.update({
       where: { id: user.id },
       data: {
         emailVerified: true,
         verificationToken: null,
         verificationTokenExpiry: null,
       },
+      include: { studentProfile: true, teacherProfile: true },
     });
+
+    const jwtToken = await this.generateToken(updatedUser.id, updatedUser.email, updatedUser.role);
 
     return {
       message: MESSAGES.AUTH.EMAIL_VERIFIED_SUCCESS,
       verified: true,
+      user: this.formatUserResponse(updatedUser),
+      access_token: jwtToken,
     };
   }
 
@@ -287,20 +340,21 @@ export class AuthService {
     }
 
     // توليد token جديد
-    const verificationToken = crypto.randomBytes(32).toString('hex');
+    const rawVerificationToken = crypto.randomBytes(32).toString('hex');
+    const hashedVerificationToken = crypto.createHash('sha256').update(rawVerificationToken).digest('hex');
     const verificationTokenExpiry = new Date(Date.now() + 60 * 60 * 1000); // ساعة
 
     // حفظ الـ Token الجديد
     await this.prisma.user.update({
       where: { id: user.id },
       data: {
-        verificationToken,
+        verificationToken: hashedVerificationToken,
         verificationTokenExpiry,
       },
     });
 
     // إرسال البريد
-    await this.mailService.sendVerificationEmail(email, verificationToken);
+    await this.mailService.sendVerificationEmail(email, rawVerificationToken);
 
     return {
       message: MESSAGES.AUTH.VERIFICATION_EMAIL_SENT,
