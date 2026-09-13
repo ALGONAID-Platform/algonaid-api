@@ -1,0 +1,210 @@
+==================================================
+ ALGONAID POST-REPAIR DIAGNOSTIC
+ Mon Aug 17 13:39:26 CEST 2026
+==================================================
+
+### 1. CONTAINER STATUS
+CONTAINER ID   IMAGE                COMMAND                  CREATED          STATUS                  PORTS                                         NAMES
+ee563c3017fd   algonaid-api-api     "docker-entrypoint.s…"   49 seconds ago   Up 6 seconds            0.0.0.0:3000->3000/tcp, [::]:3000->3000/tcp   algonaid-api-api-1
+5046ff90c22a   postgres:16-alpine   "docker-entrypoint.s…"   30 hours ago     Up 30 hours (healthy)   0.0.0.0:5434->5432/tcp, [::]:5434->5432/tcp   algonaid-api-db-1
+
+### 2. API STATE
+
+Status=running
+Running=true
+Paused=false
+Restarting=false
+OOMKilled=false
+ExitCode=0
+Error=
+StartedAt=2026-08-17T11:39:20.384980289Z
+FinishedAt=2026-08-17T11:39:18.785945749Z
+RestartCount=4
+
+
+### 3. API PORT
+3000/tcp -> 0.0.0.0:3000
+3000/tcp -> [::]:3000
+
+### 4. API LISTENING PORTS
+--- process ---
+PID   USER     TIME  COMMAND
+    1 root      0:00 /bin/sh -c npx prisma migrate deploy && npx prisma generate && npm run start:dev
+    7 root      0:03 npm exec prisma migrate deploy
+   19 root      0:05 node /usr/src/app/node_modules/.bin/prisma migrate deploy
+   45 root      0:00 /usr/local/bin/node /usr/src/app/node_modules/prisma/build/child {"product":"prisma","version":"7.8.0","cli_install_type":"local","information":"","local_timestamp":"2026-08-17T11:39:27Z","project_hash":"bc47c39f","cli_path":"/usr/src/app/node_modules/.bin/prisma","cli_path_hash":"139ef995","endpoint":"https://checkpoint.prisma.io","disable":false,"arch":"x64","os":"linux","node_version":"v22.23.2","ci":false,"ci_name":"","command":"migrate deploy","schema_providers":["postgresql"],"schema_preview_features":[],"schema_generators_providers":["prisma-client-js"],"cache_file":"/root/.cache/checkpoint-nodejs/prisma-139ef995","cache_duration":43200000,"remind_duration":172800000,"force":false,"timeout":5000,"unref":true,"child_path":"/usr/src/app/node_modules/prisma/build/child","client_event_id":"","previous_client_event_id":"","check_if_update_available":false}
+   57 root      0:00 sh -c  echo "--- process ---" ps aux 2>/dev/null || true echo "--- ports ---" if command -v ss >/dev/null 2>&1; then     ss -lntp elif command -v netstat >/dev/null 2>&1; then     netstat -lntp else     echo "ss/netstat not installed" fi 
+   62 root      0:00 ps aux
+--- ports ---
+Active Internet connections (only servers)
+Proto Recv-Q Send-Q Local Address           Foreign Address         State       PID/Program name    
+tcp        0      0 127.0.0.11:37881        0.0.0.0:*               LISTEN      -
+
+### 5. API LOGS - LAST 200
+Loaded Prisma config from prisma.config.ts.
+
+Prisma schema loaded from prisma/schema.prisma.
+Datasource "db": PostgreSQL database "algonaid", schema "public" at "db:5432"
+
+Error: P1000: Authentication failed against database server, the provided database credentials for `postgres` are not valid.
+
+Please make sure to provide valid database credentials for the database server at the configured address.
+Loaded Prisma config from prisma.config.ts.
+
+Prisma schema loaded from prisma/schema.prisma.
+Datasource "db": PostgreSQL database "algonaid", schema "public" at "db:5432"
+Error: P1000: Authentication failed against database server, the provided database credentials for `postgres` are not valid.
+
+Please make sure to provide valid database credentials for the database server at the configured address.
+
+Loaded Prisma config from prisma.config.ts.
+
+Prisma schema loaded from prisma/schema.prisma.
+Datasource "db": PostgreSQL database "algonaid", schema "public" at "db:5432"
+
+Error: P1000: Authentication failed against database server, the provided database credentials for `postgres` are not valid.
+
+Please make sure to provide valid database credentials for the database server at the configured address.
+Loaded Prisma config from prisma.config.ts.
+
+Prisma schema loaded from prisma/schema.prisma.
+Datasource "db": PostgreSQL database "algonaid", schema "public" at "db:5432"
+Error: P1000: Authentication failed against database server, the provided database credentials for `postgres` are not valid.
+
+Please make sure to provide valid database credentials for the database server at the configured address.
+
+Loaded Prisma config from prisma.config.ts.
+
+
+### 6. API LOGS - SINCE LAST 5 MINUTES
+Loaded Prisma config from prisma.config.ts.
+
+Prisma schema loaded from prisma/schema.prisma.
+Datasource "db": PostgreSQL database "algonaid", schema "public" at "db:5432"
+
+Error: P1000: Authentication failed against database server, the provided database credentials for `postgres` are not valid.
+
+Please make sure to provide valid database credentials for the database server at the configured address.
+Loaded Prisma config from prisma.config.ts.
+
+Prisma schema loaded from prisma/schema.prisma.
+Datasource "db": PostgreSQL database "algonaid", schema "public" at "db:5432"
+Error: P1000: Authentication failed against database server, the provided database credentials for `postgres` are not valid.
+
+Please make sure to provide valid database credentials for the database server at the configured address.
+
+Loaded Prisma config from prisma.config.ts.
+
+Prisma schema loaded from prisma/schema.prisma.
+Datasource "db": PostgreSQL database "algonaid", schema "public" at "db:5432"
+
+Error: P1000: Authentication failed against database server, the provided database credentials for `postgres` are not valid.
+
+Please make sure to provide valid database credentials for the database server at the configured address.
+Loaded Prisma config from prisma.config.ts.
+
+Prisma schema loaded from prisma/schema.prisma.
+Datasource "db": PostgreSQL database "algonaid", schema "public" at "db:5432"
+Error: P1000: Authentication failed against database server, the provided database credentials for `postgres` are not valid.
+
+Please make sure to provide valid database credentials for the database server at the configured address.
+
+Loaded Prisma config from prisma.config.ts.
+
+
+### 7. DATABASE STATUS
+
+Status=running
+Running=true
+Health=healthy
+RestartCount=0
+
+
+### 8. DATABASE HEALTH
+/var/run/postgresql:5432 - accepting connections
+
+### 9. DATABASE AUTH TEST
+ current_database | current_user |             now              
+------------------+--------------+------------------------------
+ algonaid         | postgres     | 2026-08-17 11:39:29.58665+00
+(1 row)
+
+
+### 10. DATABASE RECENT LOGS
+2026-08-17 11:37:05.431 UTC [149582] FATAL:  password authentication failed for user "postgres"
+2026-08-17 11:37:05.431 UTC [149582] DETAIL:  Connection matched file "/var/lib/postgresql/data/pg_hba.conf" line 128: "host all all all scram-sha-256"
+2026-08-17 11:38:53.188 UTC [149755] FATAL:  password authentication failed for user "postgres"
+2026-08-17 11:38:53.188 UTC [149755] DETAIL:  Connection matched file "/var/lib/postgresql/data/pg_hba.conf" line 128: "host all all all scram-sha-256"
+2026-08-17 11:39:00.657 UTC [149771] FATAL:  password authentication failed for user "postgres"
+2026-08-17 11:39:00.657 UTC [149771] DETAIL:  Connection matched file "/var/lib/postgresql/data/pg_hba.conf" line 128: "host all all all scram-sha-256"
+2026-08-17 11:39:10.117 UTC [149787] FATAL:  password authentication failed for user "postgres"
+2026-08-17 11:39:10.117 UTC [149787] DETAIL:  Connection matched file "/var/lib/postgresql/data/pg_hba.conf" line 128: "host all all all scram-sha-256"
+2026-08-17 11:39:18.579 UTC [149796] FATAL:  password authentication failed for user "postgres"
+2026-08-17 11:39:18.579 UTC [149796] DETAIL:  Connection matched file "/var/lib/postgresql/data/pg_hba.conf" line 128: "host all all all scram-sha-256"
+2026-08-17 11:39:28.845 UTC [149815] FATAL:  password authentication failed for user "postgres"
+2026-08-17 11:39:28.845 UTC [149815] DETAIL:  Connection matched file "/var/lib/postgresql/data/pg_hba.conf" line 128: "host all all all scram-sha-256"
+
+### 11. API -> DB DNS
+Error response from daemon: Container ee563c3017fd5c0ee064f81e78a65dc77d6c4dc1ef927540774664698dc2eaab is restarting, wait until the container is running
+
+### 12. API -> DB PORT
+Error response from daemon: Container ee563c3017fd5c0ee064f81e78a65dc77d6c4dc1ef927540774664698dc2eaab is restarting, wait until the container is running
+
+### 13. LOCAL API ROOT
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0*   Trying 127.0.0.1:3000...
+* connect to 127.0.0.1 port 3000 from 127.0.0.1 port 46160 failed: Connection refused
+* Failed to connect to 127.0.0.1 port 3000 after 5 ms: Couldn't connect to server
+  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0
+* Closing connection
+curl: (7) Failed to connect to 127.0.0.1 port 3000 after 5 ms: Couldn't connect to server
+
+### 14. LOCAL COURSES API
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0*   Trying 127.0.0.1:3000...
+* connect to 127.0.0.1 port 3000 from 127.0.0.1 port 46174 failed: Connection refused
+* Failed to connect to 127.0.0.1 port 3000 after 1 ms: Couldn't connect to server
+  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0
+* Closing connection
+curl: (7) Failed to connect to 127.0.0.1 port 3000 after 1 ms: Couldn't connect to server
+
+### 15. LOCAL API HEALTH ENDPOINTS
+--- /health ---
+curl: (7) Failed to connect to 127.0.0.1 port 3000 after 0 ms: Couldn't connect to server
+--- /api ---
+curl: (7) Failed to connect to 127.0.0.1 port 3000 after 0 ms: Couldn't connect to server
+--- /api/v1 ---
+curl: (7) Failed to connect to 127.0.0.1 port 3000 after 0 ms: Couldn't connect to server
+--- /api/v1/health ---
+curl: (7) Failed to connect to 127.0.0.1 port 3000 after 0 ms: Couldn't connect to server
+
+### 16. ENV DATABASE URL - STRUCTURE ONLY
+DATABASE_URL="user=postgres host=db port=5432 database=algonaid
+
+### 17. API DATABASE URL - STRUCTURE ONLY
+DATABASE_URL=user=postgres host=db port=5432 database=algonaid
+
+### 18. DOCKER COMPOSE CONFIG
+NAME                 IMAGE                COMMAND                  SERVICE   CREATED          STATUS                  PORTS
+algonaid-api-api-1   algonaid-api-api     "docker-entrypoint.s…"   api       56 seconds ago   Up 2 seconds            0.0.0.0:3000->3000/tcp, [::]:3000->3000/tcp
+algonaid-api-db-1    postgres:16-alpine   "docker-entrypoint.s…"   db        30 hours ago     Up 30 hours (healthy)   0.0.0.0:5434->5432/tcp, [::]:5434->5432/tcp
+
+### 19. RESOURCE USAGE
+CONTAINER ID   NAME                 CPU %     MEM USAGE / LIMIT     MEM %     NET I/O           BLOCK I/O       PIDS
+ee563c3017fd   algonaid-api-api-1   144.64%   86.61MiB / 7.755GiB   1.09%     516B / 126B       0B / 0B         19
+5046ff90c22a   algonaid-api-db-1    0.01%     85.28MiB / 7.755GiB   1.07%     8.27MB / 7.15MB   234MB / 160MB   6
+
+### 20. RECENT POSTGRES AUTH FAILURES
+2026-08-17 11:31:09.239 UTC [149064] FATAL:  password authentication failed for user "postgres"
+2026-08-17 11:37:05.431 UTC [149582] FATAL:  password authentication failed for user "postgres"
+2026-08-17 11:38:53.188 UTC [149755] FATAL:  password authentication failed for user "postgres"
+2026-08-17 11:39:00.657 UTC [149771] FATAL:  password authentication failed for user "postgres"
+2026-08-17 11:39:10.117 UTC [149787] FATAL:  password authentication failed for user "postgres"
+2026-08-17 11:39:18.579 UTC [149796] FATAL:  password authentication failed for user "postgres"
+2026-08-17 11:39:28.845 UTC [149815] FATAL:  password authentication failed for user "postgres"
+
+==================================================
+ DIAGNOSTIC FINISHED
+==================================================

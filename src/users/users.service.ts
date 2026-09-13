@@ -36,6 +36,61 @@ export class UsersService {
     };
   }
 
+  async getPublicProfile(userId: number) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      include: { studentProfile: true, teacherProfile: true }
+    });
+
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    const { password, studentProfile, teacherProfile, ...userWithoutPassword } = user;
+    
+    let badges: any[] = [];
+    let totalPoints = 0;
+    
+    if (studentProfile) {
+      const badgesResult = await this.getBadges(user.id);
+      badges = badgesResult.data;
+
+      // حساب النقاط ديناميكياً بناءً على أعلى درجة حصل عليها الطالب في الامتحانات المجتازة
+      const passedAttempts = await this.prisma.examAttempt.findMany({
+        where: { studentId: studentProfile.id, status: 'PASSED' },
+        select: { examId: true, score: true }
+      });
+      
+      const maxScorePerExam = new Map<number, number>();
+      for (const attempt of passedAttempts) {
+        const currentMax = maxScorePerExam.get(attempt.examId) || 0;
+        if (attempt.score > currentMax) {
+          maxScorePerExam.set(attempt.examId, attempt.score);
+        }
+      }
+      totalPoints = Array.from(maxScorePerExam.values()).reduce((sum, score) => sum + score, 0);
+    }
+
+    return {
+      ...userWithoutPassword,
+      avatarUrl: userWithoutPassword.avatar,
+      role: user.role,
+      ...(studentProfile ? {
+        academicId: studentProfile.academicId,
+        grade: studentProfile.grade,
+        birthDate: studentProfile.birthDate,
+        address: studentProfile.address,
+        points: totalPoints,
+        badges: badges,
+      } : {}),
+      ...(teacherProfile ? {
+        specialization: teacherProfile.specialization,
+        bio: teacherProfile.bio,
+        experience: teacherProfile.experience,
+      } : {}),
+    };
+  }
+
   async updateProfile(userId: number, updateProfileDto: UpdateProfileDto, role: UserRole) {
     const { name, avatar, background, grade, birthDate, address } = updateProfileDto;
     

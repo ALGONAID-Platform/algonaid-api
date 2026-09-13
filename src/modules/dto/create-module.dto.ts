@@ -12,6 +12,11 @@ export class CreateModuleDto {
   @IsString()
   description?: string;
 
+  @ApiProperty({ example: 'https://example.com/image.jpg', required: false })
+  @IsOptional()
+  @IsString()
+  imageUrl?: string;
+
   @ApiProperty({ example: 1 })
   @IsNotEmpty()
   @IsInt()

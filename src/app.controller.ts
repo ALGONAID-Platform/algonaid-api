@@ -1,6 +1,8 @@
 import { Controller, Get, Param, Header, Post, UseInterceptors, UploadedFile, UseGuards } from '@nestjs/common';
 import { AppService } from './app.service';
 import { FileInterceptor } from '@nestjs/platform-express';
+import { memoryStorage } from 'multer';
+import { BadRequestException } from '@nestjs/common';
 import { UploadcareStorageService } from './utils/uploadcare-storage.service';
 import { AuthRollGuard } from './auth/guards/auth-roll.guard';
 import { userRoles } from './auth/decorators/user_roll.decorator';
@@ -53,8 +55,35 @@ export class AppController {
   @ApiBearerAuth('JWT-auth')
   @UseGuards(AuthRollGuard)
   @userRoles(Role.ADMIN, Role.OWNER)
-  @UseInterceptors(FileInterceptor('file'))
-  @ApiOperation({ summary: 'Upload general image (e.g., from RTF editor)' })
+  @UseInterceptors(
+    FileInterceptor('file', {
+      storage: memoryStorage(),
+      limits: {
+        fileSize: 50 * 1024 * 1024,
+      },
+      fileFilter: (req, file, callback) => {
+        const allowedMimeTypes = [
+          'image/jpeg',
+          'image/png',
+          'image/gif',
+          'image/webp',
+          'application/pdf',
+        ];
+
+        if (!allowedMimeTypes.includes(file.mimetype)) {
+          return callback(
+            new BadRequestException(
+              'مسموح برفع صور وملفات PDF فقط',
+            ),
+            false,
+          );
+        }
+
+        callback(null, true);
+      },
+    }),
+  )
+  @ApiOperation({ summary: 'Upload general image or PDF' })
   @ApiConsumes('multipart/form-data')
   async uploadImage(@UploadedFile() file: Express.Multer.File) {
     const url = await this.uploadcareStorageService.upload(file);

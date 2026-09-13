@@ -10,7 +10,7 @@ export class ModulesService {
   constructor(private readonly prisma: PrismaService) { }
 
   async create(createModuleDto: CreateModuleDto, userId: number) {
-    const { courseId, title, description } = createModuleDto;
+    const { courseId, title, description, imageUrl } = createModuleDto;
 
     const course = await this.prisma.course.findUnique({
       where: { id: courseId },
@@ -39,6 +39,7 @@ export class ModulesService {
         title,
         description,
         courseId,
+        imageUrl,
       },
     });
   }
@@ -67,6 +68,7 @@ export class ModulesService {
             lessonProgress: studentId ? {
               where: { studentId },
             } : false,
+            _count: { select: { comments: true } }
           }
         },
         _count: {
@@ -85,8 +87,17 @@ export class ModulesService {
       let totalLessons = _count.lessons;
       let completedLessons = 0;
 
+      const mappedLessons = lessons.map(lesson => {
+        // @ts-ignore
+        const { _count: lessonCount, ...lessonRest } = lesson;
+        return {
+          ...lessonRest,
+          commentsCount: lessonCount?.comments || 0,
+        };
+      });
+
       if (studentId) {
-        lessons.forEach(lesson => {
+        mappedLessons.forEach(lesson => {
           // @ts-ignore
           const progress = lesson.lessonProgress;
           if (progress && progress.length > 0 && progress[0].isCompleted) {
@@ -99,6 +110,7 @@ export class ModulesService {
 
       return {
         ...rest,
+        lessons: mappedLessons,
         totalLessons,
         completedLessons,
         progressPercentage: studentId ? progressPercentage : undefined,
@@ -131,6 +143,7 @@ export class ModulesService {
             lessonProgress: studentId ? {
               where: { studentId },
             } : false,
+            _count: { select: { comments: true } }
           }
         },
         _count: {
@@ -149,8 +162,17 @@ export class ModulesService {
       let totalLessons = _count.lessons;
       let completedLessons = 0;
 
+      const mappedLessons = lessons.map(lesson => {
+        // @ts-ignore
+        const { _count: lessonCount, ...lessonRest } = lesson;
+        return {
+          ...lessonRest,
+          commentsCount: lessonCount?.comments || 0,
+        };
+      });
+
       if (studentId) {
-        lessons.forEach(lesson => {
+        mappedLessons.forEach(lesson => {
           // @ts-ignore
           const progress = lesson.lessonProgress;
           if (progress && progress.length > 0 && progress[0].isCompleted) {
@@ -163,6 +185,7 @@ export class ModulesService {
 
       return {
         ...rest,
+        lessons: mappedLessons,
         totalLessons,
         completedLessons,
         progressPercentage: studentId ? progressPercentage : undefined,

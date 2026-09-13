@@ -1,0 +1,420 @@
+==================================================
+ ALGONAID VPS / DOCKER DIAGNOSTIC REPORT
+ Mon Aug 17 13:30:52 CEST 2026
+==================================================
+
+### 1) HOST
+Hostname:
+vmi3509408
+
+Disk:
+Filesystem      Size  Used Avail Use% Mounted on
+/dev/sda1        96G   13G   83G  14% /
+
+Memory:
+               total        used        free      shared  buff/cache   available
+Mem:           7.8Gi       1.2Gi       5.7Gi        55Mi       1.3Gi       6.5Gi
+Swap:             0B          0B          0B
+
+Uptime:
+ 13:30:52 up 2 days, 18:37,  2 users,  load average: 0.30, 0.33, 0.29
+
+==================================================
+### 2) DOCKER CONTAINERS
+==================================================
+CONTAINER ID   IMAGE                COMMAND                  CREATED        STATUS                  PORTS                                         NAMES
+878a88f1b5d7   algonaid-api-api     "docker-entrypoint.s…"   30 hours ago   Up 18 hours             0.0.0.0:3000->3000/tcp, [::]:3000->3000/tcp   algonaid-api-api-1
+5046ff90c22a   postgres:16-alpine   "docker-entrypoint.s…"   30 hours ago   Up 30 hours (healthy)   0.0.0.0:5434->5432/tcp, [::]:5434->5432/tcp   algonaid-api-db-1
+
+==================================================
+### 3) DOCKER COMPOSE
+==================================================
+NAME                 IMAGE                COMMAND                  SERVICE   CREATED        STATUS                  PORTS
+algonaid-api-api-1   algonaid-api-api     "docker-entrypoint.s…"   api       30 hours ago   Up 18 hours             0.0.0.0:3000->3000/tcp, [::]:3000->3000/tcp
+algonaid-api-db-1    postgres:16-alpine   "docker-entrypoint.s…"   db        30 hours ago   Up 30 hours (healthy)   0.0.0.0:5434->5432/tcp, [::]:5434->5432/tcp
+
+Compose services:
+db
+api
+
+Compose images:
+postgres:16-alpine
+algonaid-api-api
+
+==================================================
+### 4) API CONTAINER
+==================================================
+Name=/algonaid-api-api-1
+Status=running
+Running=true
+StartedAt=2026-08-16T17:31:56.632195605Z
+RestartCount=0
+WorkingDir=/usr/src/app
+
+API Networks:
+{"algonaid-api_default":{"IPAMConfig":null,"Links":null,"Aliases":["algonaid-api-api-1","api"],"DriverOpts":null,"GwPriority":0,"NetworkID":"9b9670db93bac8cd662f9076fae0b924c490131b11c59c661fa2c0714b98860d","EndpointID":"bca6d7d3f679f6ec2f577e4c46527d293f31cd6ed5a6147c9dadd0b2c7d43210","Gateway":"172.18.0.1","IPAddress":"172.18.0.3","MacAddress":"12:32:55:b6:91:05","IPPrefixLen":16,"IPv6Gateway":"","GlobalIPv6Address":"","GlobalIPv6PrefixLen":0,"DNSNames":["algonaid-api-api-1","api","878a88f1b5d7"]}}
+
+==================================================
+### 5) API ENVIRONMENT (SECRETS MASKED)
+==================================================
+APP_URL=https://api.exchangesmangement.online
+DATABASE_URL=postgresql://postgres:****@db:5432/algonaid?schema=public
+PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+NODE_VERSION=22.23.2
+YARN_VERSION=1.22.22
+
+
+==================================================
+### 6) POSTGRES CONTAINER
+==================================================
+Name=/algonaid-api-db-1
+Status=running
+Health=healthy
+StartedAt=2026-08-16T05:17:57.234312069Z
+RestartCount=0
+
+PostgreSQL environment (passwords masked):
+POSTGRES_USER=postgres
+POSTGRES_PASSWORD=****
+POSTGRES_DB=algonaid
+PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+GOSU_VERSION=1.19
+LANG=en_US.utf8
+PG_MAJOR=16
+PG_VERSION=16.15
+PG_SHA256=c1575341fa7bd40f5274ea465b34390f4dc64cdd0770af327005caaeb9f6b7ed
+DOCKER_PG_LLVM_DEPS=llvm21-dev 		clang21
+PGDATA=/var/lib/postgresql/data
+
+
+==================================================
+### 7) POSTGRES HEALTH
+==================================================
+/var/run/postgresql:5432 - accepting connections
+
+PostgreSQL version:
+PostgreSQL 16.15 on x86_64-pc-linux-musl, compiled by gcc (Alpine 15.2.0) 15.2.0, 64-bit
+
+PostgreSQL current user:
+postgres
+
+Databases:
+algonaid
+postgres
+readme_to_recover
+
+Postgres users:
+postgres
+wog
+
+==================================================
+### 8) API -> DATABASE DNS
+==================================================
+DATABASE hostname from environment:
+postgresql://postgres:****@db:5432/algonaid?schema=public
+
+API container DNS:
+172.18.0.2        db  db
+
+==================================================
+### 9) DATABASE PORT CONNECTIVITY FROM API
+==================================================
+Testing db:5432...
+db (172.18.0.2:5432) open
+
+==================================================
+### 10) PRISMA
+==================================================
+Prisma schema: FOUND
+Prisma package: FOUND
+
+==================================================
+### 11) API LOGS - LAST 120 LINES
+==================================================
+    at zr.handleRequestError [90m(/usr/src/app/[39mnode_modules/[4m@prisma/client[24m/src/runtime/RequestHandler.ts:237:13[90m)[39m
+    at zr.handleAndLogRequestError [90m(/usr/src/app/[39mnode_modules/[4m@prisma/client[24m/src/runtime/RequestHandler.ts:183:12[90m)[39m
+    at zr.request [90m(/usr/src/app/[39mnode_modules/[4m@prisma/client[24m/src/runtime/RequestHandler.ts:152:12[90m)[39m
+[90m    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)[39m
+    at async a [90m(/usr/src/app/[39mnode_modules/[4m@prisma/client[24m/src/runtime/getPrismaClient.ts:963:24[90m)[39m
+    at async AuthService.getCurrentUser [90m(/usr/src/app/[39msrc/auth/services/auth.services.ts:419:18[90m)[39m
+    at async AuthRollGuard.canActivate [90m(/usr/src/app/[39msrc/auth/guards/auth-roll.guard.ts:47:22[90m)[39m
+    at async GuardsConsumer.tryActivate [90m(/usr/src/app/[39mnode_modules/[4m@nestjs/core[24m/guards/guards-consumer.js:22:17[90m)[39m
+    at async canActivateFn [90m(/usr/src/app/[39mnode_modules/[4m@nestjs/core[24m/router/router-execution-context.js:135:33[90m)[39m
+    at async [90m/usr/src/app/[39mnode_modules/[4m@nestjs/core[24m/router/router-execution-context.js:42:31 {
+  code: [32m'P1000'[39m,
+  meta: {
+    modelName: [32m'User'[39m,
+    driverAdapterError: DriverAdapterError: AuthenticationFailed
+        at PrismaPgAdapter.onError [90m(/usr/src/app/[39mnode_modules/[4m@prisma/adapter-pg[24m/dist/index.js:687:11[90m)[39m
+        at PrismaPgAdapter.performIO [90m(/usr/src/app/[39mnode_modules/[4m@prisma/adapter-pg[24m/dist/index.js:682:12[90m)[39m
+    [90m    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)[39m
+        at async PrismaPgAdapter.queryRaw [90m(/usr/src/app/[39mnode_modules/[4m@prisma/adapter-pg[24m/dist/index.js:602:30[90m)[39m
+        at async e.interpretNode [90m(/usr/src/app/[39mnode_modules/[4m@prisma/client-engine-runtime[24m/src/interpreter/query-interpreter.ts:186:26[90m)[39m
+        at async e.interpretNode [90m(/usr/src/app/[39mnode_modules/[4m@prisma/client-engine-runtime[24m/src/interpreter/query-interpreter.ts:213:41[90m)[39m
+        at async e.interpretNode [90m(/usr/src/app/[39mnode_modules/[4m@prisma/client-engine-runtime[24m/src/interpreter/query-interpreter.ts:128:29[90m)[39m
+        at async e.interpretNode [90m(/usr/src/app/[39mnode_modules/[4m@prisma/client-engine-runtime[24m/src/interpreter/query-interpreter.ts:272:41[90m)[39m
+        at async e.run [90m(/usr/src/app/[39mnode_modules/[4m@prisma/client-engine-runtime[24m/src/interpreter/query-interpreter.ts:94:23[90m)[39m
+        at async e.execute [90m(/usr/src/app/[39mnode_modules/[4m@prisma/client[24m/src/runtime/core/engines/client/LocalExecutor.ts:81:12[90m)[39m {
+      cause: {
+        originalCode: [32m'28P01'[39m,
+        originalMessage: [32m'password authentication failed for user "postgres"'[39m,
+        kind: [32m'AuthenticationFailed'[39m,
+        user: [32m'postgres'[39m
+      }
+    }
+  },
+  clientVersion: [32m'7.8.0'[39m
+}
+[31m[Nest] 150  - [39m08/17/2026, 11:19:45 AM [31m  ERROR[39m [38;5;3m[ExceptionsHandler] [39mPrismaClientKnownRequestError: 
+Invalid `this.prisma.user.findUnique()` invocation in
+/usr/src/app/src/auth/services/auth.services.ts:419:41
+
+  416 }
+  417 
+  418 async getCurrentUser(id: number) {
+→ 419   const user = await this.prisma.user.findUnique(
+Authentication failed against the database server, the provided database credentials for `postgres` are not valid
+    at zr.handleRequestError [90m(/usr/src/app/[39mnode_modules/[4m@prisma/client[24m/src/runtime/RequestHandler.ts:237:13[90m)[39m
+    at zr.handleAndLogRequestError [90m(/usr/src/app/[39mnode_modules/[4m@prisma/client[24m/src/runtime/RequestHandler.ts:183:12[90m)[39m
+    at zr.request [90m(/usr/src/app/[39mnode_modules/[4m@prisma/client[24m/src/runtime/RequestHandler.ts:152:12[90m)[39m
+[90m    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)[39m
+    at async a [90m(/usr/src/app/[39mnode_modules/[4m@prisma/client[24m/src/runtime/getPrismaClient.ts:963:24[90m)[39m
+    at async AuthService.getCurrentUser [90m(/usr/src/app/[39msrc/auth/services/auth.services.ts:419:18[90m)[39m
+    at async AuthRollGuard.canActivate [90m(/usr/src/app/[39msrc/auth/guards/auth-roll.guard.ts:47:22[90m)[39m
+    at async GuardsConsumer.tryActivate [90m(/usr/src/app/[39mnode_modules/[4m@nestjs/core[24m/guards/guards-consumer.js:22:17[90m)[39m
+    at async canActivateFn [90m(/usr/src/app/[39mnode_modules/[4m@nestjs/core[24m/router/router-execution-context.js:135:33[90m)[39m
+    at async [90m/usr/src/app/[39mnode_modules/[4m@nestjs/core[24m/router/router-execution-context.js:42:31 {
+  code: [32m'P1000'[39m,
+  meta: {
+    modelName: [32m'User'[39m,
+    driverAdapterError: DriverAdapterError: AuthenticationFailed
+        at PrismaPgAdapter.onError [90m(/usr/src/app/[39mnode_modules/[4m@prisma/adapter-pg[24m/dist/index.js:687:11[90m)[39m
+        at PrismaPgAdapter.performIO [90m(/usr/src/app/[39mnode_modules/[4m@prisma/adapter-pg[24m/dist/index.js:682:12[90m)[39m
+    [90m    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)[39m
+        at async PrismaPgAdapter.queryRaw [90m(/usr/src/app/[39mnode_modules/[4m@prisma/adapter-pg[24m/dist/index.js:602:30[90m)[39m
+        at async e.interpretNode [90m(/usr/src/app/[39mnode_modules/[4m@prisma/client-engine-runtime[24m/src/interpreter/query-interpreter.ts:186:26[90m)[39m
+        at async e.interpretNode [90m(/usr/src/app/[39mnode_modules/[4m@prisma/client-engine-runtime[24m/src/interpreter/query-interpreter.ts:213:41[90m)[39m
+        at async e.interpretNode [90m(/usr/src/app/[39mnode_modules/[4m@prisma/client-engine-runtime[24m/src/interpreter/query-interpreter.ts:128:29[90m)[39m
+        at async e.interpretNode [90m(/usr/src/app/[39mnode_modules/[4m@prisma/client-engine-runtime[24m/src/interpreter/query-interpreter.ts:272:41[90m)[39m
+        at async e.run [90m(/usr/src/app/[39mnode_modules/[4m@prisma/client-engine-runtime[24m/src/interpreter/query-interpreter.ts:94:23[90m)[39m
+        at async e.execute [90m(/usr/src/app/[39mnode_modules/[4m@prisma/client[24m/src/runtime/core/engines/client/LocalExecutor.ts:81:12[90m)[39m {
+      cause: {
+        originalCode: [32m'28P01'[39m,
+        originalMessage: [32m'password authentication failed for user "postgres"'[39m,
+        kind: [32m'AuthenticationFailed'[39m,
+        user: [32m'postgres'[39m
+      }
+    }
+  },
+  clientVersion: [32m'7.8.0'[39m
+}
+[31m[Nest] 150  - [39m08/17/2026, 11:19:45 AM [31m  ERROR[39m [38;5;3m[ExceptionsHandler] [39mPrismaClientKnownRequestError: 
+Invalid `this.prisma.user.findUnique()` invocation in
+/usr/src/app/src/auth/services/auth.services.ts:419:41
+
+  416 }
+  417 
+  418 async getCurrentUser(id: number) {
+→ 419   const user = await this.prisma.user.findUnique(
+Authentication failed against the database server, the provided database credentials for `postgres` are not valid
+    at zr.handleRequestError [90m(/usr/src/app/[39mnode_modules/[4m@prisma/client[24m/src/runtime/RequestHandler.ts:237:13[90m)[39m
+    at zr.handleAndLogRequestError [90m(/usr/src/app/[39mnode_modules/[4m@prisma/client[24m/src/runtime/RequestHandler.ts:183:12[90m)[39m
+    at zr.request [90m(/usr/src/app/[39mnode_modules/[4m@prisma/client[24m/src/runtime/RequestHandler.ts:152:12[90m)[39m
+[90m    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)[39m
+    at async a [90m(/usr/src/app/[39mnode_modules/[4m@prisma/client[24m/src/runtime/getPrismaClient.ts:963:24[90m)[39m
+    at async AuthService.getCurrentUser [90m(/usr/src/app/[39msrc/auth/services/auth.services.ts:419:18[90m)[39m
+    at async AuthRollGuard.canActivate [90m(/usr/src/app/[39msrc/auth/guards/auth-roll.guard.ts:47:22[90m)[39m
+    at async GuardsConsumer.tryActivate [90m(/usr/src/app/[39mnode_modules/[4m@nestjs/core[24m/guards/guards-consumer.js:22:17[90m)[39m
+    at async canActivateFn [90m(/usr/src/app/[39mnode_modules/[4m@nestjs/core[24m/router/router-execution-context.js:135:33[90m)[39m
+    at async [90m/usr/src/app/[39mnode_modules/[4m@nestjs/core[24m/router/router-execution-context.js:42:31 {
+  code: [32m'P1000'[39m,
+  meta: {
+    modelName: [32m'User'[39m,
+    driverAdapterError: DriverAdapterError: AuthenticationFailed
+        at PrismaPgAdapter.onError [90m(/usr/src/app/[39mnode_modules/[4m@prisma/adapter-pg[24m/dist/index.js:687:11[90m)[39m
+        at PrismaPgAdapter.performIO [90m(/usr/src/app/[39mnode_modules/[4m@prisma/adapter-pg[24m/dist/index.js:682:12[90m)[39m
+    [90m    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)[39m
+        at async PrismaPgAdapter.queryRaw [90m(/usr/src/app/[39mnode_modules/[4m@prisma/adapter-pg[24m/dist/index.js:602:30[90m)[39m
+        at async e.interpretNode [90m(/usr/src/app/[39mnode_modules/[4m@prisma/client-engine-runtime[24m/src/interpreter/query-interpreter.ts:186:26[90m)[39m
+        at async e.interpretNode [90m(/usr/src/app/[39mnode_modules/[4m@prisma/client-engine-runtime[24m/src/interpreter/query-interpreter.ts:213:41[90m)[39m
+        at async e.interpretNode [90m(/usr/src/app/[39mnode_modules/[4m@prisma/client-engine-runtime[24m/src/interpreter/query-interpreter.ts:128:29[90m)[39m
+        at async e.interpretNode [90m(/usr/src/app/[39mnode_modules/[4m@prisma/client-engine-runtime[24m/src/interpreter/query-interpreter.ts:272:41[90m)[39m
+        at async e.run [90m(/usr/src/app/[39mnode_modules/[4m@prisma/client-engine-runtime[24m/src/interpreter/query-interpreter.ts:94:23[90m)[39m
+        at async e.execute [90m(/usr/src/app/[39mnode_modules/[4m@prisma/client[24m/src/runtime/core/engines/client/LocalExecutor.ts:81:12[90m)[39m {
+      cause: {
+        originalCode: [32m'28P01'[39m,
+        originalMessage: [32m'password authentication failed for user "postgres"'[39m,
+        kind: [32m'AuthenticationFailed'[39m,
+        user: [32m'postgres'[39m
+      }
+    }
+  },
+  clientVersion: [32m'7.8.0'[39m
+}
+
+==================================================
+### 12) DATABASE LOGS - LAST 80 LINES
+==================================================
+2026-08-17 11:16:42.262 UTC [147796] FATAL:  password authentication failed for user "postgres"
+2026-08-17 11:16:42.262 UTC [147796] DETAIL:  Connection matched file "/var/lib/postgresql/data/pg_hba.conf" line 128: "host all all all scram-sha-256"
+2026-08-17 11:16:42.446 UTC [147798] FATAL:  password authentication failed for user "postgres"
+2026-08-17 11:16:42.446 UTC [147798] DETAIL:  Connection matched file "/var/lib/postgresql/data/pg_hba.conf" line 128: "host all all all scram-sha-256"
+2026-08-17 11:16:42.496 UTC [147799] FATAL:  password authentication failed for user "postgres"
+2026-08-17 11:16:42.496 UTC [147799] DETAIL:  Connection matched file "/var/lib/postgresql/data/pg_hba.conf" line 128: "host all all all scram-sha-256"
+2026-08-17 11:16:42.704 UTC [147800] FATAL:  password authentication failed for user "postgres"
+2026-08-17 11:16:42.704 UTC [147800] DETAIL:  Connection matched file "/var/lib/postgresql/data/pg_hba.conf" line 128: "host all all all scram-sha-256"
+2026-08-17 11:17:12.091 UTC [147836] FATAL:  password authentication failed for user "postgres"
+2026-08-17 11:17:12.091 UTC [147836] DETAIL:  Connection matched file "/var/lib/postgresql/data/pg_hba.conf" line 128: "host all all all scram-sha-256"
+2026-08-17 11:17:12.123 UTC [147837] FATAL:  password authentication failed for user "postgres"
+2026-08-17 11:17:12.123 UTC [147837] DETAIL:  Connection matched file "/var/lib/postgresql/data/pg_hba.conf" line 128: "host all all all scram-sha-256"
+2026-08-17 11:17:12.185 UTC [147838] FATAL:  password authentication failed for user "postgres"
+2026-08-17 11:17:12.185 UTC [147838] DETAIL:  Connection matched file "/var/lib/postgresql/data/pg_hba.conf" line 128: "host all all all scram-sha-256"
+2026-08-17 11:17:12.249 UTC [147840] FATAL:  password authentication failed for user "postgres"
+2026-08-17 11:17:12.249 UTC [147840] DETAIL:  Connection matched file "/var/lib/postgresql/data/pg_hba.conf" line 128: "host all all all scram-sha-256"
+2026-08-17 11:17:12.272 UTC [147847] FATAL:  password authentication failed for user "postgres"
+2026-08-17 11:17:12.272 UTC [147847] DETAIL:  Connection matched file "/var/lib/postgresql/data/pg_hba.conf" line 128: "host all all all scram-sha-256"
+2026-08-17 11:17:12.441 UTC [147849] FATAL:  password authentication failed for user "postgres"
+2026-08-17 11:17:12.441 UTC [147849] DETAIL:  Connection matched file "/var/lib/postgresql/data/pg_hba.conf" line 128: "host all all all scram-sha-256"
+2026-08-17 11:17:41.943 UTC [147888] FATAL:  password authentication failed for user "postgres"
+2026-08-17 11:17:41.943 UTC [147888] DETAIL:  Connection matched file "/var/lib/postgresql/data/pg_hba.conf" line 128: "host all all all scram-sha-256"
+2026-08-17 11:17:41.976 UTC [147887] FATAL:  password authentication failed for user "postgres"
+2026-08-17 11:17:41.976 UTC [147887] DETAIL:  Connection matched file "/var/lib/postgresql/data/pg_hba.conf" line 128: "host all all all scram-sha-256"
+2026-08-17 11:17:42.000 UTC [147889] FATAL:  password authentication failed for user "postgres"
+2026-08-17 11:17:42.000 UTC [147889] DETAIL:  Connection matched file "/var/lib/postgresql/data/pg_hba.conf" line 128: "host all all all scram-sha-256"
+2026-08-17 11:17:42.090 UTC [147891] FATAL:  password authentication failed for user "postgres"
+2026-08-17 11:17:42.090 UTC [147891] DETAIL:  Connection matched file "/var/lib/postgresql/data/pg_hba.conf" line 128: "host all all all scram-sha-256"
+2026-08-17 11:17:42.159 UTC [147892] FATAL:  password authentication failed for user "postgres"
+2026-08-17 11:17:42.159 UTC [147892] DETAIL:  Connection matched file "/var/lib/postgresql/data/pg_hba.conf" line 128: "host all all all scram-sha-256"
+2026-08-17 11:17:42.304 UTC [147893] FATAL:  password authentication failed for user "postgres"
+2026-08-17 11:17:42.304 UTC [147893] DETAIL:  Connection matched file "/var/lib/postgresql/data/pg_hba.conf" line 128: "host all all all scram-sha-256"
+2026-08-17 11:18:11.927 UTC [147939] FATAL:  password authentication failed for user "postgres"
+2026-08-17 11:18:11.927 UTC [147939] DETAIL:  Connection matched file "/var/lib/postgresql/data/pg_hba.conf" line 128: "host all all all scram-sha-256"
+2026-08-17 11:18:12.018 UTC [147940] FATAL:  password authentication failed for user "postgres"
+2026-08-17 11:18:12.018 UTC [147940] DETAIL:  Connection matched file "/var/lib/postgresql/data/pg_hba.conf" line 128: "host all all all scram-sha-256"
+2026-08-17 11:18:12.058 UTC [147941] FATAL:  password authentication failed for user "postgres"
+2026-08-17 11:18:12.058 UTC [147941] DETAIL:  Connection matched file "/var/lib/postgresql/data/pg_hba.conf" line 128: "host all all all scram-sha-256"
+2026-08-17 11:18:12.089 UTC [147942] FATAL:  password authentication failed for user "postgres"
+2026-08-17 11:18:12.089 UTC [147942] DETAIL:  Connection matched file "/var/lib/postgresql/data/pg_hba.conf" line 128: "host all all all scram-sha-256"
+2026-08-17 11:18:12.294 UTC [147943] FATAL:  password authentication failed for user "postgres"
+2026-08-17 11:18:12.294 UTC [147943] DETAIL:  Connection matched file "/var/lib/postgresql/data/pg_hba.conf" line 128: "host all all all scram-sha-256"
+2026-08-17 11:18:12.627 UTC [147944] FATAL:  password authentication failed for user "postgres"
+2026-08-17 11:18:12.627 UTC [147944] DETAIL:  Connection matched file "/var/lib/postgresql/data/pg_hba.conf" line 128: "host all all all scram-sha-256"
+2026-08-17 11:18:42.150 UTC [147989] FATAL:  password authentication failed for user "postgres"
+2026-08-17 11:18:42.150 UTC [147989] DETAIL:  Connection matched file "/var/lib/postgresql/data/pg_hba.conf" line 128: "host all all all scram-sha-256"
+2026-08-17 11:18:42.151 UTC [147990] FATAL:  password authentication failed for user "postgres"
+2026-08-17 11:18:42.151 UTC [147990] DETAIL:  Connection matched file "/var/lib/postgresql/data/pg_hba.conf" line 128: "host all all all scram-sha-256"
+2026-08-17 11:18:42.180 UTC [147991] FATAL:  password authentication failed for user "postgres"
+2026-08-17 11:18:42.180 UTC [147991] DETAIL:  Connection matched file "/var/lib/postgresql/data/pg_hba.conf" line 128: "host all all all scram-sha-256"
+2026-08-17 11:18:42.193 UTC [147992] FATAL:  password authentication failed for user "postgres"
+2026-08-17 11:18:42.193 UTC [147992] DETAIL:  Connection matched file "/var/lib/postgresql/data/pg_hba.conf" line 128: "host all all all scram-sha-256"
+2026-08-17 11:18:42.385 UTC [147993] FATAL:  password authentication failed for user "postgres"
+2026-08-17 11:18:42.385 UTC [147993] DETAIL:  Connection matched file "/var/lib/postgresql/data/pg_hba.conf" line 128: "host all all all scram-sha-256"
+2026-08-17 11:18:42.631 UTC [147994] FATAL:  password authentication failed for user "postgres"
+2026-08-17 11:18:42.631 UTC [147994] DETAIL:  Connection matched file "/var/lib/postgresql/data/pg_hba.conf" line 128: "host all all all scram-sha-256"
+2026-08-17 11:19:12.408 UTC [148031] FATAL:  password authentication failed for user "postgres"
+2026-08-17 11:19:12.408 UTC [148031] DETAIL:  Connection matched file "/var/lib/postgresql/data/pg_hba.conf" line 128: "host all all all scram-sha-256"
+2026-08-17 11:19:13.031 UTC [148032] FATAL:  password authentication failed for user "postgres"
+2026-08-17 11:19:13.031 UTC [148032] DETAIL:  Connection matched file "/var/lib/postgresql/data/pg_hba.conf" line 128: "host all all all scram-sha-256"
+2026-08-17 11:19:13.037 UTC [148033] FATAL:  password authentication failed for user "postgres"
+2026-08-17 11:19:13.037 UTC [148033] DETAIL:  Connection matched file "/var/lib/postgresql/data/pg_hba.conf" line 128: "host all all all scram-sha-256"
+2026-08-17 11:19:13.168 UTC [148035] FATAL:  password authentication failed for user "postgres"
+2026-08-17 11:19:13.168 UTC [148035] DETAIL:  Connection matched file "/var/lib/postgresql/data/pg_hba.conf" line 128: "host all all all scram-sha-256"
+2026-08-17 11:19:13.175 UTC [148034] FATAL:  password authentication failed for user "postgres"
+2026-08-17 11:19:13.175 UTC [148034] DETAIL:  Connection matched file "/var/lib/postgresql/data/pg_hba.conf" line 128: "host all all all scram-sha-256"
+2026-08-17 11:19:13.319 UTC [148042] FATAL:  password authentication failed for user "postgres"
+2026-08-17 11:19:13.319 UTC [148042] DETAIL:  Connection matched file "/var/lib/postgresql/data/pg_hba.conf" line 128: "host all all all scram-sha-256"
+2026-08-17 11:19:44.812 UTC [148079] FATAL:  password authentication failed for user "postgres"
+2026-08-17 11:19:44.812 UTC [148079] DETAIL:  Connection matched file "/var/lib/postgresql/data/pg_hba.conf" line 128: "host all all all scram-sha-256"
+2026-08-17 11:19:44.813 UTC [148078] FATAL:  password authentication failed for user "postgres"
+2026-08-17 11:19:44.813 UTC [148078] DETAIL:  Connection matched file "/var/lib/postgresql/data/pg_hba.conf" line 128: "host all all all scram-sha-256"
+2026-08-17 11:19:44.859 UTC [148080] FATAL:  password authentication failed for user "postgres"
+2026-08-17 11:19:44.859 UTC [148080] DETAIL:  Connection matched file "/var/lib/postgresql/data/pg_hba.conf" line 128: "host all all all scram-sha-256"
+2026-08-17 11:19:44.873 UTC [148081] FATAL:  password authentication failed for user "postgres"
+2026-08-17 11:19:44.873 UTC [148081] DETAIL:  Connection matched file "/var/lib/postgresql/data/pg_hba.conf" line 128: "host all all all scram-sha-256"
+2026-08-17 11:19:44.983 UTC [148088] FATAL:  password authentication failed for user "postgres"
+2026-08-17 11:19:44.983 UTC [148088] DETAIL:  Connection matched file "/var/lib/postgresql/data/pg_hba.conf" line 128: "host all all all scram-sha-256"
+2026-08-17 11:19:45.177 UTC [148090] FATAL:  password authentication failed for user "postgres"
+2026-08-17 11:19:45.177 UTC [148090] DETAIL:  Connection matched file "/var/lib/postgresql/data/pg_hba.conf" line 128: "host all all all scram-sha-256"
+
+==================================================
+### 13) API LOCAL TEST
+==================================================
+HTTP/1.1 500 Internal Server Error
+X-Powered-By: Express
+Vary: Origin
+Access-Control-Allow-Credentials: true
+Content-Type: application/json; charset=utf-8
+Content-Length: 52
+ETag: W/"34-rlKccw1E+/fV8niQk4oFitDfPro"
+Date: Mon, 17 Aug 2026 11:31:09 GMT
+Connection: keep-alive
+Keep-Alive: timeout=5
+
+{"statusCode":500,"message":"Internal server error"}
+==================================================
+### 14) PUBLIC API TEST
+==================================================
+curl: (6) Could not resolve host: api.exchangemangement.online
+
+==================================================
+### 15) DOCKER VOLUMES
+==================================================
+DRIVER    VOLUME NAME
+local     1eb219f81f50d7c683ff608237d1e9f0972f2660048f76b0401720ba42ce3342
+local     2fb7baf0f194ff56dd9b20e4bb7b0d91a1b945715c8d79ec138807ca66650eaa
+local     5b0a06bc3f623a2534506598e798342a90b80e0149abc99953fa292801911db6
+local     1114c9509d8b3134852cc3f2aebc48712615556233e22258f10a0f6892ef200d
+local     algonaid-api_postgres_data
+local     c635c4ccd62756d24ffa34f5cc9879b93e99fa2b754e7d08b88fbe2a958dcea7
+local     cfcb77a3d679182e7efcf20ae6a08c36f9214951f2b5fc91ccd02b4e7e7de8c9
+local     d8f8f7896e66fa523c96dd6cdbee8b74946c72b211484aa22b86bf26ba71c634
+local     ea445918434dea6143128b1cf5931ab8564a1ca6776d1e77f976e2a48c4599f4
+
+==================================================
+### 16) DOCKER NETWORKS
+==================================================
+NETWORK ID     NAME                   DRIVER    SCOPE
+9b9670db93ba   algonaid-api_default   bridge    local
+13e7d70f2104   bridge                 bridge    local
+380e194ea151   host                   host      local
+70f0bd143fef   none                   null      local
+
+==================================================
+### 17) PROJECT FILES
+==================================================
+/root/algonaid-api
+total 648K
+drwxr-xr-x 10 root root 4.0K Aug 17 13:30 .
+drwx------  9 root root 4.0K Aug 16 19:49 ..
+-rw-r--r--  1 root root   28 Aug 14 19:33 .dockerignore
+-rw-r--r--  1 root root 3.5K Aug 15 22:59 .env
+-rw-r--r--  1 root root 3.1K Aug 14 19:33 .env.example
+drwxr-xr-x  8 root root 4.0K Aug 15 20:17 .git
+-rw-r--r--  1 root root  683 Aug 14 19:33 .gitignore
+-rw-r--r--  1 root root   52 Aug 14 19:33 .prettierrc
+-rw-r--r--  1 root root  393 Aug 14 19:33 Dockerfile
+-rw-r--r--  1 root root 8.4K Aug 14 19:33 README.md
+-rwxr-xr-x  1 root root 5.9K Aug 17 13:30 diagnose.sh
+-rw-r--r--  1 root root  20K Aug 16 19:21 diagnosis.txt
+-rw-r--r--  1 root root  27K Aug 17 13:31 diagnostic-report.txt
+drwxr-xr-x 14 root root 4.0K Aug 16 19:33 dist
+-rw-r--r--  1 root root  875 Aug 15 12:12 docker-compose.yml
+-rw-r--r--  1 root root  899 Aug 14 19:33 eslint.config.mjs
+-rwxr-xr-x  1 root root 1.6K Aug 16 19:31 fix-database.sh
+-rw-r--r--  1 root root  171 Aug 14 19:33 nest-cli.json
+drwxr-xr-x  2 root root 4.0K Aug 14 19:51 node_modules
+-rw-r--r--  1 root root 476K Aug 15 13:04 package-lock.json
+-rw-r--r--  1 root root 3.1K Aug 15 12:16 package.json
+-rw-r--r--  1 root root 4.4K Aug 14 19:33 postman-mock-data.md
+drwxr-xr-x  3 root root 4.0K Aug 14 19:33 prisma
+-rw-r--r--  1 root root  320 Aug 14 19:33 prisma.config.ts
+drwxr-xr-x  3 root root 4.0K Aug 14 19:33 public
+drwxr-xr-x 14 root root 4.0K Aug 15 12:31 src
+drwxr-xr-x  2 root root 4.0K Aug 14 19:33 test
+-rw-r--r--  1 root root   97 Aug 14 19:33 tsconfig.build.json
+-rw-r--r--  1 root root  675 Aug 14 19:33 tsconfig.json
+drwxrwxrwx  4 root root 4.0K Aug 15 11:13 uploads
+
+==================================================
+ DIAGNOSTIC COMPLETE
+==================================================

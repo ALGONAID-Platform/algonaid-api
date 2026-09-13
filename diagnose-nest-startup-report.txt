@@ -1,0 +1,464 @@
+==================================================
+ ALGONAID NESTJS STARTUP DIAGNOSTIC
+ Mon Aug 17 13:44:13 CEST 2026
+==================================================
+
+### 1. CONTAINER STATE
+
+Status=running
+Running=true
+Restarting=false
+RestartCount=0
+ExitCode=0
+OOMKilled=false
+Error=
+StartedAt=2026-08-17T11:43:25.991296152Z
+FinishedAt=0001-01-01T00:00:00Z
+
+
+### 2. CURRENT PROCESSES
+PID   USER     TIME  COMMAND
+    1 root      0:00 npm run start:dev
+   18 root      0:00 node /usr/src/app/node_modules/.bin/cross-env NODE_ENV=development nest start --watch
+   25 root      1:22 node /usr/src/app/node_modules/.bin/nest start --watch
+   37 root      0:09 node --enable-source-maps /usr/src/app/dist/main
+   45 root      0:00 ps aux
+
+### 3. LISTENING PORTS
+  sl  local_address rem_address   st tx_queue rx_queue tr tm->when retrnsmt   uid  timeout inode                                                     
+   0: 0B00007F:8ED7 00000000:0000 0A 00000000:00000000 00:00000000 00000000     0        0 4891188 2 0000000000000000 100 0 0 10 0                   
+   1: 00000000:0BB8 00000000:0000 0A 00000000:00000000 00:00000000 00000000     0        0 4891509 1 0000000000000000 100 0 0 10 0                   
+
+### 4. LAST 250 API LOGS
+
+> algonaid-api@0.0.1 start:dev
+> cross-env NODE_ENV=development nest start --watch
+
+[2J[3J[H[[90m11:43:30 AM[0m] Starting compilation in watch mode...
+
+[[90m11:44:06 AM[0m] Found 0 errors. Watching for file changes.
+
+[32m[Nest] 37  - [39m08/17/2026, 11:44:10 AM [32m    LOG[39m [38;5;3m[NestFactory] [39m[32mStarting Nest application...[39m
+[32m[Nest] 37  - [39m08/17/2026, 11:44:10 AM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mPrismaModule dependencies initialized[39m[38;5;3m +865ms[39m
+[32m[Nest] 37  - [39m08/17/2026, 11:44:10 AM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mMulterModule dependencies initialized[39m[38;5;3m +0ms[39m
+[32m[Nest] 37  - [39m08/17/2026, 11:44:10 AM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mMulterModule dependencies initialized[39m[38;5;3m +1ms[39m
+[32m[Nest] 37  - [39m08/17/2026, 11:44:10 AM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mConfigHostModule dependencies initialized[39m[38;5;3m +2ms[39m
+[32m[Nest] 37  - [39m08/17/2026, 11:44:11 AM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mConfigModule dependencies initialized[39m[38;5;3m +308ms[39m
+[32m[Nest] 37  - [39m08/17/2026, 11:44:11 AM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mServeStaticModule dependencies initialized[39m[38;5;3m +3ms[39m
+[32m[Nest] 37  - [39m08/17/2026, 11:44:11 AM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mJwtModule dependencies initialized[39m[38;5;3m +11ms[39m
+[32m[Nest] 37  - [39m08/17/2026, 11:44:11 AM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mUsersModule dependencies initialized[39m[38;5;3m +7ms[39m
+[32m[Nest] 37  - [39m08/17/2026, 11:44:11 AM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mLessonsModule dependencies initialized[39m[38;5;3m +1ms[39m
+[32m[Nest] 37  - [39m08/17/2026, 11:44:11 AM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mModulesModule dependencies initialized[39m[38;5;3m +0ms[39m
+[32m[Nest] 37  - [39m08/17/2026, 11:44:11 AM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mProgressModule dependencies initialized[39m[38;5;3m +0ms[39m
+[32m[Nest] 37  - [39m08/17/2026, 11:44:11 AM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mPracticeExamsModule dependencies initialized[39m[38;5;3m +0ms[39m
+[32m[Nest] 37  - [39m08/17/2026, 11:44:11 AM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mEnrollmentModule dependencies initialized[39m[38;5;3m +0ms[39m
+[32m[Nest] 37  - [39m08/17/2026, 11:44:11 AM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mCoursesModule dependencies initialized[39m[38;5;3m +0ms[39m
+[32m[Nest] 37  - [39m08/17/2026, 11:44:11 AM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mExamsModule dependencies initialized[39m[38;5;3m +0ms[39m
+[32m[Nest] 37  - [39m08/17/2026, 11:44:11 AM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mAppModule dependencies initialized[39m[38;5;3m +1ms[39m
+[32m[Nest] 37  - [39m08/17/2026, 11:44:11 AM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mAuthModule dependencies initialized[39m[38;5;3m +0ms[39m
+✅ Firebase Admin initialized successfully
+[32m[Nest] 37  - [39m08/17/2026, 11:44:11 AM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mAppController {/api/v1}:[39m[38;5;3m +207ms[39m
+[32m[Nest] 37  - [39m08/17/2026, 11:44:11 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1, GET} route[39m[38;5;3m +36ms[39m
+[32m[Nest] 37  - [39m08/17/2026, 11:44:11 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/.well-known/assetlinks.json, GET} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 37  - [39m08/17/2026, 11:44:11 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/modulesList/:courseId, GET} route[39m[38;5;3m +4ms[39m
+[32m[Nest] 37  - [39m08/17/2026, 11:44:11 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/lessonDetails/:lessonId, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 37  - [39m08/17/2026, 11:44:11 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/upload/image, POST} route[39m[38;5;3m +2ms[39m
+[32m[Nest] 37  - [39m08/17/2026, 11:44:11 AM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mAuthController {/api/v1/auth}:[39m[38;5;3m +0ms[39m
+[32m[Nest] 37  - [39m08/17/2026, 11:44:11 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/auth/signup, POST} route[39m[38;5;3m +2ms[39m
+[32m[Nest] 37  - [39m08/17/2026, 11:44:11 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/auth/signin, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 37  - [39m08/17/2026, 11:44:11 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/auth/forgot-password, POST} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 37  - [39m08/17/2026, 11:44:11 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/auth/reset-password, POST} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 37  - [39m08/17/2026, 11:44:11 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/auth/validate-reset-token, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 37  - [39m08/17/2026, 11:44:11 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/auth/reset-password, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 37  - [39m08/17/2026, 11:44:11 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/auth/verify-email, GET} route[39m[38;5;3m +3ms[39m
+[32m[Nest] 37  - [39m08/17/2026, 11:44:11 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/auth/resend-verification, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 37  - [39m08/17/2026, 11:44:11 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/auth/google, GET} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 37  - [39m08/17/2026, 11:44:11 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/auth/google/callback, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 37  - [39m08/17/2026, 11:44:11 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/auth/google/mobile, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 37  - [39m08/17/2026, 11:44:11 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/auth/:id, GET} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 37  - [39m08/17/2026, 11:44:11 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/auth/logout, POST} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 37  - [39m08/17/2026, 11:44:11 AM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mEnrollmentController {/api/v1/enrollment}:[39m[38;5;3m +0ms[39m
+[32m[Nest] 37  - [39m08/17/2026, 11:44:11 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/enrollment, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 37  - [39m08/17/2026, 11:44:11 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/enrollment/check-enrollment, GET} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 37  - [39m08/17/2026, 11:44:11 AM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mCoursesController {/api/v1/courses}:[39m[38;5;3m +0ms[39m
+[32m[Nest] 37  - [39m08/17/2026, 11:44:11 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/courses, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 37  - [39m08/17/2026, 11:44:11 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/courses, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 37  - [39m08/17/2026, 11:44:11 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/courses/my-courses, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 37  - [39m08/17/2026, 11:44:11 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/courses/search, GET} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 37  - [39m08/17/2026, 11:44:11 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/courses/:id, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 37  - [39m08/17/2026, 11:44:11 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/courses/:id, PATCH} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 37  - [39m08/17/2026, 11:44:11 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/courses/:id, DELETE} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 37  - [39m08/17/2026, 11:44:11 AM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mLessonsController {/api/v1/lessons}:[39m[38;5;3m +0ms[39m
+[32m[Nest] 37  - [39m08/17/2026, 11:44:11 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/lessons, POST} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 37  - [39m08/17/2026, 11:44:11 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/lessons/module/:moduleId, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 37  - [39m08/17/2026, 11:44:11 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/lessons/module/:moduleId/guest, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 37  - [39m08/17/2026, 11:44:11 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/lessons/:id, GET} route[39m[38;5;3m +3ms[39m
+[32m[Nest] 37  - [39m08/17/2026, 11:44:11 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/lessons/:id, PATCH} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 37  - [39m08/17/2026, 11:44:11 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/lessons/:id, DELETE} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 37  - [39m08/17/2026, 11:44:11 AM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mModulesController {/api/v1/modules}:[39m[38;5;3m +0ms[39m
+[32m[Nest] 37  - [39m08/17/2026, 11:44:11 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/modules, POST} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 37  - [39m08/17/2026, 11:44:11 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/modules, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 37  - [39m08/17/2026, 11:44:11 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/modules/course/:courseId, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 37  - [39m08/17/2026, 11:44:11 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/modules/course/:courseId/guest, GET} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 37  - [39m08/17/2026, 11:44:11 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/modules/:id, GET} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 37  - [39m08/17/2026, 11:44:11 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/modules/:id, PATCH} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 37  - [39m08/17/2026, 11:44:11 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/modules/:id, DELETE} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 37  - [39m08/17/2026, 11:44:11 AM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mExamsController {/api/v1/exams}:[39m[38;5;3m +0ms[39m
+[32m[Nest] 37  - [39m08/17/2026, 11:44:11 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/exams, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 37  - [39m08/17/2026, 11:44:11 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/exams/upload-image, POST} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 37  - [39m08/17/2026, 11:44:11 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/exams, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 37  - [39m08/17/2026, 11:44:11 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/exams/:id, PATCH} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 37  - [39m08/17/2026, 11:44:11 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/exams/:id, DELETE} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 37  - [39m08/17/2026, 11:44:11 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/exams/:id, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 37  - [39m08/17/2026, 11:44:11 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/exams/:examId/start, POST} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 37  - [39m08/17/2026, 11:44:11 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/exams/attempts/:attemptId/submit, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 37  - [39m08/17/2026, 11:44:11 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/exams/attempts/:attemptId/result, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 37  - [39m08/17/2026, 11:44:11 AM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mProgressController {/api/v1/progress}:[39m[38;5;3m +0ms[39m
+[32m[Nest] 37  - [39m08/17/2026, 11:44:11 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/progress/update, POST} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 37  - [39m08/17/2026, 11:44:11 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/progress/course/:courseId, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 37  - [39m08/17/2026, 11:44:11 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/progress/last-watched, GET} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 37  - [39m08/17/2026, 11:44:11 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/progress/last-accessed-module, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 37  - [39m08/17/2026, 11:44:11 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/progress/excellence-courses, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 37  - [39m08/17/2026, 11:44:11 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/progress/course/:courseId/excellence-modules, GET} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 37  - [39m08/17/2026, 11:44:11 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/progress/module/:moduleId/grades, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 37  - [39m08/17/2026, 11:44:11 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/progress/course/:courseId/grades, GET} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 37  - [39m08/17/2026, 11:44:11 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/progress/total-points, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 37  - [39m08/17/2026, 11:44:11 AM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mUsersController {/api/v1/users}:[39m[38;5;3m +3ms[39m
+[32m[Nest] 37  - [39m08/17/2026, 11:44:11 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/users/profile/badges, GET} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 37  - [39m08/17/2026, 11:44:11 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/users/profile, GET} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 37  - [39m08/17/2026, 11:44:11 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/users/profile, PATCH} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 37  - [39m08/17/2026, 11:44:11 AM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mPracticeExamsController {/api/v1/practice-exams}:[39m[38;5;3m +40ms[39m
+[32m[Nest] 37  - [39m08/17/2026, 11:44:11 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/practice-exams, POST} route[39m[38;5;3m +10ms[39m
+[32m[Nest] 37  - [39m08/17/2026, 11:44:11 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/practice-exams, GET} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 37  - [39m08/17/2026, 11:44:11 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/practice-exams/course/:courseId, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 37  - [39m08/17/2026, 11:44:11 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/practice-exams/:id, GET} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 37  - [39m08/17/2026, 11:44:11 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/practice-exams/:id, PATCH} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 37  - [39m08/17/2026, 11:44:11 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/practice-exams/:id, DELETE} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 37  - [39m08/17/2026, 11:44:11 AM [32m    LOG[39m [38;5;3m[NestApplication] [39m[32mNest application successfully started[39m[38;5;3m +296ms[39m
+
+### 5. LOGS FROM LAST 3 MINUTES
+
+> algonaid-api@0.0.1 start:dev
+> cross-env NODE_ENV=development nest start --watch
+
+[2J[3J[H[[90m11:43:30 AM[0m] Starting compilation in watch mode...
+
+[[90m11:44:06 AM[0m] Found 0 errors. Watching for file changes.
+
+[32m[Nest] 37  - [39m08/17/2026, 11:44:10 AM [32m    LOG[39m [38;5;3m[NestFactory] [39m[32mStarting Nest application...[39m
+[32m[Nest] 37  - [39m08/17/2026, 11:44:10 AM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mPrismaModule dependencies initialized[39m[38;5;3m +865ms[39m
+[32m[Nest] 37  - [39m08/17/2026, 11:44:10 AM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mMulterModule dependencies initialized[39m[38;5;3m +0ms[39m
+[32m[Nest] 37  - [39m08/17/2026, 11:44:10 AM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mMulterModule dependencies initialized[39m[38;5;3m +1ms[39m
+[32m[Nest] 37  - [39m08/17/2026, 11:44:10 AM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mConfigHostModule dependencies initialized[39m[38;5;3m +2ms[39m
+[32m[Nest] 37  - [39m08/17/2026, 11:44:11 AM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mConfigModule dependencies initialized[39m[38;5;3m +308ms[39m
+[32m[Nest] 37  - [39m08/17/2026, 11:44:11 AM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mServeStaticModule dependencies initialized[39m[38;5;3m +3ms[39m
+[32m[Nest] 37  - [39m08/17/2026, 11:44:11 AM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mJwtModule dependencies initialized[39m[38;5;3m +11ms[39m
+[32m[Nest] 37  - [39m08/17/2026, 11:44:11 AM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mUsersModule dependencies initialized[39m[38;5;3m +7ms[39m
+[32m[Nest] 37  - [39m08/17/2026, 11:44:11 AM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mLessonsModule dependencies initialized[39m[38;5;3m +1ms[39m
+[32m[Nest] 37  - [39m08/17/2026, 11:44:11 AM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mModulesModule dependencies initialized[39m[38;5;3m +0ms[39m
+[32m[Nest] 37  - [39m08/17/2026, 11:44:11 AM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mProgressModule dependencies initialized[39m[38;5;3m +0ms[39m
+[32m[Nest] 37  - [39m08/17/2026, 11:44:11 AM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mPracticeExamsModule dependencies initialized[39m[38;5;3m +0ms[39m
+[32m[Nest] 37  - [39m08/17/2026, 11:44:11 AM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mEnrollmentModule dependencies initialized[39m[38;5;3m +0ms[39m
+[32m[Nest] 37  - [39m08/17/2026, 11:44:11 AM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mCoursesModule dependencies initialized[39m[38;5;3m +0ms[39m
+[32m[Nest] 37  - [39m08/17/2026, 11:44:11 AM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mExamsModule dependencies initialized[39m[38;5;3m +0ms[39m
+[32m[Nest] 37  - [39m08/17/2026, 11:44:11 AM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mAppModule dependencies initialized[39m[38;5;3m +1ms[39m
+[32m[Nest] 37  - [39m08/17/2026, 11:44:11 AM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mAuthModule dependencies initialized[39m[38;5;3m +0ms[39m
+✅ Firebase Admin initialized successfully
+[32m[Nest] 37  - [39m08/17/2026, 11:44:11 AM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mAppController {/api/v1}:[39m[38;5;3m +207ms[39m
+[32m[Nest] 37  - [39m08/17/2026, 11:44:11 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1, GET} route[39m[38;5;3m +36ms[39m
+[32m[Nest] 37  - [39m08/17/2026, 11:44:11 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/.well-known/assetlinks.json, GET} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 37  - [39m08/17/2026, 11:44:11 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/modulesList/:courseId, GET} route[39m[38;5;3m +4ms[39m
+[32m[Nest] 37  - [39m08/17/2026, 11:44:11 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/lessonDetails/:lessonId, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 37  - [39m08/17/2026, 11:44:11 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/upload/image, POST} route[39m[38;5;3m +2ms[39m
+[32m[Nest] 37  - [39m08/17/2026, 11:44:11 AM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mAuthController {/api/v1/auth}:[39m[38;5;3m +0ms[39m
+[32m[Nest] 37  - [39m08/17/2026, 11:44:11 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/auth/signup, POST} route[39m[38;5;3m +2ms[39m
+[32m[Nest] 37  - [39m08/17/2026, 11:44:11 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/auth/signin, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 37  - [39m08/17/2026, 11:44:11 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/auth/forgot-password, POST} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 37  - [39m08/17/2026, 11:44:11 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/auth/reset-password, POST} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 37  - [39m08/17/2026, 11:44:11 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/auth/validate-reset-token, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 37  - [39m08/17/2026, 11:44:11 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/auth/reset-password, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 37  - [39m08/17/2026, 11:44:11 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/auth/verify-email, GET} route[39m[38;5;3m +3ms[39m
+[32m[Nest] 37  - [39m08/17/2026, 11:44:11 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/auth/resend-verification, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 37  - [39m08/17/2026, 11:44:11 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/auth/google, GET} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 37  - [39m08/17/2026, 11:44:11 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/auth/google/callback, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 37  - [39m08/17/2026, 11:44:11 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/auth/google/mobile, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 37  - [39m08/17/2026, 11:44:11 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/auth/:id, GET} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 37  - [39m08/17/2026, 11:44:11 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/auth/logout, POST} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 37  - [39m08/17/2026, 11:44:11 AM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mEnrollmentController {/api/v1/enrollment}:[39m[38;5;3m +0ms[39m
+[32m[Nest] 37  - [39m08/17/2026, 11:44:11 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/enrollment, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 37  - [39m08/17/2026, 11:44:11 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/enrollment/check-enrollment, GET} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 37  - [39m08/17/2026, 11:44:11 AM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mCoursesController {/api/v1/courses}:[39m[38;5;3m +0ms[39m
+[32m[Nest] 37  - [39m08/17/2026, 11:44:11 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/courses, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 37  - [39m08/17/2026, 11:44:11 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/courses, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 37  - [39m08/17/2026, 11:44:11 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/courses/my-courses, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 37  - [39m08/17/2026, 11:44:11 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/courses/search, GET} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 37  - [39m08/17/2026, 11:44:11 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/courses/:id, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 37  - [39m08/17/2026, 11:44:11 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/courses/:id, PATCH} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 37  - [39m08/17/2026, 11:44:11 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/courses/:id, DELETE} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 37  - [39m08/17/2026, 11:44:11 AM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mLessonsController {/api/v1/lessons}:[39m[38;5;3m +0ms[39m
+[32m[Nest] 37  - [39m08/17/2026, 11:44:11 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/lessons, POST} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 37  - [39m08/17/2026, 11:44:11 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/lessons/module/:moduleId, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 37  - [39m08/17/2026, 11:44:11 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/lessons/module/:moduleId/guest, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 37  - [39m08/17/2026, 11:44:11 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/lessons/:id, GET} route[39m[38;5;3m +3ms[39m
+[32m[Nest] 37  - [39m08/17/2026, 11:44:11 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/lessons/:id, PATCH} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 37  - [39m08/17/2026, 11:44:11 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/lessons/:id, DELETE} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 37  - [39m08/17/2026, 11:44:11 AM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mModulesController {/api/v1/modules}:[39m[38;5;3m +0ms[39m
+[32m[Nest] 37  - [39m08/17/2026, 11:44:11 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/modules, POST} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 37  - [39m08/17/2026, 11:44:11 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/modules, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 37  - [39m08/17/2026, 11:44:11 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/modules/course/:courseId, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 37  - [39m08/17/2026, 11:44:11 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/modules/course/:courseId/guest, GET} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 37  - [39m08/17/2026, 11:44:11 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/modules/:id, GET} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 37  - [39m08/17/2026, 11:44:11 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/modules/:id, PATCH} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 37  - [39m08/17/2026, 11:44:11 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/modules/:id, DELETE} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 37  - [39m08/17/2026, 11:44:11 AM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mExamsController {/api/v1/exams}:[39m[38;5;3m +0ms[39m
+[32m[Nest] 37  - [39m08/17/2026, 11:44:11 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/exams, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 37  - [39m08/17/2026, 11:44:11 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/exams/upload-image, POST} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 37  - [39m08/17/2026, 11:44:11 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/exams, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 37  - [39m08/17/2026, 11:44:11 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/exams/:id, PATCH} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 37  - [39m08/17/2026, 11:44:11 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/exams/:id, DELETE} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 37  - [39m08/17/2026, 11:44:11 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/exams/:id, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 37  - [39m08/17/2026, 11:44:11 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/exams/:examId/start, POST} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 37  - [39m08/17/2026, 11:44:11 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/exams/attempts/:attemptId/submit, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 37  - [39m08/17/2026, 11:44:11 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/exams/attempts/:attemptId/result, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 37  - [39m08/17/2026, 11:44:11 AM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mProgressController {/api/v1/progress}:[39m[38;5;3m +0ms[39m
+[32m[Nest] 37  - [39m08/17/2026, 11:44:11 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/progress/update, POST} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 37  - [39m08/17/2026, 11:44:11 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/progress/course/:courseId, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 37  - [39m08/17/2026, 11:44:11 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/progress/last-watched, GET} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 37  - [39m08/17/2026, 11:44:11 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/progress/last-accessed-module, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 37  - [39m08/17/2026, 11:44:11 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/progress/excellence-courses, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 37  - [39m08/17/2026, 11:44:11 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/progress/course/:courseId/excellence-modules, GET} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 37  - [39m08/17/2026, 11:44:11 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/progress/module/:moduleId/grades, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 37  - [39m08/17/2026, 11:44:11 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/progress/course/:courseId/grades, GET} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 37  - [39m08/17/2026, 11:44:11 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/progress/total-points, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 37  - [39m08/17/2026, 11:44:11 AM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mUsersController {/api/v1/users}:[39m[38;5;3m +3ms[39m
+[32m[Nest] 37  - [39m08/17/2026, 11:44:11 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/users/profile/badges, GET} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 37  - [39m08/17/2026, 11:44:11 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/users/profile, GET} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 37  - [39m08/17/2026, 11:44:11 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/users/profile, PATCH} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 37  - [39m08/17/2026, 11:44:11 AM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mPracticeExamsController {/api/v1/practice-exams}:[39m[38;5;3m +40ms[39m
+[32m[Nest] 37  - [39m08/17/2026, 11:44:11 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/practice-exams, POST} route[39m[38;5;3m +10ms[39m
+[32m[Nest] 37  - [39m08/17/2026, 11:44:11 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/practice-exams, GET} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 37  - [39m08/17/2026, 11:44:11 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/practice-exams/course/:courseId, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 37  - [39m08/17/2026, 11:44:11 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/practice-exams/:id, GET} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 37  - [39m08/17/2026, 11:44:11 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/practice-exams/:id, PATCH} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 37  - [39m08/17/2026, 11:44:11 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/practice-exams/:id, DELETE} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 37  - [39m08/17/2026, 11:44:11 AM [32m    LOG[39m [38;5;3m[NestApplication] [39m[32mNest application successfully started[39m[38;5;3m +296ms[39m
+
+### 6. PACKAGE SCRIPTS
+{
+  "postinstall": "prisma generate",
+  "build": "nest build",
+  "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
+  "start": "nest start",
+  "start:dev": "cross-env NODE_ENV=development nest start --watch",
+  "start:debug": "cross-env NODE_ENV=development nest start --debug --watch",
+  "start:prod": "npx prisma migrate deploy && node dist/main",
+  "lint": "eslint \"{src,apps,libs,test}/**/*.ts\" --fix",
+  "test": "jest",
+  "test:watch": "cross-env NODE_ENV=test jest --watch",
+  "test:cov": "cross-env NODE_ENV=test jest --coverage",
+  "test:debug": "cross-env NODE_ENV=test node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
+  "test:e2e": "cross-env NODE_ENV=test jest --config ./test/jest-e2e.json"
+}
+
+### 7. NEST MAIN FILE
+import { NestFactory } from '@nestjs/core';
+import { AppModule } from './app.module';
+import { SwaggerModule } from '@nestjs/swagger';
+import { swaggerConfig } from './config/swagger/swagger.config';
+import { ValidationPipe } from '@nestjs/common';
+import { NestExpressApplication } from '@nestjs/platform-express';
+import { join } from 'path';
+import { initializeApp, getApps, applicationDefault, cert } from 'firebase-admin/app';
+
+async function bootstrap() {
+  const app = await NestFactory.create<NestExpressApplication>(AppModule);
+
+  // Initialize Firebase Admin
+  try {
+    if (!getApps().length) {
+      const serviceAccountJson = process.env.FIREBASE_SERVICE_ACCOUNT_JSON;
+
+      if (serviceAccountJson) {
+        const serviceAccount = JSON.parse(serviceAccountJson);
+        initializeApp({ credential: cert(serviceAccount) });
+      } else {
+        initializeApp({ credential: applicationDefault() });
+      }
+      console.log('✅ Firebase Admin initialized successfully');
+    }
+  } catch (error) {
+    console.error('❌ Failed to initialize Firebase Admin', error);
+  }
+
+  // مسارات تطبيق الفلاتر محفوظة تماماً بدون أي تعديل
+  app.setGlobalPrefix('api/v1', {
+    exclude: ['modulesList/:courseId', 'lessonDetails/:courseId/:lessonId', 'lessonDetails/:lessonId', '.well-known/assetlinks.json', '.well-known/apple-app-site-association'],
+  });
+
+  app.useGlobalPipes(new ValidationPipe({
+    whitelist: true,
+    transform: true,
+    forbidNonWhitelisted: true,
+  }));
+ 
+  app.useStaticAssets(join(__dirname, '..', 'public'), {
+    prefix: '/',
+    setHeaders: (res, path, stat) => {
+      if (path.endsWith('apple-app-site-association')) {
+        res.set('Content-Type', 'application/json');
+      }
+    }
+  });
+
+  // إعدادات CORS صريحة لدعم الـ Preflight والـ Localhost
+  app.enableCors({
+    origin: true,
+    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
+    allowedHeaders: 'Content-Type, Accept, Authorization, X-Requested-With',
+    credentials: true,
+  });
+
+  const documentation = SwaggerModule.createDocument(app, swaggerConfig);
+  SwaggerModule.setup("swagger", app, documentation);
+
+  const port = process.env.PORT || 3000;
+  await app.listen(port, '0.0.0.0');
+}
+bootstrap();
+
+### 8. DOCKER COMPOSE API COMMAND
+1-
+2-services:
+3:  api:
+4-    build:
+5-      context: .
+6-      dockerfile: Dockerfile
+7-    container_name: algonaid-api-api-1
+8-    restart: always
+9-    ports:
+10-      - '3000:3000'
+11-    environment:
+12-      - DATABASE_URL=${DATABASE_URL}
+13-      - APP_URL=https://api.exchangesmangement.online
+14-    command: npm run start:dev
+15-    volumes:
+16-      - .:/usr/src/app
+17-      - /usr/src/app/node_modules
+18-    depends_on:
+19-      db:
+20-        condition: service_healthy
+21-
+22-  db:
+23-    image: postgres:16-alpine
+
+### 9. DOCKERFILE
+FROM node:22-alpine AS development
+
+WORKDIR /usr/src/app
+
+COPY package*.json ./
+
+# نسخ مجلد بريسما هنا يحمي الـ npm install من الفشل
+COPY prisma ./prisma/
+
+RUN npm install
+
+COPY . .
+
+# عند تشغيل الحاوية: تطبيق الـ Migrations أولاً ثم تشغيل السيرفر
+CMD npx prisma migrate deploy && npx prisma generate && npm run start:dev
+### 10. NODE / NPM / PRISMA
+v22.23.2
+10.9.8
+Loaded Prisma config from prisma.config.ts.
+
+Prisma schema loaded from prisma/schema.prisma.
+prisma               : 7.8.0
+@prisma/client       : 7.8.0
+Operating System     : linux
+Architecture         : x64
+Node.js              : v22.23.2
+TypeScript           : 5.9.3
+Query Compiler       : enabled
+PSL                  : @prisma/prisma-schema-wasm 7.8.0-6.3c6e192761c0362d496ed980de936e2f3cebcd3a
+Schema Engine        : schema-engine-cli 3c6e192761c0362d496ed980de936e2f3cebcd3a (at node_modules/@prisma/engines/schema-engine-linux-musl-openssl-3.0.x)
+Default Engines Hash : 3c6e192761c0362d496ed980de936e2f3cebcd3a
+Studio               : 0.27.3
+
+### 11. TYPESCRIPT CONFIG
+--- tsconfig.json ---
+{
+  "compilerOptions": {
+    "module": "commonjs",
+    "moduleResolution": "node",
+    "esModuleInterop": true,
+    "isolatedModules": true,
+    "declaration": true,
+    "removeComments": true,
+    "emitDecoratorMetadata": true,
+    "experimentalDecorators": true,
+    "allowSyntheticDefaultImports": true,
+    "target": "ES2023",
+    "sourceMap": true,
+    "outDir": "./dist",
+    "baseUrl": "./",
+    "paths": {},
+    "incremental": true,
+    "skipLibCheck": true,
+    "strictNullChecks": true,
+    "forceConsistentCasingInFileNames": true,
+    "noImplicitAny": true,
+    "strictBindCallApply": true,
+    "noFallthroughCasesInSwitch": true
+  },
+  "include": ["src/**/*"]
+}
+--- tsconfig.build.json ---
+{
+  "extends": "./tsconfig.json",
+  "exclude": ["node_modules", "test", "dist", "**/*spec.ts"]
+}
+--- nest-cli.json ---
+{
+  "$schema": "https://json.schemastore.org/nest-cli",
+  "collection": "@nestjs/schematics",
+  "sourceRoot": "src",
+  "compilerOptions": {
+    "deleteOutDir": true
+  }
+}
+
+### 12. PORT ENVIRONMENT
+sed: unmatched '#'
+
+### 13. DIRECT LOCAL TEST
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0*   Trying 127.0.0.1:3000...
+* Connected to 127.0.0.1 (127.0.0.1) port 3000
+> GET / HTTP/1.1
+> Host: 127.0.0.1:3000
+> User-Agent: curl/8.5.0
+> Accept: */*
+> 
+< HTTP/1.1 404 Not Found
+< X-Powered-By: Express
+< Vary: Origin
+< Access-Control-Allow-Credentials: true
+< Content-Type: application/json; charset=utf-8
+< Content-Length: 63
+< ETag: W/"3f-BunLb98SCK6azHy0RO08GDnFBek"
+< Date: Mon, 17 Aug 2026 11:44:24 GMT
+< Connection: keep-alive
+< Keep-Alive: timeout=5
+< 
+{ [63 bytes data]
+100    63  100    63    0     0    679      0 --:--:-- --:--:-- --:--:--   684
+* Connection #0 to host 127.0.0.1 left intact
+{"message":"Cannot GET /","error":"Not Found","statusCode":404}
+### 14. DATABASE
+/var/run/postgresql:5432 - accepting connections
+
+==================================================
+ END
+==================================================

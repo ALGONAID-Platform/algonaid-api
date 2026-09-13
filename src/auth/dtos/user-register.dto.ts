@@ -36,8 +36,8 @@ export class UserRegisterDto {
     })
     @IsNotEmpty({ message: MESSAGES.VALIDATION.PASSWORD_REQUIRED })
     @IsString({ message: MESSAGES.VALIDATION.PASSWORD_STRING })
-    @MinLength(8, { message: MESSAGES.VALIDATION.PASSWORD_MIN_LENGTH })
-    @MaxLength(20)
+    @MinLength(6, { message: MESSAGES.VALIDATION.PASSWORD_MIN_LENGTH })
+    @MaxLength(30)
     @Matches(/((?=.*\d)|(?=.*\W+))(?![.\n])(?=.*[A-Z])(?=.*[a-z]).*$/, {
         message: MESSAGES.VALIDATION.PASSWORD_COMPLEXITY,
     })
@@ -58,7 +58,7 @@ export class UserRegisterDto {
     //==================
     role: UserRole
     //==================
-
+ 
 }
 
 

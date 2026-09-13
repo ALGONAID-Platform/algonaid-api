@@ -1,5 +1,6 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
+import { json, urlencoded } from 'express';
 import { SwaggerModule } from '@nestjs/swagger';
 import { swaggerConfig } from './config/swagger/swagger.config';
 import { ValidationPipe } from '@nestjs/common';
@@ -9,18 +10,16 @@ import { initializeApp, getApps, applicationDefault, cert } from 'firebase-admin
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
-  
+
   // Initialize Firebase Admin
   try {
     if (!getApps().length) {
       const serviceAccountJson = process.env.FIREBASE_SERVICE_ACCOUNT_JSON;
 
       if (serviceAccountJson) {
-        // Render hosting: read from env variable (JSON string)
         const serviceAccount = JSON.parse(serviceAccountJson);
         initializeApp({ credential: cert(serviceAccount) });
       } else {
-        // Local development: read from file via GOOGLE_APPLICATION_CREDENTIALS
         initializeApp({ credential: applicationDefault() });
       }
       console.log('✅ Firebase Admin initialized successfully');
@@ -29,36 +28,40 @@ async function bootstrap() {
     console.error('❌ Failed to initialize Firebase Admin', error);
   }
 
+  // مسارات تطبيق الفلاتر محفوظة تماماً بدون أي تعديل
   app.setGlobalPrefix('api/v1', {
-    exclude: ['modulesList/:courseId', 'lessonDetails/:lessonId', '.well-known/assetlinks.json'],
-  });
+    exclude: ['modulesList/:courseId', 'lessonDetails/:courseId/:lessonId', 'lessonDetails/:lessonId', '.well-known/assetlinks.json', '.well-known/apple-app-site-association'],
+  }); 
+
   app.useGlobalPipes(new ValidationPipe({
     whitelist: true,
     transform: true,
     forbidNonWhitelisted: true,
-  }));
-
+  })); 
+ 
   app.useStaticAssets(join(__dirname, '..', 'public'), {
     prefix: '/',
     setHeaders: (res, path, stat) => {
-      // Ensure correct content-type for apple-app-site-association (iOS requires application/json)
       if (path.endsWith('apple-app-site-association')) {
         res.set('Content-Type', 'application/json');
       }
     }
   });
+app.use(json({ limit: '50mb' }));
+  app.use(urlencoded({ extended: true, limit: '50mb' }));
 
+  // إعدادات CORS صريحة لدعم الـ Preflight والـ Localhost
   app.enableCors({
-    // origin: "http://localhost:5000"
     origin: true,
+    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
+    allowedHeaders: 'Content-Type, Accept, Authorization, X-Requested-With',
     credentials: true,
   });
 
   const documentation = SwaggerModule.createDocument(app, swaggerConfig);
   SwaggerModule.setup("swagger", app, documentation);
-  
+
   const port = process.env.PORT || 3000;
   await app.listen(port, '0.0.0.0');
 }
 bootstrap();
- 

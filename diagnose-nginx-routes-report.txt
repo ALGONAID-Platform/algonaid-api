@@ -1,0 +1,179 @@
+==================================================
+ ALGONAID NGINX / ROUTES DIAGNOSTIC
+ Mon Aug 17 13:49:44 CEST 2026
+==================================================
+
+### 1. EXACT PUBLIC COURSES
+HTTP/1.1 200 OK
+Server: nginx/1.24.0 (Ubuntu)
+Date: Mon, 17 Aug 2026 11:49:44 GMT
+Content-Type: application/json; charset=utf-8
+Content-Length: 2
+Connection: keep-alive
+X-Powered-By: Express
+Vary: Origin
+Access-Control-Allow-Credentials: true
+ETag: W/"2-l9Fw4VUO7kr8CvBlt4zaMCqXZ0w"
+
+[]
+### 2. EXACT PUBLIC MODULES
+HTTP/1.1 401 Unauthorized
+Server: nginx/1.24.0 (Ubuntu)
+Date: Mon, 17 Aug 2026 11:49:44 GMT
+Content-Type: application/json; charset=utf-8
+Content-Length: 123
+Connection: keep-alive
+X-Powered-By: Express
+Vary: Origin
+Access-Control-Allow-Credentials: true
+ETag: W/"7b-/1/dnQodHBjX2TxU3EyJvWQlZ7E"
+
+{"message":"تم رفض الوصول، لم يتم تقديم رمز الدخول","error":"Unauthorized","statusCode":401}
+### 3. EXACT PUBLIC EXAMS
+HTTP/1.1 401 Unauthorized
+Server: nginx/1.24.0 (Ubuntu)
+Date: Mon, 17 Aug 2026 11:49:44 GMT
+Content-Type: application/json; charset=utf-8
+Content-Length: 123
+Connection: keep-alive
+X-Powered-By: Express
+Vary: Origin
+Access-Control-Allow-Credentials: true
+ETag: W/"7b-/1/dnQodHBjX2TxU3EyJvWQlZ7E"
+
+{"message":"تم رفض الوصول، لم يتم تقديم رمز الدخول","error":"Unauthorized","statusCode":401}
+### 4. EXACT PUBLIC LESSONS
+HTTP/1.1 404 Not Found
+Server: nginx/1.24.0 (Ubuntu)
+Date: Mon, 17 Aug 2026 11:49:44 GMT
+Content-Type: application/json; charset=utf-8
+Content-Length: 77
+Connection: keep-alive
+X-Powered-By: Express
+Vary: Origin
+Access-Control-Allow-Credentials: true
+ETag: W/"4d-jaIOmjxTYS7OMmrRE6yPR/Sjy0Y"
+
+{"message":"Cannot GET /api/v1/lessons","error":"Not Found","statusCode":404}
+### 5. LOCAL MODULES
+HTTP/1.1 401 Unauthorized
+X-Powered-By: Express
+Vary: Origin
+Access-Control-Allow-Credentials: true
+Content-Type: application/json; charset=utf-8
+Content-Length: 123
+ETag: W/"7b-/1/dnQodHBjX2TxU3EyJvWQlZ7E"
+Date: Mon, 17 Aug 2026 11:49:45 GMT
+Connection: keep-alive
+Keep-Alive: timeout=5
+
+{"message":"تم رفض الوصول، لم يتم تقديم رمز الدخول","error":"Unauthorized","statusCode":401}
+### 6. LOCAL EXAMS
+HTTP/1.1 401 Unauthorized
+X-Powered-By: Express
+Vary: Origin
+Access-Control-Allow-Credentials: true
+Content-Type: application/json; charset=utf-8
+Content-Length: 123
+ETag: W/"7b-/1/dnQodHBjX2TxU3EyJvWQlZ7E"
+Date: Mon, 17 Aug 2026 11:49:45 GMT
+Connection: keep-alive
+Keep-Alive: timeout=5
+
+{"message":"تم رفض الوصول، لم يتم تقديم رمز الدخول","error":"Unauthorized","statusCode":401}
+### 7. NGINX CONFIG
+26:	# server_names_hash_bucket_size 64;
+27:	# server_name_in_redirect off;
+191:# configuration file /etc/nginx/sites-enabled/api.exchangesmangement.online:
+193:    server_name api.exchangesmangement.online;
+195:    location / {
+196:        proxy_pass http://127.0.0.1:3000;
+208:    ssl_certificate /etc/letsencrypt/live/api.exchangesmangement.online/fullchain.pem; # managed by Certbot
+209:    ssl_certificate_key /etc/letsencrypt/live/api.exchangesmangement.online/privkey.pem; # managed by Certbot
+215:    if ($host = api.exchangesmangement.online) {
+220:    server_name api.exchangesmangement.online;
+286:	server_name _;
+288:	location / {
+323:#	server_name example.com;
+328:#	location / {
+
+### 8. NGINX ERROR LOG
+2026/08/17 02:15:34 [error] 49101#49101: *17012 client intended to send too large body: 10485761 bytes, client: 195.170.172.216, server: _, request: "POST / HTTP/1.1", host: "169.58.179.188"
+2026/08/17 02:15:34 [error] 49101#49101: *17014 client intended to send too large body: 10485760 bytes, client: 195.170.172.216, server: _, request: "POST / HTTP/1.1", host: "169.58.179.188"
+
+### 9. NGINX ACCESS LOG - MODULES
+209.198.132.13 - - [17/Aug/2026:13:46:59 +0200] "GET /api/v1/modules HTTP/1.1" 404 96 "http://localhost:5173/" "Mozilla/5.0 (Linux; Android 15; Pixel 9) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Mobile Safari/537.36"
+150.228.11.169 - - [17/Aug/2026:13:46:59 +0200] "GET /api/v1/modules HTTP/1.1" 404 96 "http://localhost:5173/" "Mozilla/5.0 (Linux; Android 15; Pixel 9) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Mobile Safari/537.36"
+209.198.132.13 - - [17/Aug/2026:13:47:02 +0200] "GET /api/v1/modules HTTP/1.1" 404 96 "http://localhost:5173/" "Mozilla/5.0 (Linux; Android 15; Pixel 9) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Mobile Safari/537.36"
+209.198.132.13 - - [17/Aug/2026:13:47:02 +0200] "GET /api/v1/exams HTTP/1.1" 404 96 "http://localhost:5173/" "Mozilla/5.0 (Linux; Android 15; Pixel 9) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Mobile Safari/537.36"
+150.228.11.169 - - [17/Aug/2026:13:47:02 +0200] "GET /api/v1/courses HTTP/1.1" 304 0 "http://localhost:5173/" "Mozilla/5.0 (Linux; Android 15; Pixel 9) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Mobile Safari/537.36"
+150.228.11.169 - - [17/Aug/2026:13:47:02 +0200] "GET /api/v1/modules HTTP/1.1" 404 96 "http://localhost:5173/" "Mozilla/5.0 (Linux; Android 15; Pixel 9) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Mobile Safari/537.36"
+209.198.132.13 - - [17/Aug/2026:13:47:02 +0200] "GET /api/v1/modules HTTP/1.1" 404 96 "http://localhost:5173/" "Mozilla/5.0 (Linux; Android 15; Pixel 9) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Mobile Safari/537.36"
+150.228.11.169 - - [17/Aug/2026:13:47:29 +0200] "OPTIONS /api/v1/modules HTTP/1.1" 204 0 "http://localhost:5173/" "Mozilla/5.0 (Linux; Android 15; Pixel 9) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Mobile Safari/537.36"
+150.228.11.169 - - [17/Aug/2026:13:47:29 +0200] "OPTIONS /api/v1/exams HTTP/1.1" 204 0 "http://localhost:5173/" "Mozilla/5.0 (Linux; Android 15; Pixel 9) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Mobile Safari/537.36"
+150.228.11.169 - - [17/Aug/2026:13:47:29 +0200] "OPTIONS /api/v1/modules HTTP/1.1" 204 0 "http://localhost:5173/" "Mozilla/5.0 (Linux; Android 15; Pixel 9) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Mobile Safari/537.36"
+209.198.132.13 - - [17/Aug/2026:13:47:29 +0200] "OPTIONS /api/v1/modules HTTP/1.1" 204 0 "http://localhost:5173/" "Mozilla/5.0 (Linux; Android 15; Pixel 9) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Mobile Safari/537.36"
+209.198.132.13 - - [17/Aug/2026:13:47:29 +0200] "OPTIONS /api/v1/courses HTTP/1.1" 204 0 "http://localhost:5173/" "Mozilla/5.0 (Linux; Android 15; Pixel 9) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Mobile Safari/537.36"
+150.228.11.169 - - [17/Aug/2026:13:47:29 +0200] "GET /api/v1/exams HTTP/1.1" 404 96 "http://localhost:5173/" "Mozilla/5.0 (Linux; Android 15; Pixel 9) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Mobile Safari/537.36"
+209.198.132.13 - - [17/Aug/2026:13:47:29 +0200] "GET /api/v1/modules HTTP/1.1" 404 96 "http://localhost:5173/" "Mozilla/5.0 (Linux; Android 15; Pixel 9) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Mobile Safari/537.36"
+209.198.132.13 - - [17/Aug/2026:13:47:29 +0200] "GET /api/v1/courses HTTP/1.1" 304 0 "http://localhost:5173/" "Mozilla/5.0 (Linux; Android 15; Pixel 9) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Mobile Safari/537.36"
+150.228.11.169 - - [17/Aug/2026:13:47:30 +0200] "GET /api/v1/modules HTTP/1.1" 404 96 "http://localhost:5173/" "Mozilla/5.0 (Linux; Android 15; Pixel 9) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Mobile Safari/537.36"
+209.198.132.13 - - [17/Aug/2026:13:47:30 +0200] "GET /api/v1/modules HTTP/1.1" 404 96 "http://localhost:5173/" "Mozilla/5.0 (Linux; Android 15; Pixel 9) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Mobile Safari/537.36"
+209.198.132.13 - - [17/Aug/2026:13:47:59 +0200] "OPTIONS /api/v1/courses HTTP/1.1" 204 0 "http://localhost:5173/" "Mozilla/5.0 (Linux; Android 15; Pixel 9) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Mobile Safari/537.36"
+209.198.132.13 - - [17/Aug/2026:13:47:59 +0200] "OPTIONS /api/v1/modules HTTP/1.1" 204 0 "http://localhost:5173/" "Mozilla/5.0 (Linux; Android 15; Pixel 9) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Mobile Safari/537.36"
+150.228.11.169 - - [17/Aug/2026:13:47:59 +0200] "OPTIONS /api/v1/modules HTTP/1.1" 204 0 "http://localhost:5173/" "Mozilla/5.0 (Linux; Android 15; Pixel 9) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Mobile Safari/537.36"
+150.228.11.169 - - [17/Aug/2026:13:47:59 +0200] "OPTIONS /api/v1/modules HTTP/1.1" 204 0 "http://localhost:5173/" "Mozilla/5.0 (Linux; Android 15; Pixel 9) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Mobile Safari/537.36"
+150.228.11.169 - - [17/Aug/2026:13:47:59 +0200] "OPTIONS /api/v1/exams HTTP/1.1" 204 0 "http://localhost:5173/" "Mozilla/5.0 (Linux; Android 15; Pixel 9) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Mobile Safari/537.36"
+209.198.132.13 - - [17/Aug/2026:13:47:59 +0200] "GET /api/v1/modules HTTP/1.1" 404 96 "http://localhost:5173/" "Mozilla/5.0 (Linux; Android 15; Pixel 9) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Mobile Safari/537.36"
+150.228.11.169 - - [17/Aug/2026:13:47:59 +0200] "GET /api/v1/exams HTTP/1.1" 404 96 "http://localhost:5173/" "Mozilla/5.0 (Linux; Android 15; Pixel 9) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Mobile Safari/537.36"
+209.198.132.13 - - [17/Aug/2026:13:47:59 +0200] "GET /api/v1/courses HTTP/1.1" 304 0 "http://localhost:5173/" "Mozilla/5.0 (Linux; Android 15; Pixel 9) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Mobile Safari/537.36"
+150.228.11.169 - - [17/Aug/2026:13:47:59 +0200] "GET /api/v1/modules HTTP/1.1" 404 96 "http://localhost:5173/" "Mozilla/5.0 (Linux; Android 15; Pixel 9) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Mobile Safari/537.36"
+209.198.132.13 - - [17/Aug/2026:13:48:00 +0200] "GET /api/v1/modules HTTP/1.1" 404 96 "http://localhost:5173/" "Mozilla/5.0 (Linux; Android 15; Pixel 9) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Mobile Safari/537.36"
+150.228.11.169 - - [17/Aug/2026:13:48:44 +0200] "OPTIONS /api/v1/modules HTTP/1.1" 204 0 "http://localhost:5173/" "Mozilla/5.0 (Linux; Android 15; Pixel 9) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Mobile Safari/537.36"
+150.228.11.169 - - [17/Aug/2026:13:48:44 +0200] "OPTIONS /api/v1/modules HTTP/1.1" 204 0 "http://localhost:5173/" "Mozilla/5.0 (Linux; Android 15; Pixel 9) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Mobile Safari/537.36"
+150.228.11.169 - - [17/Aug/2026:13:48:44 +0200] "OPTIONS /api/v1/modules HTTP/1.1" 204 0 "http://localhost:5173/" "Mozilla/5.0 (Linux; Android 15; Pixel 9) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Mobile Safari/537.36"
+209.198.132.13 - - [17/Aug/2026:13:48:44 +0200] "OPTIONS /api/v1/courses HTTP/1.1" 204 0 "http://localhost:5173/" "Mozilla/5.0 (Linux; Android 15; Pixel 9) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Mobile Safari/537.36"
+209.198.132.13 - - [17/Aug/2026:13:48:44 +0200] "OPTIONS /api/v1/exams HTTP/1.1" 204 0 "http://localhost:5173/" "Mozilla/5.0 (Linux; Android 15; Pixel 9) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Mobile Safari/537.36"
+150.228.11.169 - - [17/Aug/2026:13:48:44 +0200] "GET /api/v1/modules HTTP/1.1" 404 96 "http://localhost:5173/" "Mozilla/5.0 (Linux; Android 15; Pixel 9) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Mobile Safari/537.36"
+209.198.132.13 - - [17/Aug/2026:13:48:44 +0200] "GET /api/v1/courses HTTP/1.1" 304 0 "http://localhost:5173/" "Mozilla/5.0 (Linux; Android 15; Pixel 9) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Mobile Safari/537.36"
+150.228.11.169 - - [17/Aug/2026:13:48:45 +0200] "GET /api/v1/modules HTTP/1.1" 404 96 "http://localhost:5173/" "Mozilla/5.0 (Linux; Android 15; Pixel 9) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Mobile Safari/537.36"
+209.198.132.13 - - [17/Aug/2026:13:48:45 +0200] "GET /api/v1/modules HTTP/1.1" 404 96 "http://localhost:5173/" "Mozilla/5.0 (Linux; Android 15; Pixel 9) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Mobile Safari/537.36"
+209.198.132.13 - - [17/Aug/2026:13:48:45 +0200] "GET /api/v1/exams HTTP/1.1" 404 96 "http://localhost:5173/" "Mozilla/5.0 (Linux; Android 15; Pixel 9) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Mobile Safari/537.36"
+169.58.179.188 - - [17/Aug/2026:13:49:44 +0200] "GET /api/v1/courses HTTP/1.1" 200 2 "-" "curl/8.5.0"
+169.58.179.188 - - [17/Aug/2026:13:49:44 +0200] "GET /api/v1/modules HTTP/1.1" 401 123 "-" "curl/8.5.0"
+209.198.132.13 - - [17/Aug/2026:13:49:44 +0200] "OPTIONS /api/v1/courses HTTP/1.1" 204 0 "http://localhost:5173/" "Mozilla/5.0 (Linux; Android 15; Pixel 9) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Mobile Safari/537.36"
+150.228.11.169 - - [17/Aug/2026:13:49:44 +0200] "OPTIONS /api/v1/modules HTTP/1.1" 204 0 "http://localhost:5173/" "Mozilla/5.0 (Linux; Android 15; Pixel 9) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Mobile Safari/537.36"
+150.228.11.169 - - [17/Aug/2026:13:49:44 +0200] "OPTIONS /api/v1/modules HTTP/1.1" 204 0 "http://localhost:5173/" "Mozilla/5.0 (Linux; Android 15; Pixel 9) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Mobile Safari/537.36"
+209.198.132.13 - - [17/Aug/2026:13:49:44 +0200] "OPTIONS /api/v1/modules HTTP/1.1" 204 0 "http://localhost:5173/" "Mozilla/5.0 (Linux; Android 15; Pixel 9) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Mobile Safari/537.36"
+150.228.11.169 - - [17/Aug/2026:13:49:44 +0200] "OPTIONS /api/v1/exams HTTP/1.1" 204 0 "http://localhost:5173/" "Mozilla/5.0 (Linux; Android 15; Pixel 9) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Mobile Safari/537.36"
+169.58.179.188 - - [17/Aug/2026:13:49:44 +0200] "GET /api/v1/exams HTTP/1.1" 401 123 "-" "curl/8.5.0"
+169.58.179.188 - - [17/Aug/2026:13:49:44 +0200] "GET /api/v1/lessons HTTP/1.1" 404 77 "-" "curl/8.5.0"
+150.228.11.169 - - [17/Aug/2026:13:49:44 +0200] "GET /api/v1/exams HTTP/1.1" 404 96 "http://localhost:5173/" "Mozilla/5.0 (Linux; Android 15; Pixel 9) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Mobile Safari/537.36"
+150.228.11.169 - - [17/Aug/2026:13:49:45 +0200] "GET /api/v1/modules HTTP/1.1" 404 96 "http://localhost:5173/" "Mozilla/5.0 (Linux; Android 15; Pixel 9) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Mobile Safari/537.36"
+209.198.132.13 - - [17/Aug/2026:13:49:45 +0200] "GET /api/v1/courses HTTP/1.1" 304 0 "http://localhost:5173/" "Mozilla/5.0 (Linux; Android 15; Pixel 9) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Mobile Safari/537.36"
+209.198.132.13 - - [17/Aug/2026:13:49:45 +0200] "GET /api/v1/modules HTTP/1.1" 404 96 "http://localhost:5173/" "Mozilla/5.0 (Linux; Android 15; Pixel 9) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Mobile Safari/537.36"
+
+### 10. API LOG - MODULES / EXAMS
+[32m[Nest] 37  - [39m08/17/2026, 11:44:11 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/modulesList/:courseId, GET} route[39m[38;5;3m +4ms[39m
+[32m[Nest] 37  - [39m08/17/2026, 11:44:11 AM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mModulesController {/api/v1/modules}:[39m[38;5;3m +0ms[39m
+[32m[Nest] 37  - [39m08/17/2026, 11:44:11 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/modules, POST} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 37  - [39m08/17/2026, 11:44:11 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/modules, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 37  - [39m08/17/2026, 11:44:11 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/modules/course/:courseId, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 37  - [39m08/17/2026, 11:44:11 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/modules/course/:courseId/guest, GET} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 37  - [39m08/17/2026, 11:44:11 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/modules/:id, GET} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 37  - [39m08/17/2026, 11:44:11 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/modules/:id, PATCH} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 37  - [39m08/17/2026, 11:44:11 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/modules/:id, DELETE} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 37  - [39m08/17/2026, 11:44:11 AM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mExamsController {/api/v1/exams}:[39m[38;5;3m +0ms[39m
+[32m[Nest] 37  - [39m08/17/2026, 11:44:11 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/exams, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 37  - [39m08/17/2026, 11:44:11 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/exams/upload-image, POST} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 37  - [39m08/17/2026, 11:44:11 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/exams, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 37  - [39m08/17/2026, 11:44:11 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/exams/:id, PATCH} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 37  - [39m08/17/2026, 11:44:11 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/exams/:id, DELETE} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 37  - [39m08/17/2026, 11:44:11 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/exams/:id, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 37  - [39m08/17/2026, 11:44:11 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/exams/:examId/start, POST} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 37  - [39m08/17/2026, 11:44:11 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/exams/attempts/:attemptId/submit, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 37  - [39m08/17/2026, 11:44:11 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/exams/attempts/:attemptId/result, GET} route[39m[38;5;3m +0ms[39m
+
+==================================================
+ END
+==================================================

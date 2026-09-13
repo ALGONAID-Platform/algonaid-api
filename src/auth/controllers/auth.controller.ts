@@ -115,11 +115,11 @@ export class AuthController {
         <div class="container">
           <h1>إعادة تعيين كلمة المرور</h1>
           <p>إذا لم يفتح التطبيق تلقائياً، يرجى الضغط على الزر أدناه لإكمال العملية داخل تطبيق منصة الجنيد.</p>
-          <a href="intent://algonaid-api.onrender.com/reset-password?token=\${token}#Intent;scheme=https;package=com.algonaid.app;end" class="btn">فتح في التطبيق</a>
+          <a href="intent://api.exchangesmangement.online/reset-password?token=${token}#Intent;scheme=https;package=com.algonaid.app;end" class="btn">فتح في التطبيق</a>
         </div>
         <script>
           setTimeout(function() {
-            window.location.href = "intent://algonaid-api.onrender.com/reset-password?token=\${token}#Intent;scheme=https;package=com.algonaid.app;end";
+            window.location.href = "intent://api.exchangesmangement.online/reset-password?token=${token}#Intent;scheme=https;package=com.algonaid.app;end";
           }, 500);
         </script>
       </body>
@@ -166,6 +166,7 @@ export class AuthController {
     description: 'Invalid or expired token',
   })
   async verifyEmail(
+    @Req() req: any,
     @Query('token') token: string,
     @Res({ passthrough: true }) res: Response,
   ) {
@@ -173,11 +174,84 @@ export class AuthController {
       throw new BadRequestException('Token is required');
     }
 
-    const result = await this.authService.verifyEmail(token);
+    try {
+      const result = await this.authService.verifyEmail(token);
 
-    // إذا كان الطلب يأتي من متصفح (مستخدم ليس لديه التطبيق)
-    // نعيد JSON فقط — Flutter سيتعامل مع هذا
-    return result;
+      const accept = req.headers.accept || '';
+      if (accept.includes('text/html')) {
+        const html = `
+          <!DOCTYPE html>
+          <html lang="ar" dir="rtl">
+          <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>تأكيد البريد الإلكتروني</title>
+            <style>
+              body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; text-align: center; padding: 50px; background-color: #f4f4f9; }
+              .container { background: white; padding: 40px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); max-width: 400px; margin: 0 auto; }
+              h1 { color: #4A9F8A; font-size: 24px; margin-bottom: 10px; }
+              p { color: #666; margin-bottom: 30px; font-size: 16px; line-height: 1.5; }
+              .btn { background: #4A9F8A; color: white; text-decoration: none; padding: 14px 28px; border-radius: 8px; font-size: 16px; font-weight: bold; display: inline-block; transition: background 0.3s; }
+              .btn:hover { background: #3d8a77; }
+            </style>
+          </head>
+          <body>
+            <div class="container">
+              <h1>تم تأكيد الحساب بنجاح</h1>
+              <p>تم تأكيد بريدك الإلكتروني بنجاح. يتم الآن تحويلك إلى التطبيق، أو يمكنك الضغط على الزر أدناه.</p>
+              <a href="intent://api.exchangesmangement.online/verify-email?token=${token}#Intent;scheme=https;package=com.algonaid.app;end" class="btn">فتح في التطبيق</a>
+            </div>
+            <script>
+              setTimeout(function() {
+                window.location.href = "intent://api.exchangesmangement.online/verify-email?token=${token}#Intent;scheme=https;package=com.algonaid.app;end";
+              }, 500);
+            </script>
+          </body>
+          </html>
+        `;
+        res.type('text/html');
+        return html;
+      }
+
+      return result;
+    } catch (error: any) {
+      const accept = req.headers.accept || '';
+      if (accept.includes('text/html')) {
+        const html = `
+          <!DOCTYPE html>
+          <html lang="ar" dir="rtl">
+          <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>خطأ في التأكيد</title>
+            <style>
+              body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; text-align: center; padding: 50px; background-color: #f4f4f9; }
+              .container { background: white; padding: 40px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); max-width: 400px; margin: 0 auto; }
+              h1 { color: #e53935; font-size: 24px; margin-bottom: 10px; }
+              p { color: #666; margin-bottom: 30px; font-size: 16px; line-height: 1.5; }
+              .btn { background: #4A9F8A; color: white; text-decoration: none; padding: 14px 28px; border-radius: 8px; font-size: 16px; font-weight: bold; display: inline-block; transition: background 0.3s; }
+              .btn:hover { background: #3d8a77; }
+            </style>
+          </head>
+          <body>
+            <div class="container">
+              <h1>حدث خطأ</h1>
+              <p>\${error.message || 'الرابط غير صالح أو منتهي الصلاحية. يتم الآن تحويلك للتطبيق.'}</p>
+              <a href="intent://api.exchangesmangement.online/verify-email?token=${token}#Intent;scheme=https;package=com.algonaid.app;end" class="btn">فتح في التطبيق</a>
+            </div>
+            <script>
+              setTimeout(function() {
+                window.location.href = "intent://api.exchangesmangement.online/verify-email?token=${token}#Intent;scheme=https;package=com.algonaid.app;end";
+              }, 500);
+            </script>
+          </body>
+          </html>
+        `;
+        res.type('text/html');
+        return html;
+      }
+      throw error;
+    }
   }
 
   // ==================== Resend Verification Email ====================

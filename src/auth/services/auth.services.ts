@@ -280,15 +280,7 @@ try {
       throw new BadRequestException(MESSAGES.AUTH.VERIFICATION_TOKEN_USED);
     }
 
-    // إذا كان البريد مؤكداً بالفعل
-    if (user.emailVerified) {
-      return {
-        message: MESSAGES.AUTH.EMAIL_ALREADY_VERIFIED,
-        verified: true,
-      };
-    }
-
-    // التحقق من انتهاء الصلاحية
+    // 1. التحقق من انتهاء الصلاحية أولاً
     if (
       !user.verificationTokenExpiry ||
       user.verificationTokenExpiry < new Date()
@@ -296,13 +288,23 @@ try {
       throw new BadRequestException(MESSAGES.AUTH.VERIFICATION_TOKEN_EXPIRED);
     }
 
-    // تحديث المستخدم: تفعيل البريد وحذف الـ Token
+    // 2. إذا كان البريد مؤكداً بالفعل (والرابط ما زال صالحاً لفترة السماح)
+    if (user.emailVerified) {
+      const jwtToken = await this.generateToken(user.id, user.email, user.role);
+      return {
+        message: MESSAGES.AUTH.EMAIL_ALREADY_VERIFIED,
+        verified: true,
+        user: this.formatUserResponse(user),
+        access_token: jwtToken,
+      };
+    }
+
+    // 3. تحديث المستخدم: تفعيل البريد وإعطاء فترة سماح 15 ثانية للتطبيق لاستلام الجلسة
     const updatedUser = await this.prisma.user.update({
       where: { id: user.id },
       data: {
         emailVerified: true,
-        verificationToken: null,
-        verificationTokenExpiry: null,
+        verificationTokenExpiry: new Date(Date.now() + 15000), // 15 ثانية فقط
       },
       include: { studentProfile: true, teacherProfile: true },
     });
@@ -364,7 +366,7 @@ try {
   // ==================== Google Auth ====================
   async validateGoogleUser(googleUser: any) {
     console.log('============');
-    const { email, name, googleId } = googleUser;
+    const { email, name, googleId, avatar } = googleUser;
 
     let user = await this.prisma.user.findUnique({
       where: { email },
@@ -373,11 +375,12 @@ try {
 
     if (user) {
       // Update user with googleId if they signed up with email before
-      if (!user.googleId) {
+      if (!user.googleId || (avatar && !user.avatar)) {
         user = await this.prisma.user.update({
           where: { id: user.id },
           data: {
             googleId,
+            ...(avatar && !user.avatar ? { avatar } : {}),
             // المستخدمون عبر Google تعتبر بريداتهم محققة تلقائياً
             emailVerified: true,
           },
@@ -391,6 +394,7 @@ try {
           email,
           name,
           googleId,
+          avatar,
           role: Role.STUDENT,
           // Google users are automatically verified
           emailVerified: true,
@@ -444,23 +448,39 @@ try {
   async loginWithGoogleMobile(idToken: string) {
     try {
       console.log('======login======');
-      const { getAuth } = require('firebase-admin/auth');
+      const { createClient } = require('@supabase/supabase-js');
       
-      // Verify the Firebase ID Token
-      const decodedToken = await getAuth().verifyIdToken(idToken);
+      const supabaseUrl = this.configService.get<string>('SUPABASE_URL') || process.env.SUPABASE_URL;
+      const supabaseKey = this.configService.get<string>('SUPABASE_ANON_KEY') || process.env.SUPABASE_ANON_KEY;
       
-      const email = decodedToken.email;
-      if (!email) {
-         throw new UnauthorizedException('No email found in Firebase ID Token');
+      if (!supabaseUrl || !supabaseKey) {
+        throw new Error('Supabase configuration is missing (SUPABASE_URL or SUPABASE_ANON_KEY)');
+      }
+
+      const supabase = createClient(supabaseUrl, supabaseKey);
+
+      // Verify the Supabase JWT Token
+      const { data, error } = await supabase.auth.getUser(idToken);
+      
+      if (error || !data.user) {
+        throw new UnauthorizedException(error?.message || 'Invalid Supabase Token');
       }
       
-      const name = decodedToken.name || email.split('@')[0];
-      const googleId = decodedToken.uid;
+      const email = data.user.email;
+      if (!email) {
+         throw new UnauthorizedException('No email found in Supabase Token');
+      }
+      
+      const userMetadata = data.user.user_metadata || {};
+      const name = userMetadata.name || userMetadata.full_name || email.split('@')[0];
+      const avatar = userMetadata.avatar_url || userMetadata.picture || null;
+      const googleId = data.user.id;
 
       const googleUser = {
         email,
         name,
         googleId,
+        avatar,
       };
 
       return this.validateGoogleUser(googleUser);
@@ -470,7 +490,7 @@ try {
         throw error;
       }
       throw new UnauthorizedException(
-        error.message || 'Failed to verify Google ID Token',
+        error.message || 'Failed to verify Supabase ID Token',
       );
     }
   }

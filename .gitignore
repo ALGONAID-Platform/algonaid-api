@@ -8,6 +8,7 @@ tsconfig.tsbuildinfo
 
 # Environment Variables
 .env
+.env.backup-20260817-133824
 .env.test
 .env.production
 .env.local

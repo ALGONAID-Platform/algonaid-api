@@ -295,10 +295,10 @@ export class AppService {
         const type = '${type}';
         const id = '${id}';
         const path = type === 'course' ? 'modulesList' : 'lessonDetails';
-        const rawUrl = 'https://algonaid-api.onrender.com/' + path + '/' + id;
+        const rawUrl = 'https://api.exchangesmangement.online/' + path + '/' + id;
         
         // 1. Set the dynamic target link for "Open in App" button
-        const appIntentUrl = 'intent://algonaid-api.onrender.com/' + path + '/' + id + '#Intent;scheme=https;package=com.algonaid.app;end';
+        const appIntentUrl = 'intent://api.exchangesmangement.online/' + path + '/' + id + '#Intent;scheme=https;package=com.algonaid.app;end';
         const openAppBtn = document.getElementById('open-app-btn');
         openAppBtn.href = appIntentUrl;
 

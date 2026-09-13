@@ -1,4 +1,4 @@
-import { Controller, Get, Patch, Body, UseGuards, UseInterceptors, UploadedFiles } from '@nestjs/common';
+import { Controller, Get, Patch, Body, UseGuards, UseInterceptors, UploadedFiles, Param, ParseIntPipe } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { UpdateProfileDto } from './dtos/update-profile.dto';
 import { AuthGuard } from 'src/auth/guards/auth.guard';
@@ -31,6 +31,13 @@ export class UsersController {
   @UseGuards(AuthGuard)
   async getProfile(@CurrentUser() user: JwtPayloadType) {
     return this.usersService.getProfile(user.id);
+  }
+
+  @ApiOperation({ summary: 'Get details of any user by ID (Public Profile)' })
+  @ApiResponse({ status: 200, description: 'Return the detailed profile of the specified user including points and badges.' })
+  @Get('details/:id')
+  async getUserProfile(@Param('id', ParseIntPipe) id: number) {
+    return this.usersService.getPublicProfile(id);
   }
 
   @ApiOperation({ summary: 'Update user profile and upload images' })

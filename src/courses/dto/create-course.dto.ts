@@ -1,4 +1,4 @@
-import { IsNotEmpty, IsOptional, IsString } from "class-validator";
+import { IsBoolean, IsNotEmpty, IsOptional, IsString } from "class-validator";
 import { ApiProperty } from "@nestjs/swagger";
 
 export class CreateCourseDto {
@@ -17,6 +17,10 @@ export class CreateCourseDto {
     @IsString()
     thumbnail?: string;
 
-   
+    // @ApiProperty({ example: true, description: 'Marks the course as completed' })
+    // @IsOptional()
+    // @IsBoolean()
+    // isCompleted?: boolean;
 }
 
+ 

@@ -1,37 +1,80 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, BadRequestException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { uploadFile } from '@uploadcare/upload-client';
+import * as fs from 'fs';
+import * as path from 'path';
 
 @Injectable()
 export class UploadcareStorageService {
-  private publicKey: string;
+  constructor(private configService: ConfigService) {}
 
-  constructor(private configService: ConfigService) {
-    this.publicKey = this.configService.get<string>('UPLOADCARE_PUBLIC_KEY') as string;
-  }
-
-  async upload(file: Express.Multer.File): Promise<string> {
-    try {
-      const result = await uploadFile(file.buffer, {
-        publicKey: this.publicKey,
-        store: 'auto',
-        fileName: file.originalname,
-      });
-
-      return result.cdnUrl;
-    } catch (error) {
-      throw new Error(`Uploadcare upload error: ${error.message}`);
+  async upload(file: Express.Multer.File, customFolder?: string): Promise<string> {
+    if (!file) {
+      throw new BadRequestException('لم يتم رفع أي ملف');
     }
+
+    const allowedMimeTypes = [
+      'image/jpeg',
+      'image/png',
+      'image/gif',
+      'image/webp',
+      'application/pdf', // تم السماح لملفات PDF بالمرور من هنا
+    ];
+
+    if (!allowedMimeTypes.includes(file.mimetype)) {
+      throw new BadRequestException(
+        'مسموح برفع صور وملفات PDF فقط',
+      );
+    }
+
+    if (!file.buffer || !Buffer.isBuffer(file.buffer)) {
+      throw new BadRequestException('فشل معالجة محتوى الملف');
+    }
+
+    if (!file.size || file.size <= 0) {
+      throw new BadRequestException('الملف فارغ أو غير صالح');
+    }
+
+    // تحديد المجلد: إما المجلد المخصص (مثل avatars أو backgrounds) أو المجلد الافتراضي
+    const folderName = customFolder || (file.mimetype === 'application/pdf' ? 'docs' : 'images');
+    const uploadDir = path.join('/usr/src/app/uploads', folderName);
+
+    if (!fs.existsSync(uploadDir)) {
+      fs.mkdirSync(uploadDir, { recursive: true });
+    }
+
+    const ext = path.extname(file.originalname).toLowerCase();
+    const safeExtension = ext === '.jpeg' ? '.jpg' : ext;
+
+    const randomString = Array.from({ length: 32 }, () =>
+      Math.floor(Math.random() * 16).toString(16),
+    ).join('');
+
+    const fileName = `${randomString}${safeExtension}`;
+    const fullPath = path.join(uploadDir, fileName);
+
+    fs.writeFileSync(fullPath, file.buffer);
+
+    const rawUrl =
+      this.configService.get<string>('APP_URL') ||
+      'https://api.exchangesmangement.online';
+
+    const domain = new URL(rawUrl).origin;
+
+    return `${domain}/uploads/${folderName}/${fileName}`;
   }
 
-  /**
-   * Note: Uploadcare's client-side library doesn't support file deletion 
-   * via public key for security reasons. Deletion requires the REST API 
-   * and a Secret Key. If you need deletion, we can add it later using 
-   * the @uploadcare/api-client-utils or simple fetch calls.
-   */
   async deleteFile(fileUrl: string): Promise<void> {
-    // Placeholder for future REST API implementation
-    console.log(`Manual deletion required for: ${fileUrl} or use Uploadcare REST API`);
+    try {
+      if (fileUrl && fileUrl.includes('/uploads/')) {
+        const relativePath = fileUrl.split('/uploads/')[1];
+        const filePath = path.join('/usr/src/app/uploads', relativePath);
+
+        if (fs.existsSync(filePath)) {
+          fs.unlinkSync(filePath);
+        }
+      }
+    } catch (error) {
+      console.log(`Error deleting file: ${error.message}`);
+    }
   }
 }

@@ -44,6 +44,11 @@ export class CoursesService {
           include: {
             teacher: { include: { user: { select: { name: true, email: true } } } },
             _count: { select: { modules: true } },
+            practiceExams: {
+              select: { createdAt: true },
+              orderBy: { createdAt: 'desc' },
+              take: 1,
+            },
             modules: {
               include: {
                 lessons: {
@@ -73,14 +78,28 @@ export class CoursesService {
 
     return myEnrollments.map((enrol) => {
       const { course } = enrol;
-      const { modules, _count, ...rest } = course;
+      const { modules, _count, practiceExams, ...rest } = course;
 
       let totalLessons = 0;
       let completedLessons = 0;
+      let lastContentAddedAt: Date | null = null;
+
+      if (practiceExams && practiceExams.length > 0) {
+        lastContentAddedAt = practiceExams[0].createdAt;
+      }
 
       modules.forEach((module) => {
         totalLessons += module.lessons.length;
         module.lessons.forEach((lesson) => {
+          if (!lastContentAddedAt || lesson.createdAt > lastContentAddedAt) {
+            lastContentAddedAt = lesson.createdAt;
+          }
+          if (lesson.exam && lesson.exam.createdAt) {
+            if (!lastContentAddedAt || lesson.exam.createdAt > lastContentAddedAt) {
+              lastContentAddedAt = lesson.exam.createdAt;
+            }
+          }
+
           const progress = lesson.lessonProgress;
           const passedExam = lesson.exam?.attempts;
           if (
@@ -103,6 +122,7 @@ export class CoursesService {
       totalLessons,
       completedLessons,
       progressPercentage,
+      lastContentAddedAt,
     };
   });
 }
@@ -297,7 +317,41 @@ async findAll(userId?: number) {
       throw new NotFoundException(MESSAGES.COURSES.COURSE_NOT_FOUND(id));
     }
 
-    return course;
+    // Fetch the latest 3 comments for this course
+    const latestComments = await this.prisma.comment.findMany({
+      where: {
+        lesson: {
+          module: {
+            courseId: id,
+          },
+        },
+        parentId: null, // Only top-level comments
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
+      take: 3,
+      include: {
+        user: {
+          select: {
+            id: true,
+            name: true,
+            avatar: true,
+          }
+        },
+        lesson: {
+          select: {
+            id: true,
+            title: true,
+          }
+        }
+      }
+    });
+
+    return {
+      ...course,
+      latestComments: latestComments,
+    };
   }
 
   async update(id: number, updateCourseDto: UpdateCourseDto, userId: number) {

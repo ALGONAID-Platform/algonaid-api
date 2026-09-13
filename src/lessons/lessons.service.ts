@@ -78,6 +78,9 @@ export class LessonsService {
           } : false,
           exam: {
             select: { id: true }
+          },
+          _count: {
+            select: { comments: true }
           }
         },
         orderBy: { order: 'asc' },
@@ -93,9 +96,10 @@ export class LessonsService {
     ]);
 
     const mappedLessons = lessons.map(lesson => {
-      const { exam, ...rest } = lesson;
+      const { exam, _count, ...rest } = lesson;
       return {
         ...rest,
+        commentsCount: _count.comments,
         hasTest: !!exam,
       };
     });
@@ -146,7 +150,37 @@ export class LessonsService {
       }
     }
 
-    return lesson;
+    const latestComments = await this.prisma.comment.findMany({
+      where: {
+        lessonId: id,
+        parentId: null,
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
+      take: 3,
+      include: {
+        user: {
+          select: {
+            id: true,
+            name: true,
+            avatar: true,
+          }
+        },
+      }
+    });
+
+    const commentsCount = await this.prisma.comment.count({
+      where: {
+        lessonId: id,
+      }
+    });
+
+    return {
+      ...lesson,
+      commentsCount,
+      latestComments: latestComments,
+    };
   }
 
   async update(id: number, updateLessonDto: UpdateLessonDto, userId: number) {

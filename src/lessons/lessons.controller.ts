@@ -8,10 +8,19 @@ import { CurrentUser } from 'src/auth/decorators/current-user.decorator';
 import { CreateLessonDto } from './dto/create-lesson.dto';
 import { UpdateLessonDto } from './dto/update-lesson.dto';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { allowedFileTypes, pdfFileSizeLimit } from 'src/utils/conistants';
+import { pdfFileSizeLimit } from 'src/utils/conistants';
 import { SwaggerCreateLesson, SwaggerGetAllLessonsByModule, SwaggerGetLesson, SwaggerUpdateLesson, SwaggerDeleteLesson } from './decorators/swagger.decorator';
 import * as types from 'src/utils/types';
 import { UploadcareStorageService } from 'src/utils/uploadcare-storage.service';
+
+// فلتر مخصص للـ PDF فقط
+const pdfFileFilter = (req: any, file: any, cb: any) => {
+  if (file.mimetype === 'application/pdf' || file.originalname.toLowerCase().endsWith('.pdf')) {
+    cb(null, true);
+  } else {
+    cb(new BadRequestException('مسموح برفع ملفات PDF فقط'), false);
+  }
+};
 
 @ApiTags('lessons')
 @ApiBearerAuth('JWT-auth')
@@ -25,7 +34,7 @@ export class LessonsController {
   @Post()
   @UseGuards(AuthRollGuard)
   @userRoles(Role.ADMIN, Role.OWNER)
-  @UseInterceptors(FileInterceptor('pdf'))
+  @UseInterceptors(FileInterceptor('pdf', { fileFilter: pdfFileFilter }))
   @SwaggerCreateLesson()
   async create(
     @Body() createLessonDto: CreateLessonDto,
@@ -33,12 +42,11 @@ export class LessonsController {
     @UploadedFile(
       new ParseFilePipe({
         validators: [
-          new MaxFileSizeValidator({ maxSize: pdfFileSizeLimit }), // الحد الأقصى 10 ميجابايت
-          new FileTypeValidator({ fileType: allowedFileTypes[0] }), // يقبل PDF فقط
+          new MaxFileSizeValidator({ maxSize: pdfFileSizeLimit }),
+          new FileTypeValidator({ fileType: 'application/pdf' }),
         ],
         fileIsRequired: false,
       }),
-
     ) file?: Express.Multer.File
   ) {
     if (file) {
@@ -84,13 +92,21 @@ export class LessonsController {
   @Patch(':id')
   @UseGuards(AuthRollGuard)
   @userRoles(Role.ADMIN, Role.OWNER)
-  @UseInterceptors(FileInterceptor('pdf'))
+  @UseInterceptors(FileInterceptor('pdf', { fileFilter: pdfFileFilter }))
   @SwaggerUpdateLesson()
   async update(
     @Param('id', ParseIntPipe) id: number,
     @Body() updateLessonDto: UpdateLessonDto,
     @CurrentUser() user: types.JwtPayloadType,
-    @UploadedFile() file?: Express.Multer.File
+    @UploadedFile(
+      new ParseFilePipe({
+        validators: [
+          new MaxFileSizeValidator({ maxSize: pdfFileSizeLimit }),
+          new FileTypeValidator({ fileType: 'application/pdf' }), 
+        ],
+        fileIsRequired: false,
+      }),
+    ) file?: Express.Multer.File
   ) {
     if (file) {
       updateLessonDto.pdfUrl = await this.uploadcareStorageService.upload(file);

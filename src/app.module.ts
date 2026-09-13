@@ -1,5 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
+import { ServeStaticModule } from '@nestjs/serve-static';
+import { join } from 'path';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { AuthModule } from './auth/auth.module';
@@ -14,12 +16,19 @@ import { ProgressModule } from './progress/progress.module';
 import { UsersModule } from './users/users.module';
 import { UploadcareStorageService } from './utils/uploadcare-storage.service';
 import { PracticeExamsModule } from './practice-exams/practice-exams.module';
+import { MediaModule } from './media/media.module';
+import { CommentsModule } from './comments/comments.module';
 
+ 
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
       envFilePath: `.env`
+    }),
+    ServeStaticModule.forRoot({
+      rootPath: join('/usr/src/app', 'uploads'),
+      serveRoot: '/uploads',
     }),
     JwtModule.registerAsync({
       global: true,
@@ -29,6 +38,7 @@ import { PracticeExamsModule } from './practice-exams/practice-exams.module';
         signOptions: { expiresIn: (config.get<string>('JWT_EXPIRES_SECRET') || '30d') as any },
       }),
     }),
+    MediaModule,
     AuthModule,
     PrismaModule,
     EnrollmentModule,
@@ -38,6 +48,8 @@ import { PracticeExamsModule } from './practice-exams/practice-exams.module';
     ExamsModule,
     ProgressModule,
     UsersModule,
+        CommentsModule,
+
     PracticeExamsModule,
   ],
   controllers: [AppController],
