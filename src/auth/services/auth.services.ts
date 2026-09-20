@@ -69,8 +69,6 @@ export class AuthService {
     const { token, newPassword } = resetPasswordDto;
     
     const hashedToken = crypto.createHash('sha256').update(token.trim()).digest('hex');
-    console.log('Received raw token:', token);
-    console.log('Computed hash:', hashedToken);
 
     const user = await this.prisma.user.findFirst({
       where: {
@@ -79,12 +77,10 @@ export class AuthService {
     });
 
     if (!user) {
-      console.log('No user found with this hashedToken in the database.');
       throw new UnauthorizedException(MESSAGES.AUTH.INVALID_OR_EXPIRED_TOKEN);
     }
 
     if (user.resetPasswordExpires && user.resetPasswordExpires < new Date()) {
-      console.log('Token is expired.');
       throw new UnauthorizedException(MESSAGES.AUTH.INVALID_OR_EXPIRED_TOKEN);
     }
 
@@ -129,7 +125,7 @@ export class AuthService {
 
   // ==================== Register ====================
   async register(userDto: UserRegisterDto) {
-    let { email, password, name, role } = userDto;
+    let { email, password, name } = userDto;
     email = email.toLowerCase().trim();
 
     const existingUser = await this.prisma.user.findUnique({
@@ -146,9 +142,8 @@ export class AuthService {
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    let prismaRole: Role = Role.STUDENT;
-    if (role === UserRole.ADMIN) prismaRole = Role.ADMIN;
-    if (role === UserRole.OWNER) prismaRole = Role.OWNER;
+    // Public registration must never be able to create a privileged account.
+    const prismaRole: Role = Role.STUDENT;
 
     // ===== توليد Verification Token آمن =====
     const rawVerificationToken = crypto.randomBytes(32).toString('hex');
@@ -190,17 +185,11 @@ export class AuthService {
       });
 
       // ===== إرسال بريد التحقق =====
-     console.log('📧 Starting verification email...');
-console.log('📧 Email:', email);
-console.log('📧 Token generated:', !!rawVerificationToken);
-
 try {
-  const result = await this.mailService.sendVerificationEmail(
+  await this.mailService.sendVerificationEmail(
     email,
     rawVerificationToken,
   );
-
-  console.log('✅ Verification email result:', result);
 } catch (error) {
   console.error('❌ Verification email failed:', error);
 }
@@ -332,13 +321,9 @@ try {
       where: { email },
     });
 
-    if (!user) {
-      throw new NotFoundException(MESSAGES.AUTH.EMAIL_NOT_FOUND);
-    }
-
-    // إذا كان البريد مؤكداً بالفعل لا نحتاج لإعادة الإرسال
-    if (user.emailVerified) {
-      throw new BadRequestException(MESSAGES.AUTH.EMAIL_ALREADY_VERIFIED);
+    // Always return the same response to avoid revealing account existence.
+    if (!user || user.emailVerified) {
+      return { message: MESSAGES.AUTH.VERIFICATION_EMAIL_SENT };
     }
 
     // توليد token جديد

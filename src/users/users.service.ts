@@ -17,7 +17,7 @@ export class UsersService {
       throw new NotFoundException('User not found');
     }
 
-    const { password, studentProfile, teacherProfile, ...userWithoutPassword } = user;
+    const { password, resetPasswordToken, resetPasswordExpires, verificationToken, verificationTokenExpiry, studentProfile, teacherProfile, ...userWithoutPassword } = user;
     
     return {
       ...userWithoutPassword,
@@ -46,7 +46,7 @@ export class UsersService {
       throw new NotFoundException('User not found');
     }
 
-    const { password, studentProfile, teacherProfile, ...userWithoutPassword } = user;
+    const { password, resetPasswordToken, resetPasswordExpires, verificationToken, verificationTokenExpiry, studentProfile, teacherProfile, ...userWithoutPassword } = user;
     
     let badges: any[] = [];
     let totalPoints = 0;
@@ -72,14 +72,12 @@ export class UsersService {
     }
 
     return {
-      ...userWithoutPassword,
-      avatarUrl: userWithoutPassword.avatar,
+      id: user.id,
+      name: user.name,
+      avatar: user.avatar,
+      avatarUrl: user.avatar,
       role: user.role,
       ...(studentProfile ? {
-        academicId: studentProfile.academicId,
-        grade: studentProfile.grade,
-        birthDate: studentProfile.birthDate,
-        address: studentProfile.address,
         points: totalPoints,
         badges: badges,
       } : {}),
@@ -139,7 +137,7 @@ export class UsersService {
       throw new NotFoundException('User not found after update');
     }
 
-    const { password, studentProfile, teacherProfile, ...userWithoutPassword } = finalUpdatedUser;
+    const { password, resetPasswordToken, resetPasswordExpires, verificationToken, verificationTokenExpiry, studentProfile, teacherProfile, ...userWithoutPassword } = finalUpdatedUser;
 
     return {
       message: 'Profile updated successfully',

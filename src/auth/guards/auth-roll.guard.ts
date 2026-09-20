@@ -9,6 +9,7 @@ import { UserRole } from "../enums/userRole";
 import { CURRENT_USER_KEY } from "src/utils/conistants";
 import { Role } from "@prisma/client";
 import { MESSAGES } from "src/utils/messages";
+import { PrismaService } from "src/prisma/prisma.service";
 
 
 @Injectable()
@@ -19,6 +20,7 @@ export class AuthRollGuard implements CanActivate {
         private readonly config: ConfigService,
         private readonly reflector: Reflector,
         private readonly authService: AuthService,
+        private readonly prisma: PrismaService,
     ) { }
     async canActivate(context: ExecutionContext): Promise<boolean> {
 
@@ -35,10 +37,15 @@ export class AuthRollGuard implements CanActivate {
             throw new UnauthorizedException(MESSAGES.AUTH.NO_TOKEN_PROVIDED);
         }
 
+        const blacklisted = await this.prisma.tokenBlacklist.findUnique({ where: { token } });
+        if (blacklisted) {
+            throw new UnauthorizedException(MESSAGES.AUTH.INVALID_TOKEN);
+        }
+
         let payload: JwtPayloadType;
         try {
             payload = await this.jwtService.verifyAsync(token, {
-                secret: this.config.get<string>('JWT_SECRET') || 'defaultSecret'
+                secret: this.config.getOrThrow<string>('JWT_SECRET')
             }) as JwtPayloadType;
         } catch (e) {
             throw new UnauthorizedException(MESSAGES.AUTH.INVALID_TOKEN);

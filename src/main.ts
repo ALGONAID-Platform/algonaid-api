@@ -45,14 +45,16 @@ async function bootstrap() {
       if (path.endsWith('apple-app-site-association')) {
         res.set('Content-Type', 'application/json');
       }
+      res.set('X-Content-Type-Options', 'nosniff');
     }
   });
 app.use(json({ limit: '50mb' }));
   app.use(urlencoded({ extended: true, limit: '50mb' }));
 
-  // إعدادات CORS صريحة لدعم الـ Preflight والـ Localhost
+  // CORS is restricted to explicitly configured frontends.
+  const allowedOrigins = (process.env.CORS_ORIGINS || 'http://localhost:3000,http://localhost:5000').split(',').map((origin) => origin.trim()).filter(Boolean);
   app.enableCors({
-    origin: true,
+    origin: allowedOrigins,
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
     allowedHeaders: 'Content-Type, Accept, Authorization, X-Requested-With',
     credentials: true,

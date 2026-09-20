@@ -28,13 +28,14 @@ import { CommentsModule } from './comments/comments.module';
     }),
     ServeStaticModule.forRoot({
       rootPath: join('/usr/src/app', 'uploads'),
+      serveStaticOptions: { setHeaders: (res: any) => res.setHeader('X-Content-Type-Options', 'nosniff') },
       serveRoot: '/uploads',
     }),
     JwtModule.registerAsync({
       global: true,
       inject: [ConfigService],
       useFactory: (config: ConfigService) => ({
-        secret: config.get<string>('JWT_SECRET') || 'defaultSecret',
+        secret: config.getOrThrow<string>('JWT_SECRET'),
         signOptions: { expiresIn: (config.get<string>('JWT_EXPIRES_SECRET') || '30d') as any },
       }),
     }),

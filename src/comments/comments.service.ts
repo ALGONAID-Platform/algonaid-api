@@ -16,6 +16,9 @@ export class CommentsService {
     if (!lesson) {
       throw new NotFoundException('Lesson not found');
     }
+    if (lesson.status !== 'PUBLISHED') {
+      throw new ForbiddenException('Comments are unavailable for unpublished lessons');
+    }
 
     // Check if parent comment exists if parentId is provided
     if (parentId) {
@@ -51,7 +54,7 @@ export class CommentsService {
     const lesson = await this.prisma.lesson.findUnique({
       where: { id: lessonId },
     });
-    if (!lesson) {
+    if (!lesson || lesson.status !== 'PUBLISHED') {
       throw new NotFoundException('Lesson not found');
     }
 
@@ -94,6 +97,7 @@ export class CommentsService {
     return this.prisma.comment.findMany({
       where: {
         lesson: {
+          status: 'PUBLISHED',
           module: {
             courseId: courseId
           }

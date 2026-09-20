@@ -42,8 +42,17 @@ export class UploadcareStorageService {
       fs.mkdirSync(uploadDir, { recursive: true });
     }
 
-    const ext = path.extname(file.originalname).toLowerCase();
-    const safeExtension = ext === '.jpeg' ? '.jpg' : ext;
+    const extensions: Record<string, string> = {
+      'image/jpeg': '.jpg',
+      'image/png': '.png',
+      'image/gif': '.gif',
+      'image/webp': '.webp',
+      'application/pdf': '.pdf',
+    };
+    const safeExtension = extensions[file.mimetype];
+    if (!safeExtension) {
+      throw new BadRequestException('Unsupported file type');
+    }
 
     const randomString = Array.from({ length: 32 }, () =>
       Math.floor(Math.random() * 16).toString(16),
