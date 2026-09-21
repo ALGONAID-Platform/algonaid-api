@@ -1,4 +1,7 @@
-import { Controller, Post, UploadedFile, UseInterceptors, BadRequestException } from '@nestjs/common';
+import { Controller, Post, UploadedFile, UseInterceptors, BadRequestException, UseGuards } from '@nestjs/common';
+import { AuthRollGuard } from '../auth/guards/auth-roll.guard';
+import { userRoles } from '../auth/decorators/user_roll.decorator';
+import { Role } from '@prisma/client';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { memoryStorage } from 'multer';
 import { UploadcareStorageService } from '../utils/uploadcare-storage.service';
@@ -8,6 +11,8 @@ export class MediaController {
   constructor(private readonly uploadcareStorageService: UploadcareStorageService) {}
 
   @Post('images')
+  @UseGuards(AuthRollGuard)
+  @userRoles(Role.STUDENT, Role.ADMIN, Role.OWNER)
   @UseInterceptors(FileInterceptor('file', {
     storage: memoryStorage(),
     fileFilter: (req, file, cb) => {

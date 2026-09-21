@@ -1,6 +1,5 @@
 import { ApiProperty } from "@nestjs/swagger";
-import { UserRole } from "../enums/userRole";
-import { IsString, IsEmail, MinLength, Matches, MaxLength, Length, IsNotEmpty, IsOptional, IsEnum } from 'class-validator';
+import { IsString, IsEmail, MinLength, Matches, MaxLength, Length, IsNotEmpty } from 'class-validator';
 import { MESSAGES } from 'src/utils/messages';
 
 export class UserRegisterDto {
@@ -45,20 +44,6 @@ export class UserRegisterDto {
     password: string;
     //==================
 
-
-
-    @ApiProperty({
-        example: UserRole.STUDENT,
-        enum: UserRole,
-        description: 'نوع الحساب: طالب أو معلم',
-        required: true,
-    })
-    @IsEnum(UserRole, { message: MESSAGES.VALIDATION.ROLE_INVALID })
-    @IsNotEmpty({ message: MESSAGES.VALIDATION.ROLE_REQUIRED })
-    //==================
-    role: UserRole
-    //==================
- 
 }
 
 

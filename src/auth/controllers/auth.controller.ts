@@ -37,6 +37,10 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import { AuthGuard } from '@nestjs/passport';
+import { AuthGuard as JwtAuthGuard } from '../guards/auth.guard';
+import { CurrentUser } from '../decorators/current-user.decorator';
+import { JwtPayloadType } from 'src/utils/types';
+import { ForbiddenException } from '@nestjs/common';
 import { Response } from 'express';
 
 @ApiTags('auth')
@@ -106,6 +110,7 @@ export class AuthController {
     if (!token) {
       throw new BadRequestException('Token is required');
     }
+    const safeToken = encodeURIComponent(token);
     const html = `
       <!DOCTYPE html>
       <html lang="ar" dir="rtl">
@@ -126,11 +131,11 @@ export class AuthController {
         <div class="container">
           <h1>إعادة تعيين كلمة المرور</h1>
           <p>إذا لم يفتح التطبيق تلقائياً، يرجى الضغط على الزر أدناه لإكمال العملية داخل تطبيق منصة الجنيد.</p>
-          <a href="intent://api.exchangesmangement.online/reset-password?token=${token}#Intent;scheme=https;package=com.algonaid.app;end" class="btn">فتح في التطبيق</a>
+          <a href="intent://api.exchangesmangement.online/reset-password?token=${safeToken}#Intent;scheme=https;package=com.algonaid.app;end" class="btn">فتح في التطبيق</a>
         </div>
         <script>
           setTimeout(function() {
-            window.location.href = "intent://api.exchangesmangement.online/reset-password?token=${token}#Intent;scheme=https;package=com.algonaid.app;end";
+            window.location.href = "intent://api.exchangesmangement.online/reset-password?token=${safeToken}#Intent;scheme=https;package=com.algonaid.app;end";
           }, 500);
         </script>
       </body>
@@ -190,6 +195,7 @@ export class AuthController {
 
       const accept = req.headers.accept || '';
       if (accept.includes('text/html')) {
+    const safeToken = encodeURIComponent(token);
         const html = `
           <!DOCTYPE html>
           <html lang="ar" dir="rtl">
@@ -210,11 +216,11 @@ export class AuthController {
             <div class="container">
               <h1>تم تأكيد الحساب بنجاح</h1>
               <p>تم تأكيد بريدك الإلكتروني بنجاح. يتم الآن تحويلك إلى التطبيق، أو يمكنك الضغط على الزر أدناه.</p>
-              <a href="intent://api.exchangesmangement.online/verify-email?token=${token}#Intent;scheme=https;package=com.algonaid.app;end" class="btn">فتح في التطبيق</a>
+              <a href="intent://api.exchangesmangement.online/verify-email?token=${safeToken}#Intent;scheme=https;package=com.algonaid.app;end" class="btn">فتح في التطبيق</a>
             </div>
             <script>
               setTimeout(function() {
-                window.location.href = "intent://api.exchangesmangement.online/verify-email?token=${token}#Intent;scheme=https;package=com.algonaid.app;end";
+                window.location.href = "intent://api.exchangesmangement.online/verify-email?token=${safeToken}#Intent;scheme=https;package=com.algonaid.app;end";
               }, 500);
             </script>
           </body>
@@ -228,6 +234,7 @@ export class AuthController {
     } catch (error: any) {
       const accept = req.headers.accept || '';
       if (accept.includes('text/html')) {
+    const safeToken = encodeURIComponent(token);
         const html = `
           <!DOCTYPE html>
           <html lang="ar" dir="rtl">
@@ -248,11 +255,11 @@ export class AuthController {
             <div class="container">
               <h1>حدث خطأ</h1>
               <p>\${error.message || 'الرابط غير صالح أو منتهي الصلاحية. يتم الآن تحويلك للتطبيق.'}</p>
-              <a href="intent://api.exchangesmangement.online/verify-email?token=${token}#Intent;scheme=https;package=com.algonaid.app;end" class="btn">فتح في التطبيق</a>
+              <a href="intent://api.exchangesmangement.online/verify-email?token=${safeToken}#Intent;scheme=https;package=com.algonaid.app;end" class="btn">فتح في التطبيق</a>
             </div>
             <script>
               setTimeout(function() {
-                window.location.href = "intent://api.exchangesmangement.online/verify-email?token=${token}#Intent;scheme=https;package=com.algonaid.app;end";
+                window.location.href = "intent://api.exchangesmangement.online/verify-email?token=${safeToken}#Intent;scheme=https;package=com.algonaid.app;end";
               }, 500);
             </script>
           </body>
@@ -305,14 +312,17 @@ export class AuthController {
 
   // ==================== Get Current User ====================
   @Get(':id')
+  @UseGuards(JwtAuthGuard)
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({ summary: 'Get current user data by ID' })
-  async getCurrentUser(@Param('id', ParseIntPipe) id: number) {
+  async getCurrentUser(@Param('id', ParseIntPipe) id: number, @CurrentUser() user: JwtPayloadType) {
+    if (id !== user.id) throw new ForbiddenException();
     return await this.authService.getCurrentUser(id);
   }
 
   // ==================== Logout ====================
   @Post('logout')
+  @UseGuards(JwtAuthGuard)
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({ summary: 'Logout user and invalidate token' })
   async logout(@Req() req: any) {
