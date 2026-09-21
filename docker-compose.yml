@@ -23,7 +23,7 @@ services:
       SUPABASE_URL: ${SUPABASE_URL}
       SUPABASE_ANON_KEY: ${SUPABASE_ANON_KEY}
     ports:
-      - "127.0.0.1:3000:3000"
+      - "3000:3000"
     volumes:
       - ./uploads:/usr/src/app/uploads
     depends_on:
