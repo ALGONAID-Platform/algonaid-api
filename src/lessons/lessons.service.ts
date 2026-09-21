@@ -31,9 +31,9 @@ export class LessonsService {
     });
 
     const isInstructor = user?.teacherProfile && module.course.instructorId === user.teacherProfile.id;
-    const isOwnerOrAdmin = user?.role === Role.OWNER || user?.role === Role.ADMIN;
+    const isOwner = user?.role === Role.OWNER;
 
-    if (!isInstructor && !isOwnerOrAdmin) {
+    if (!isInstructor && !isOwner) {
       throw new ForbiddenException(MESSAGES.LESSONS.UNAUTHORIZED_ADD);
     }
 
@@ -143,9 +143,9 @@ export class LessonsService {
         include: { teacherProfile: true }
       });
       const isInstructor = user?.teacherProfile && lesson.module.course.instructorId === user.teacherProfile.id;
-      const isOwnerOrAdmin = user?.role === Role.OWNER || user?.role === Role.ADMIN;
+      const isOwner = user?.role === Role.OWNER;
 
-      if (!isInstructor && !isOwnerOrAdmin) {
+      if (!isInstructor && !isOwner) {
         throw new ForbiddenException(MESSAGES.LESSONS.LESSON_NOT_FOUND(id));
       }
     }
@@ -194,9 +194,9 @@ export class LessonsService {
     });
 
     const isInstructor = user?.teacherProfile && lesson.module.course.instructorId === user.teacherProfile.id;
-    const isOwnerOrAdmin = user?.role === Role.OWNER || user?.role === Role.ADMIN;
+    const isOwner = user?.role === Role.OWNER;
 
-    if (!isInstructor && !isOwnerOrAdmin) {
+    if (!isInstructor && !isOwner) {
       throw new ForbiddenException(MESSAGES.LESSONS.UNAUTHORIZED_UPDATE);
     }
 
@@ -220,9 +220,9 @@ export class LessonsService {
     });
 
     const isInstructor = user?.teacherProfile && lesson.module.course.instructorId === user.teacherProfile.id;
-    const isOwnerOrAdmin = user?.role === Role.OWNER || user?.role === Role.ADMIN;
+    const isOwner = user?.role === Role.OWNER;
 
-    if (!isInstructor && !isOwnerOrAdmin) {
+    if (!isInstructor && !isOwner) {
       throw new ForbiddenException(MESSAGES.LESSONS.UNAUTHORIZED_DELETE);
     }
 

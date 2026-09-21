@@ -44,7 +44,9 @@ export class CoursesController {
   @SwaggerSearchCourses()
   @UseGuards(OptionalAuthGuard)
   search(@Query('q') query: string, @CurrentUser() user?: types.JwtPayloadType) {
-    return this.coursesService.search(query || '', user?.id);
+    // Limit query length to prevent ReDoS and DB overload
+    const safeQuery = (query || '').slice(0, 100).trim();
+    return this.coursesService.search(safeQuery, user?.id);
   }
 
 

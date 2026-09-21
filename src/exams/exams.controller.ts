@@ -34,7 +34,17 @@ export class ExamsController {
   @UseInterceptors(FileInterceptor('image'))
   @ApiOperation({ summary: 'Upload an image for an exam' })
   @ApiConsumes('multipart/form-data')
-  async uploadImage(@UploadedFile() file: Express.Multer.File) {
+  async uploadImage(
+    @UploadedFile(
+      new ParseFilePipe({
+        validators: [
+          new MaxFileSizeValidator({ maxSize: 5 * 1024 * 1024 }),
+          new FileTypeValidator({ fileType: /(jpg|jpeg|png|webp|gif)$/ }),
+        ],
+        fileIsRequired: true,
+      }),
+    ) file: Express.Multer.File
+  ) {
     const imageUrl = await this.uploadcareStorageService.upload(file);
     return { imageUrl };
   }

@@ -26,10 +26,7 @@ export class AuthRollGuard implements CanActivate {
 
         const rolls: Role[] = this.reflector.getAllAndOverride<Role[]>('roles', [context.getHandler(), context.getClass()])
 
-        if (!rolls || rolls.length == 0) {
-            return true; // If no roles are specified, allow access (or change to false if you want strict default)
-        }
-
+        // Always verify the JWT token first, regardless of whether roles are specified.
         const request = context.switchToHttp().getRequest();
         const [type, token] = request.headers.authorization?.split(" ") ?? [];
 
@@ -56,9 +53,16 @@ export class AuthRollGuard implements CanActivate {
             throw new UnauthorizedException(MESSAGES.AUTH.ACCESS_DENIED_USER_NOT_FOUND);
         }
 
+        payload.emailVerified = user.user.emailVerified;
+        request[CURRENT_USER_KEY] = payload;
+
+        // If no roles are specified, allow any authenticated user.
+        if (!rolls || rolls.length == 0) {
+            return true;
+        }
+
+        // Check if the user's role is in the allowed list.
         if (rolls.includes(user.user.role)) {
-            payload.emailVerified = user.user.emailVerified;
-            request[CURRENT_USER_KEY] = payload;
             return true;
         }
 

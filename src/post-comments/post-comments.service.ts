@@ -4,13 +4,14 @@ import { CreatePostCommentDto } from './dto/create-post-comment.dto';
 import { UpdatePostCommentDto } from './dto/update-post-comment.dto';
 import { Role } from '@prisma/client';
 
-@Injectable() 
+@Injectable()
 export class PostCommentsService {
   constructor(private readonly prisma: PrismaService) {}
 
   async create(postId: number, userId: number, dto: CreatePostCommentDto) {
     const post = await this.prisma.post.findUnique({ where: { id: postId } });
     if (!post) throw new NotFoundException('المنشور غير موجود');
+    if (!post.allowComments) throw new ForbiddenException('التعليقات مغلقة لهذا المنشور');
 
     if (dto.parentId) {
       const parent = await this.prisma.postComment.findUnique({ where: { id: dto.parentId } });
@@ -51,8 +52,8 @@ export class PostCommentsService {
     const comment = await this.prisma.postComment.findUnique({ where: { id: commentId } });
     if (!comment) throw new NotFoundException('التعليق غير موجود');
 
-    // Only the author can update their own comment, or an Admin
-    if (comment.userId !== userId && userRole !== Role.ADMIN && userRole !== Role.OWNER) {
+    // Only the author can update their own comment, or an Owner
+    if (comment.userId !== userId && userRole !== Role.OWNER) {
       throw new ForbiddenException('غير مصرح لك بتعديل هذا التعليق');
     }
 
@@ -69,7 +70,7 @@ export class PostCommentsService {
     const comment = await this.prisma.postComment.findUnique({ where: { id: commentId } });
     if (!comment) throw new NotFoundException('التعليق غير موجود');
 
-    if (comment.userId !== userId && userRole !== Role.ADMIN && userRole !== Role.OWNER) {
+    if (comment.userId !== userId && userRole !== Role.OWNER) {
       throw new ForbiddenException('غير مصرح لك بحذف هذا التعليق');
     }
 

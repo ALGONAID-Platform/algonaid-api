@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { APP_GUARD } from '@nestjs/core';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { ServeStaticModule } from '@nestjs/serve-static';
 import { join } from 'path';
@@ -20,7 +21,7 @@ import { MediaModule } from './media/media.module';
 import { CommentsModule } from './comments/comments.module';
 
 import { ScheduleModule } from '@nestjs/schedule';
-import { ThrottlerModule } from '@nestjs/throttler';
+import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { PostsModule } from './posts/posts.module';
 import { PostCommentsModule } from './post-comments/post-comments.module';
 
@@ -58,8 +59,19 @@ import { PostCommentsModule } from './post-comments/post-comments.module';
     PracticeExamsModule,
     PostsModule,
     PostCommentsModule,
+    ThrottlerModule.forRoot([{
+      ttl: 60000,      // 1 minute window
+      limit: 120,      // 120 req/min globally — Auth endpoints override this with @Throttle({limit:5})
+    }]),
   ],
   controllers: [AppController],
-  providers: [AppService, UploadcareStorageService],
+  providers: [
+    AppService, 
+    UploadcareStorageService,
+    {
+      provide: APP_GUARD,
+      useClass: ThrottlerGuard,
+    }
+  ],
 })
 export class AppModule { }

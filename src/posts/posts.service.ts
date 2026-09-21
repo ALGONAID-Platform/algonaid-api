@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { CreatePostDto } from './dto/create-post.dto';
 import { UpdatePostDto } from './dto/update-post.dto';
@@ -22,8 +22,9 @@ export class PostsService {
   }
 
   async findAll(userId: number, cursor?: number, limit: number = 10) {
+    const safeLimit = Math.min(Math.max(limit, 1), 50); // between 1 and 50
     const args: any = {
-      take: limit,
+      take: safeLimit,
       orderBy: { createdAt: 'desc' },
       include: {
         author: { select: { id: true, name: true, avatar: true, role: true } },
@@ -83,8 +84,12 @@ export class PostsService {
     return { ...postAny, hasLiked };
   }
 
-  async update(id: number, updatePostDto: UpdatePostDto) {
-    await this.findOne(id); // Check existence
+  async update(id: number, updatePostDto: UpdatePostDto, userId: number, role: string) {
+    const post = await this.findOne(id); // Check existence
+    
+    if (post.authorId !== userId && role !== 'OWNER') {
+      throw new ForbiddenException('غير مصرح لك بتعديل هذا المنشور');
+    }
     
     // We prevent updating poll options directly here to preserve vote integrity.
     const { pollOptions, ...postData } = updatePostDto;
@@ -95,8 +100,13 @@ export class PostsService {
     });
   }
 
-  async remove(id: number) {
-    await this.findOne(id); // Check existence
+  async remove(id: number, userId: number, role: string) {
+    const post = await this.findOne(id); // Check existence
+    
+    if (post.authorId !== userId && role !== 'OWNER') {
+      throw new ForbiddenException('غير مصرح لك بحذف هذا المنشور');
+    }
+    
     return this.prisma.post.delete({
       where: { id },
     });

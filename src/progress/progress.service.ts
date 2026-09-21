@@ -84,11 +84,11 @@ export class ProgressService {
       if (!student) throw new NotFoundException('Student profile not found');
     }
 
-    const isOwnerOrAdmin = student.user?.role === 'OWNER' || student.user?.role === 'ADMIN';
+    const isOwner = student.user?.role === 'OWNER';
 
     const lessons = await this.prisma.lesson.findMany({
       where: {
-        ...(!isOwnerOrAdmin && { status: 'PUBLISHED' }),
+        ...(!isOwner && { status: 'PUBLISHED' }),
         module: {
           courseId: courseId,
         },
@@ -255,12 +255,12 @@ export class ProgressService {
     }
 
     const module = lastProgress.lesson.module;
-    const isOwnerOrAdmin = student.user?.role === 'OWNER' || student.user?.role === 'ADMIN';
+    const isOwner = student.user?.role === 'OWNER';
 
     const lessons = await this.prisma.lesson.findMany({
       where: {
         moduleId: module.id,
-        ...(!isOwnerOrAdmin && { status: 'PUBLISHED' }),
+        ...(!isOwner && { status: 'PUBLISHED' }),
       },
       include: {
         lessonProgress: {

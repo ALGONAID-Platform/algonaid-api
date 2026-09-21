@@ -37,7 +37,7 @@ export class CoursesService {
       return [];
     }
 
-    const isOwnerOrAdmin = user?.role === 'OWNER' || user?.role === 'ADMIN';
+    const isOwner = user?.role === 'OWNER';
    
     const myEnrollments = await this.prisma.enrollment.findMany({
       where: { 
@@ -47,7 +47,7 @@ export class CoursesService {
       include: {
         course: {
           include: {
-            teacher: { include: { user: { select: { name: true, email: true } } } },
+            teacher: { include: { user: { select: { name: true, avatar: true } } } },
             _count: { 
               select: { 
                 modules: true,
@@ -63,7 +63,7 @@ export class CoursesService {
               include: {
                 lessons: {
                   where: {
-                    ...(!isOwnerOrAdmin && { status: 'PUBLISHED' }),
+                    ...(!isOwner && { status: 'PUBLISHED' }),
                   },
                   include: {
                     lessonProgress: {
@@ -142,10 +142,10 @@ export class CoursesService {
   async findAll(userId?: number, role?: string) {
     const student = userId ? await this.prisma.student.findUnique({ where: { userId } }) : null;
     const studentId = student?.id;
-    const isOwnerOrAdmin = role === 'OWNER' || role === 'ADMIN';
+    const isOwner = role === 'OWNER';
 
     const courses = await this.prisma.course.findMany({
-      where: (studentId && !isOwnerOrAdmin) ? {
+      where: (studentId && !isOwner) ? {
         NOT: {
           enrollments: {
             some: {
@@ -156,7 +156,7 @@ export class CoursesService {
         },
       } : {},
       include: {
-        teacher: { include: { user: { select: { name: true, email: true } } } },
+        teacher: { include: { user: { select: { name: true, avatar: true } } } },
         modules: { select: { title: true }, take: 3 },
         _count: { 
           select: { 
@@ -325,7 +325,7 @@ export class CoursesService {
             user: {
               select: {
                 name: true,
-                email: true,
+                avatar: true,
               },
             },
           },
@@ -399,9 +399,9 @@ export class CoursesService {
     }
 
     const isInstructor = user.teacherProfile && course.instructorId === user.teacherProfile.id;
-    const isOwnerOrAdmin = user.role === 'OWNER' || user.role === 'ADMIN';
+    const isOwner = user.role === 'OWNER';
 
-    if (!isInstructor && !isOwnerOrAdmin) {
+    if (!isInstructor && !isOwner) {
       throw new ForbiddenException(MESSAGES.COURSES.UNAUTHORIZED_UPDATE);
     }
 
@@ -423,9 +423,9 @@ export class CoursesService {
     }
 
     const isInstructor = user.teacherProfile && course.instructorId === user.teacherProfile.id;
-    const isOwnerOrAdmin = user.role === 'OWNER' || user.role === 'ADMIN';
+    const isOwner = user.role === 'OWNER';
 
-    if (!isInstructor && !isOwnerOrAdmin) {
+    if (!isInstructor && !isOwner) {
       throw new ForbiddenException(MESSAGES.COURSES.UNAUTHORIZED_DELETE);
     }
    await this.prisma.course.delete({

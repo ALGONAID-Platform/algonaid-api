@@ -1,4 +1,4 @@
-import { Controller, Get, Patch, Body, UseGuards, UseInterceptors, UploadedFiles, Param, ParseIntPipe } from '@nestjs/common';
+import { Controller, Get, Patch, Body, UseGuards, UseInterceptors, UploadedFiles, Param, ParseIntPipe, BadRequestException } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { UpdateProfileDto } from './dtos/update-profile.dto';
 import { AuthGuard } from 'src/auth/guards/auth.guard';
@@ -54,6 +54,14 @@ export class UsersController {
     @Body() updateProfileDto: UpdateProfileDto,
     @UploadedFiles() files?: { avatar?: Express.Multer.File[], background?: Express.Multer.File[] },
   ) {
+    const allowedMimeTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+    if (files?.avatar?.[0] && !allowedMimeTypes.includes(files.avatar[0].mimetype)) {
+      throw new BadRequestException('Avatar must be a valid image file (jpeg, png, webp, gif)');
+    }
+    if (files?.background?.[0] && !allowedMimeTypes.includes(files.background[0].mimetype)) {
+      throw new BadRequestException('Background must be a valid image file (jpeg, png, webp, gif)');
+    }
+
     if (files?.avatar?.[0]) {
       updateProfileDto.avatar = await this.uploadcareStorageService.upload(files.avatar[0], 'avatars');
     } else if (updateProfileDto.avatarUrl) {

@@ -1,4 +1,4 @@
-import { IsEmail, IsNotEmpty, IsOptional, IsString, MinLength, Matches } from 'class-validator';
+import { IsEmail, IsNotEmpty, IsOptional, IsString, MinLength, Matches, MaxLength } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { MESSAGES } from '../../utils/messages';
 
@@ -20,5 +20,6 @@ export class AuthenticateV2Dto {
   @ApiPropertyOptional({ example: 'John Doe', description: 'User name (required for registration)' })
   @IsOptional()
   @IsString()
+  @MaxLength(100)
   name?: string;
 }

@@ -8,6 +8,7 @@ import { PrismaModule } from "src/prisma/prisma.module";
 import { MailService } from "src/utils/mail.service";
 import { CleanupService } from "./services/cleanup.service";
 import { ThrottlerModule } from "@nestjs/throttler";
+import { LoginAttemptService } from "./services/login-attempt.service";
 
 @Global()
 @Module({
@@ -17,10 +18,9 @@ import { ThrottlerModule } from "@nestjs/throttler";
          ttl: 60000,
          limit: 5,
        }]),
-       
     ],
     controllers: [AuthController],
-    providers: [AuthService, GoogleStrategy, MailService, CleanupService],
-    exports: [AuthService, ThrottlerModule],
+    providers: [AuthService, GoogleStrategy, MailService, CleanupService, LoginAttemptService],
+    exports: [AuthService, ThrottlerModule, LoginAttemptService],
 })
 export class AuthModule { }

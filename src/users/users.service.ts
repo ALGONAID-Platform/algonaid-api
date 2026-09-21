@@ -17,7 +17,7 @@ export class UsersService {
       throw new NotFoundException('User not found');
     }
 
-    const { password, studentProfile, teacherProfile, ...userWithoutPassword } = user;
+    const { password, resetPasswordToken, resetPasswordExpires, verificationToken, verificationTokenExpiry, googleId, emailVerified, studentProfile, teacherProfile, ...userWithoutPassword } = user;
     
     return {
       ...userWithoutPassword,
@@ -47,7 +47,7 @@ export class UsersService {
       throw new NotFoundException('User not found');
     }
 
-    const { password, studentProfile, teacherProfile, ...userWithoutPassword } = user;
+    const { password, email, resetPasswordToken, resetPasswordExpires, verificationToken, verificationTokenExpiry, googleId, emailVerified, studentProfile, teacherProfile, ...userWithoutPassword } = user;
     
     let badges: any[] = [];
     let totalPoints = 0;

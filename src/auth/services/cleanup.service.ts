@@ -58,5 +58,19 @@ export class CleanupService {
     } catch (error) {
       this.logger.error('Failed to cleanup unverified accounts', error);
     }
+
+    this.logger.log('Starting expired tokens cleanup CRON job...');
+    try {
+      const deletedTokens = await this.prisma.tokenBlacklist.deleteMany({
+        where: {
+          expiresAt: {
+            lt: new Date(),
+          },
+        },
+      });
+      this.logger.log(`Successfully deleted ${deletedTokens.count} expired tokens from blacklist.`);
+    } catch (error) {
+      this.logger.error('Failed to cleanup expired tokens', error);
+    }
   }
 }

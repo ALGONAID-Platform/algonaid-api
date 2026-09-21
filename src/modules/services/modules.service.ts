@@ -28,9 +28,9 @@ export class ModulesService {
     });
 
     const isInstructor = user?.teacherProfile && course.instructorId === user.teacherProfile.id;
-    const isOwnerOrAdmin = user?.role === Role.OWNER || user?.role === Role.ADMIN;
+    const isOwner = user?.role === Role.OWNER;
 
-    if (!isInstructor && !isOwnerOrAdmin) {
+    if (!isInstructor && !isOwner) {
       throw new ForbiddenException(MESSAGES.MODULES.UNAUTHORIZED_ADD);
     }
 
@@ -46,7 +46,7 @@ export class ModulesService {
 
   async findAll(userId?: number) {
     let studentId: number | undefined;
-    let isOwnerOrAdmin = false;
+    let isOwner = false;
 
     if (userId) {
       const user = await this.prisma.user.findUnique({
@@ -54,14 +54,14 @@ export class ModulesService {
         include: { studentProfile: true }
       });
       studentId = user?.studentProfile?.id;
-      isOwnerOrAdmin = user?.role === Role.OWNER || user?.role === Role.ADMIN;
+      isOwner = user?.role === Role.OWNER;
     }
 
     const modules = await this.prisma.module.findMany({
       include: {
         lessons: {
           where: {
-            ...(!isOwnerOrAdmin && { status: LessonStatus.PUBLISHED })
+            ...(!isOwner && { status: LessonStatus.PUBLISHED })
           },
           include: {
             exam: { select: { id: true } },
@@ -120,7 +120,7 @@ export class ModulesService {
 
   async findByCourse(courseId: number, userId?: number) {
     let studentId: number | undefined;
-    let isOwnerOrAdmin = false;
+    let isOwner = false;
 
     if (userId) {
       const user = await this.prisma.user.findUnique({
@@ -128,7 +128,7 @@ export class ModulesService {
         include: { studentProfile: true }
       });
       studentId = user?.studentProfile?.id;
-      isOwnerOrAdmin = user?.role === Role.OWNER || user?.role === Role.ADMIN;
+      isOwner = user?.role === Role.OWNER;
     }
 
     const modules = await this.prisma.module.findMany({
@@ -136,7 +136,7 @@ export class ModulesService {
       include: {
         lessons: {
           where: {
-            ...(!isOwnerOrAdmin && { status: LessonStatus.PUBLISHED })
+            ...(!isOwner && { status: LessonStatus.PUBLISHED })
           },
           include: {
             exam: { select: { id: true } },
@@ -194,14 +194,14 @@ export class ModulesService {
   }
 
   async findOne(id: number, userId?: number) {
-    let isOwnerOrAdmin = false;
+    let isOwner = false;
     let isStudent = false;
 
     if (userId) {
       const user = await this.prisma.user.findUnique({
         where: { id: userId },
       });
-      isOwnerOrAdmin = user?.role === Role.OWNER || user?.role === Role.STUDENT || user?.role === Role.ADMIN;
+      isOwner = user?.role === Role.OWNER || user?.role === Role.STUDENT;
       isStudent = user?.role === Role.STUDENT;
     }
 
@@ -210,7 +210,7 @@ export class ModulesService {
       include: {
         lessons: {
           where: {
-            ...((!isOwnerOrAdmin || isStudent) && { status: LessonStatus.PUBLISHED })
+            ...((!isOwner || isStudent) && { status: LessonStatus.PUBLISHED })
           },
           include: {
             exam: { select: { id: true } }
@@ -240,9 +240,9 @@ export class ModulesService {
     });
 
     const isInstructor = user?.teacherProfile && module.course.instructorId === user.teacherProfile.id;
-    const isOwnerOrAdmin = user?.role === Role.OWNER || user?.role === Role.ADMIN;
+    const isOwner = user?.role === Role.OWNER;
 
-    if (!isInstructor && !isOwnerOrAdmin) {
+    if (!isInstructor && !isOwner) {
       throw new ForbiddenException(MESSAGES.MODULES.UNAUTHORIZED_UPDATE);
     }
 
@@ -261,9 +261,9 @@ export class ModulesService {
     });
 
     const isInstructor = user?.teacherProfile && module.course.instructorId === user.teacherProfile.id;
-    const isOwnerOrAdmin = user?.role === Role.OWNER || user?.role === Role.ADMIN;
+    const isOwner = user?.role === Role.OWNER;
 
-    if (!isInstructor && !isOwnerOrAdmin) {
+    if (!isInstructor && !isOwner) {
       throw new ForbiddenException(MESSAGES.MODULES.UNAUTHORIZED_DELETE);
     }
 

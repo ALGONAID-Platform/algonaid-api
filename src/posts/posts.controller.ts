@@ -54,8 +54,12 @@ export class PostsController {
   @UseGuards(AuthRollGuard)
   @userRoles(Role.ADMIN, Role.OWNER)
   @ApiOperation({ summary: 'تعديل المنشور (لأدمن فقط)' })
-  update(@Param('id', ParseIntPipe) id: number, @Body() updatePostDto: UpdatePostDto) {
-    return this.postsService.update(id, updatePostDto);
+  update(
+    @Param('id', ParseIntPipe) id: number, 
+    @Body() updatePostDto: UpdatePostDto,
+    @CurrentUser() user: types.JwtPayloadType
+  ) {
+    return this.postsService.update(id, updatePostDto, user.id, user.role);
   }
 
   @Delete(':id')
@@ -63,8 +67,11 @@ export class PostsController {
   @UseGuards(AuthRollGuard)
   @userRoles(Role.ADMIN, Role.OWNER)
   @ApiOperation({ summary: 'حذف المنشور (لأدمن فقط)' })
-  remove(@Param('id', ParseIntPipe) id: number) {
-    return this.postsService.remove(id);
+  remove(
+    @Param('id', ParseIntPipe) id: number,
+    @CurrentUser() user: types.JwtPayloadType
+  ) {
+    return this.postsService.remove(id, user.id, user.role);
   }
 
   @Post(':id/like')

@@ -29,6 +29,9 @@ export class PostCommentsController {
   }
 
   @Get()
+  @ApiBearerAuth('JWT-auth')
+  @UseGuards(AuthRollGuard)
+  @userRoles(Role.STUDENT, Role.ADMIN, Role.OWNER)
   @ApiOperation({ summary: 'جلب تعليقات المنشور مع الردود' })
   findAll(@Param('postId', ParseIntPipe) postId: number) {
     return this.postCommentsService.findAllByPost(postId);

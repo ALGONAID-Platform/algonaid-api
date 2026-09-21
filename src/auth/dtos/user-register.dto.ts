@@ -37,7 +37,7 @@ export class UserRegisterDto {
     @IsString({ message: MESSAGES.VALIDATION.PASSWORD_STRING })
     @MinLength(6, { message: MESSAGES.VALIDATION.PASSWORD_MIN_LENGTH })
     @MaxLength(30)
-    @Matches(/((?=.*\d)|(?=.*\W+))(?![.\n])(?=.*[A-Z])(?=.*[a-z]).*$/, {
+    @Matches(/^(?=.*[a-zA-Z])(?=.*\d).+$/, {
         message: MESSAGES.VALIDATION.PASSWORD_COMPLEXITY,
     })
     //==================

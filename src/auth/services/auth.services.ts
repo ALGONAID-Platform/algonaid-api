@@ -7,6 +7,7 @@ import {
 } from '@nestjs/common';
 import { UserRegisterDto } from '../dtos/user-register.dto';
 import { UserLoginDto } from '../dtos/user-login.dto';
+import { AuthenticateV2Dto } from '../dtos/authenticate-v2.dto';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
@@ -19,7 +20,9 @@ import { ForgotPasswordDto } from '../dtos/forgot-password.dto';
 import { ResetPasswordDto } from '../dtos/reset-password.dto';
 import { MailService } from 'src/utils/mail.service';
 import { ResendVerificationDto } from '../dtos/resend-verification.dto';
-import { AuthenticateV2Dto } from '../dtos/authenticate-v2.dto';
+import { createClient } from '@supabase/supabase-js';
+import { LoginAttemptService } from './login-attempt.service';
+
 @Injectable()
 export class AuthService {
   constructor(
@@ -27,6 +30,7 @@ export class AuthService {
     private readonly jwtService: JwtService,
     private readonly mailService: MailService,
     private readonly configService: ConfigService,
+    private readonly loginAttemptService: LoginAttemptService,
   ) {}
 
   // ==================== Forgot Password ====================
@@ -38,8 +42,9 @@ export class AuthService {
       where: { email },
     });
 
+    // Always return a generic message to prevent account enumeration.
     if (!user) {
-      throw new NotFoundException(MESSAGES.AUTH.ACCOUNT_NOT_FOUND);
+      return { message: MESSAGES.AUTH.RESET_PASSWORD_SENT };
     }
 
     const rawResetToken = crypto.randomBytes(32).toString('hex');
@@ -249,7 +254,7 @@ try {
 
       const hashedPassword = await bcrypt.hash(password, 10);
       const rawVerificationToken = crypto.randomBytes(32).toString('hex');
-      const hashedVerificationToken = await bcrypt.hash(rawVerificationToken, 10);
+      const hashedVerificationToken = crypto.createHash('sha256').update(rawVerificationToken).digest('hex');
       const verificationTokenExpiry = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
 
       const newUser = await this.prisma.user.create({
@@ -290,22 +295,35 @@ try {
     let { email, password } = userDto;
     email = email.toLowerCase().trim();
 
+    // ===== Account Lockout Check =====
+    const lockStatus = this.loginAttemptService.checkLockout(email);
+    if (lockStatus.locked) {
+      throw new UnauthorizedException(
+        `حسابك موقوف مؤقتاً بسبب محاولات دخول متعددة. حاول مرة أخرى بعد ${lockStatus.remainingSeconds} ثانية.`,
+      );
+    }
+
     const user = await this.prisma.user.findUnique({
       where: { email },
       include: { studentProfile: true, teacherProfile: true },
     });
 
-    if (!user) {
-      throw new NotFoundException(MESSAGES.AUTH.ACCOUNT_NOT_FOUND);
-    }
-
-    if (!user.password) {
-      throw new UnauthorizedException(MESSAGES.AUTH.GOOGLE_ACCOUNT_LOGIN_REQUIRED);
+    // Use a single generic error for both "user not found" and "wrong password"
+    // to prevent account enumeration attacks.
+    if (!user || !user.password) {
+      // Still run bcrypt to prevent timing attacks that reveal account existence.
+      await bcrypt.compare(password, '$2b$10$invalidhashfortimingprotection000000000000000000000');
+      if (user && !user.password) {
+        throw new UnauthorizedException(MESSAGES.AUTH.GOOGLE_ACCOUNT_LOGIN_REQUIRED);
+      }
+      this.loginAttemptService.recordFailure(email);
+      throw new UnauthorizedException(MESSAGES.AUTH.INVALID_CREDENTIALS);
     }
 
     const isPasswordValid = await bcrypt.compare(password, user.password);
 
     if (!isPasswordValid) {
+      this.loginAttemptService.recordFailure(email);
       throw new UnauthorizedException(MESSAGES.AUTH.INVALID_CREDENTIALS);
     }
 
@@ -314,6 +332,9 @@ try {
       await this.resendVerificationEmail({ email });
       throw new UnauthorizedException(MESSAGES.AUTH.EMAIL_NOT_VERIFIED_SENT_AGAIN);
     }
+
+    // Clear failure counter on successful login
+    this.loginAttemptService.recordSuccess(email);
 
     const token = await this.generateToken(user.id, user.email, user.role);
 
@@ -427,7 +448,6 @@ try {
 
   // ==================== Google Auth ====================
   async validateGoogleUser(googleUser: any) {
-    console.log('============');
     const { email, name, googleId, avatar } = googleUser;
 
     let user = await this.prisma.user.findUnique({
@@ -509,9 +529,6 @@ try {
 
   async loginWithGoogleMobile(idToken: string) {
     try {
-      console.log('======login======');
-      const { createClient } = require('@supabase/supabase-js');
-      
       const supabaseUrl = this.configService.get<string>('SUPABASE_URL') || process.env.SUPABASE_URL;
       const supabaseKey = this.configService.get<string>('SUPABASE_ANON_KEY') || process.env.SUPABASE_ANON_KEY;
       
@@ -528,6 +545,12 @@ try {
         throw new UnauthorizedException(error?.message || 'Invalid Supabase Token');
       }
       
+      // Verify the authentication was done via Google, not email/password.
+      const provider = data.user.app_metadata?.provider;
+      if (provider !== 'google') {
+        throw new UnauthorizedException('Only Google authentication is accepted for this endpoint');
+      }
+
       const email = data.user.email;
       if (!email) {
          throw new UnauthorizedException('No email found in Supabase Token');

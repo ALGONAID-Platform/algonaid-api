@@ -17,7 +17,14 @@ export class ExamsService {
 
     if (!exam) throw new NotFoundException('Exam not found');
 
-    if (role !== Role.OWNER && role !== Role.ADMIN) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      include: { teacherProfile: true }
+    });
+    const isInstructor = user?.teacherProfile && exam.lesson.module.course.instructorId === user.teacherProfile.id;
+    const isOwner = role === Role.OWNER;
+
+    if (!isInstructor && !isOwner) {
       throw new ForbiddenException('You are not authorized to manage this exam');
     }
 
@@ -98,7 +105,14 @@ export class ExamsService {
 
     if (!lesson) throw new NotFoundException('Lesson not found');
 
-    if (role !== Role.OWNER && role !== Role.ADMIN) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      include: { teacherProfile: true }
+    });
+    const isInstructor = user?.teacherProfile && lesson.module.course.instructorId === user.teacherProfile.id;
+    const isOwner = role === Role.OWNER;
+
+    if (!isInstructor && !isOwner) {
       throw new ForbiddenException('You are not authorized to add an exam to this lesson');
     }
 
@@ -175,8 +189,8 @@ export class ExamsService {
         include: { teacherProfile: true }
       });
       
-      const isOwnerOrAdmin = user?.role === Role.OWNER || user?.role === Role.ADMIN;
-      if (!isOwnerOrAdmin) throw new NotFoundException('Exam not found');
+      const isOwner = user?.role === Role.OWNER;
+      if (!isOwner) throw new NotFoundException('Exam not found');
     }
 
     return exam;

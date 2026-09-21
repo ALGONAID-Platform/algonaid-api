@@ -51,6 +51,8 @@ export class AuthController {
   // ==================== Signup ====================
   @SwaggerRegister()
   @Post('signup')
+  @UseGuards(ThrottlerGuard)
+  @Throttle({ default: { limit: 5, ttl: 60000 } })
   async register(@Body() userDto: UserRegisterDto) {
     return await this.authService.register(userDto);
   }
@@ -68,6 +70,8 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   @Post('signin')
   @SwaggerLogin()
+  @UseGuards(ThrottlerGuard)
+  @Throttle({ default: { limit: 5, ttl: 60000 } })
   async signin(@Body() userDto: UserLoginDto) {
     return await this.authService.login(userDto);
   }
@@ -75,6 +79,8 @@ export class AuthController {
   // ==================== Forgot Password ====================
   @Post('forgot-password')
   @ApiOperation({ summary: 'Request password reset token' })
+  @UseGuards(ThrottlerGuard)
+  @Throttle({ default: { limit: 3, ttl: 60000 } })
   async forgotPassword(@Body() forgotPasswordDto: ForgotPasswordDto) {
     return await this.authService.forgotPassword(forgotPasswordDto);
   }
@@ -82,6 +88,8 @@ export class AuthController {
   // ==================== Reset Password ====================
   @Post('reset-password')
   @ApiOperation({ summary: 'Reset password using token' })
+  @UseGuards(ThrottlerGuard)
+  @Throttle({ default: { limit: 3, ttl: 60000 } })
   async resetPassword(@Body() resetPasswordDto: ResetPasswordDto) {
     return await this.authService.resetPassword(resetPasswordDto);
   }
@@ -89,6 +97,8 @@ export class AuthController {
   // ==================== Validate Reset Token ====================
   @Get('validate-reset-token')
   @ApiOperation({ summary: 'Validate if reset token is still valid and not used' })
+  @UseGuards(ThrottlerGuard)
+  @Throttle({ default: { limit: 5, ttl: 60000 } })
   async validateResetToken(@Query('token') token: string) {
     return await this.authService.validateResetToken(token);
   }
@@ -109,6 +119,10 @@ export class AuthController {
   ) {
     if (!token) {
       throw new BadRequestException('Token is required');
+    }
+    // Token must be a 64-char hex string (raw SHA-256 pre-image from crypto.randomBytes(32))
+    if (!/^[a-f0-9]{64}$/i.test(token)) {
+      throw new BadRequestException('Invalid token format');
     }
     const safeToken = encodeURIComponent(token);
     const html = `
@@ -188,6 +202,10 @@ export class AuthController {
   ) {
     if (!token) {
       throw new BadRequestException('Token is required');
+    }
+    // Token must be a 64-char hex string (raw SHA-256 pre-image from crypto.randomBytes(32))
+    if (!/^[a-f0-9]{64}$/i.test(token)) {
+      throw new BadRequestException('Invalid token format');
     }
 
     try {
@@ -279,6 +297,8 @@ export class AuthController {
    */
   @Post('resend-verification')
   @ApiOperation({ summary: 'Resend email verification link' })
+  @UseGuards(ThrottlerGuard)
+  @Throttle({ default: { limit: 3, ttl: 60000 } })
   @ApiResponse({
     status: 200,
     description: 'Verification email sent successfully',

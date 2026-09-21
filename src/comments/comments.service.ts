@@ -179,7 +179,11 @@ export class CommentsService {
           include: {
             module: {
               include: {
-                course: true
+                course: {
+                  include: {
+                    teacher: true
+                  }
+                }
               }
             }
           }
@@ -192,10 +196,10 @@ export class CommentsService {
     }
 
     const isOwner = comment.userId === userId;
-    const isAdminOrOwner = userRole === 'ADMIN' || userRole === 'OWNER';
-    const isInstructor = comment.lesson.module.course.instructorId === userId;
+    const isOwnerRole = userRole === 'OWNER';
+    const isInstructor = comment.lesson.module.course.teacher.userId === userId;
 
-    if (!isOwner && !isAdminOrOwner && !isInstructor) {
+    if (!isOwner && !isOwnerRole && !isInstructor) {
       throw new ForbiddenException('You are not allowed to delete this comment');
     }
 

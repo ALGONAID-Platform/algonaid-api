@@ -19,12 +19,13 @@ export class OptionalAuthGuard implements CanActivate {
         const [type, token] = request.headers.authorization?.split(" ") ?? [];
         if (token && type == "Bearer") {
             try {
-                // Check if token is blacklisted
+                // Check if token is blacklisted — if so, treat request as unauthenticated
                 const blacklisted = await this.prisma.tokenBlacklist.findUnique({
                     where: { token }
                 });
 
                 if (blacklisted) {
+                    // Don't set user in request — proceed as unauthenticated
                     return true;
                 }
 

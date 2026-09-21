@@ -2,6 +2,7 @@ import { Injectable, BadRequestException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import * as fs from 'fs';
 import * as path from 'path';
+import { fileTypeFromBuffer } from 'file-type';
 
 @Injectable()
 export class UploadcareStorageService {
@@ -24,6 +25,7 @@ export class UploadcareStorageService {
       'video/avi',
     ];
 
+    // Step 1: Check the declared MIME type from HTTP header
     if (!allowedMimeTypes.includes(file.mimetype)) {
       throw new BadRequestException(
         'الملف المرفوع غير مدعوم. مسموح برفع صور، PDF، وفيديوهات (mp4, mov, avi) فقط.',
@@ -36,6 +38,40 @@ export class UploadcareStorageService {
 
     if (!file.size || file.size <= 0) {
       throw new BadRequestException('الملف فارغ أو غير صالح');
+    }
+
+    // Step 2: Validate actual file content (magic bytes) — prevents MIME type spoofing
+    const detectedType = await fileTypeFromBuffer(file.buffer);
+    const allowedRealMimes = new Set([
+      'image/jpeg', 'image/png', 'image/gif', 'image/webp',
+      'application/pdf', 'video/mp4', 'video/quicktime',
+      'video/x-msvideo',
+    ]);
+
+    if (!detectedType || !allowedRealMimes.has(detectedType.mime)) {
+      throw new BadRequestException(
+        'محتوى الملف لا يطابق نوعه المُعلَن. يُرفض الملف لأسباب أمنية.',
+      );
+    }
+
+    // Step 3: Ensure declared type matches actual content (no spoofing)
+    const mimeMatchMap: Record<string, string[]> = {
+      'image/jpeg':      ['image/jpeg'],
+      'image/png':       ['image/png'],
+      'image/gif':       ['image/gif'],
+      'image/webp':      ['image/webp'],
+      'application/pdf': ['application/pdf'],
+      'video/mp4':       ['video/mp4'],
+      'video/quicktime': ['video/quicktime'],
+      'video/x-msvideo': ['video/x-msvideo'],
+      'video/avi':       ['video/x-msvideo'],
+    };
+
+    const acceptedReal = mimeMatchMap[file.mimetype];
+    if (!acceptedReal || !acceptedReal.includes(detectedType.mime)) {
+      throw new BadRequestException(
+        `نوع الملف المُعلَن (${file.mimetype}) لا يتطابق مع المحتوى الفعلي (${detectedType.mime}).`,
+      );
     }
 
     // تحديد المجلد: إما المجلد المخصص أو بناءً على نوع الملف
@@ -58,6 +94,10 @@ export class UploadcareStorageService {
       'image/gif': '.gif',
       'image/webp': '.webp',
       'application/pdf': '.pdf',
+      'video/mp4': '.mp4',
+      'video/quicktime': '.mov',
+      'video/x-msvideo': '.avi',
+      'video/avi': '.avi',
     };
     const safeExtension = extensions[file.mimetype];
     if (!safeExtension) {
@@ -86,10 +126,17 @@ export class UploadcareStorageService {
     try {
       if (fileUrl && fileUrl.includes('/uploads/')) {
         const relativePath = fileUrl.split('/uploads/')[1];
-        const filePath = path.join('/usr/src/app/uploads', relativePath);
+        const safeBase = '/usr/src/app/uploads';
+        const resolvedPath = path.resolve(safeBase, relativePath);
 
-        if (fs.existsSync(filePath)) {
-          fs.unlinkSync(filePath);
+        // Prevent path traversal: ensure the resolved path is still within uploads/
+        if (!resolvedPath.startsWith(safeBase + path.sep) && resolvedPath !== safeBase) {
+          console.error(`[Security] Blocked path traversal attempt: ${fileUrl}`);
+          return;
+        }
+
+        if (fs.existsSync(resolvedPath)) {
+          fs.unlinkSync(resolvedPath);
         }
       }
     } catch (error) {

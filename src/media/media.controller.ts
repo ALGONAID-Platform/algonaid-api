@@ -21,7 +21,7 @@ export class MediaController {
       }
       cb(null, true);
     },
-    limits: { fileSize: 20 * 1024 * 1024 },
+    limits: { fileSize: 5 * 1024 * 1024 }, // 5MB max
   }))
   async uploadImage(@UploadedFile() file: Express.Multer.File) {
     if (!file) {
@@ -40,6 +40,8 @@ export class MediaController {
   }
 
   @Post('videos')
+  @UseGuards(AuthRollGuard)
+  @userRoles(Role.ADMIN, Role.OWNER)
   @UseInterceptors(FileInterceptor('file', {
     storage: memoryStorage(),
     fileFilter: (req, file, cb) => {

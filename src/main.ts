@@ -8,6 +8,8 @@ import { ValidationPipe } from '@nestjs/common';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import { join } from 'path';
 import { initializeApp, getApps, applicationDefault, cert } from 'firebase-admin/app';
+import helmet from 'helmet';
+import { GlobalExceptionFilter } from './utils/global-exception.filter';
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
@@ -34,34 +36,39 @@ async function bootstrap() {
     exclude: ['modulesList/:courseId', 'lessonDetails/:courseId/:lessonId', 'lessonDetails/:lessonId', '.well-known/assetlinks.json', '.well-known/apple-app-site-association'],
   }); 
 
-  app.useGlobalPipes(new ValidationPipe({
-    whitelist: true,
-    transform: true,
-    forbidNonWhitelisted: true,
-  })); 
- 
-  // Add a raw Express route for /posts/:id to return the redirect HTML page.
-  // This avoids conflicts with the /api/v1/posts API endpoints.
-  const expressApp = app.getHttpAdapter().getInstance();
-  expressApp.get('/posts/:id', (req, res) => {
-    const appService = app.get(AppService);
-    res.send(appService.getRedirectPage('post', req.params.id));
-  });
+  // تفعيل حماية Helmet مع Content Security Policy مُشدَّد
+  app.use(helmet({
+    contentSecurityPolicy: {
+      directives: {
+        defaultSrc: ["'self'"],
+        scriptSrc: ["'self'", "'unsafe-inline'"],   // unsafe-inline مطلوب للصفحات الـ HTML الداخلية
+        styleSrc: ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'],
+        fontSrc: ["'self'", 'https://fonts.gstatic.com'],
+        imgSrc: ["'self'", 'data:', 'blob:'],
+        connectSrc: ["'self'"],
+        frameSrc: ["'none'"],
+        objectSrc: ["'none'"],
+        upgradeInsecureRequests: process.env.NODE_ENV === 'production' ? [] : null,
+      },
+    },
+    crossOriginEmbedderPolicy: false, // مطلوب لتشغيل الـ uploads بشكل صحيح
+    referrerPolicy: { policy: 'strict-origin-when-cross-origin' },
+    hsts: {
+      maxAge: 31536000,         // سنة كاملة
+      includeSubDomains: true,
+      preload: true,
+    },
+  }));
 
-  app.useStaticAssets(join(__dirname, '..', 'public'), {
-    prefix: '/',
-    setHeaders: (res, path, stat) => {
-      if (path.endsWith('apple-app-site-association')) {
-        res.set('Content-Type', 'application/json');
-      }
-      res.set('X-Content-Type-Options', 'nosniff');
-    }
-  });
-app.use(json({ limit: '50mb' }));
-  app.use(urlencoded({ extended: true, limit: '50mb' }));
-
-  // CORS is restricted to explicitly configured frontends.
-  const allowedOrigins = (process.env.CORS_ORIGINS || 'http://localhost:3000,http://localhost:5000').split(',').map((origin) => origin.trim()).filter(Boolean);
+  // CORS — مع تحذير إذا لم يُحدَّد CORS_ORIGINS في الإنتاج
+  const rawOrigins = process.env.CORS_ORIGINS;
+  if (!rawOrigins && process.env.NODE_ENV === 'production') {
+    console.warn('⚠️  [SECURITY] CORS_ORIGINS is not set in production! Defaulting to localhost only.');
+  }
+  const allowedOrigins = (rawOrigins || 'http://localhost:3000,http://localhost:5000')
+    .split(',')
+    .map((o) => o.trim())
+    .filter(Boolean);
   app.enableCors({
     origin: allowedOrigins,
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
@@ -69,8 +76,39 @@ app.use(json({ limit: '50mb' }));
     credentials: true,
   });
 
-  const documentation = SwaggerModule.createDocument(app, swaggerConfig);
-  SwaggerModule.setup("swagger", app, documentation);
+  app.useGlobalPipes(new ValidationPipe({
+    whitelist: true,
+    transform: true,
+    forbidNonWhitelisted: true,
+  }));
+
+  // Add a raw Express route for /posts/:id to return the redirect HTML page.
+  const expressApp = app.getHttpAdapter().getInstance();
+  expressApp.get('/posts/:id', (req: any, res: any) => {
+    const appService = app.get(AppService);
+    res.send(appService.getRedirectPage('post', req.params.id));
+  });
+
+  app.useStaticAssets(join(__dirname, '..', 'public'), {
+    prefix: '/',
+    setHeaders: (res: any, path: string) => {
+      if (path.endsWith('apple-app-site-association')) {
+        res.set('Content-Type', 'application/json');
+      }
+      res.set('X-Content-Type-Options', 'nosniff');
+    }
+  });
+  app.use(json({ limit: '5mb' }));
+  app.use(urlencoded({ extended: true, limit: '5mb' }));
+
+  // Only expose Swagger documentation in non-production environments.
+  if (process.env.NODE_ENV !== 'production') {
+    const documentation = SwaggerModule.createDocument(app, swaggerConfig);
+    SwaggerModule.setup("swagger", app, documentation);
+  }
+
+  // Catch all unhandled exceptions to prevent stack trace leakage.
+  app.useGlobalFilters(new GlobalExceptionFilter());
 
   const port = process.env.PORT || 3000;
   await app.listen(port, '0.0.0.0');

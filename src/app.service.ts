@@ -2,11 +2,29 @@ import { Injectable } from '@nestjs/common';
 
 @Injectable()
 export class AppService {
-  getHello(): string {
-    return 'Hello World!';
+  /**
+   * Escapes a string for safe embedding inside a JavaScript string literal.
+   * Prevents XSS attacks when user-controlled values are injected into <script> blocks.
+   */
+  private escapeForJS(value: string): string {
+    return value
+      .replace(/\\/g, '\\\\')
+      .replace(/'/g, "\\'")  
+      .replace(/"/g, '\\"')
+      .replace(/</g, '\\x3C')
+      .replace(/>/g, '\\x3E')
+      .replace(/&/g, '\\x26')
+      .replace(/\r/g, '\\r')
+      .replace(/\n/g, '\\n');
   }
- 
+
+  getHello(): string {
+    return 'OK';
+  }
+
   getRedirectPage(type: 'course' | 'lesson' | 'post', id: string): string {
+    const safeType = this.escapeForJS(type);
+    const safeId = this.escapeForJS(id);
     return `<!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
@@ -292,8 +310,8 @@ export class AppService {
     </div>
 
     <script>
-        const type = '${type}';
-        const id = '${id}';
+        const type = '${safeType}';
+        const id = '${safeId}';
         
         let path = '';
         if (type === 'course') path = 'modulesList';

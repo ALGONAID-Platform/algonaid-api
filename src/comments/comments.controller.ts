@@ -24,7 +24,17 @@ export class CommentsController {
   @userRoles(Role.STUDENT, Role.ADMIN, Role.OWNER)
   @UseInterceptors(FileInterceptor('image'))
   @ApiOperation({ summary: 'Upload an image for a comment and get its URL' })
-  async uploadImage(@UploadedFile() file: Express.Multer.File) {
+  async uploadImage(
+    @UploadedFile(
+      new ParseFilePipe({
+        validators: [
+          new MaxFileSizeValidator({ maxSize: 5 * 1024 * 1024 }), // 5MB limit
+          new FileTypeValidator({ fileType: /(jpg|jpeg|png|webp|gif)$/ }), // images only
+        ],
+        fileIsRequired: true,
+      }),
+    ) file: Express.Multer.File
+  ) {
     if (!file) {
       throw new BadRequestException('No image file provided');
     }
@@ -56,7 +66,7 @@ export class CommentsController {
     @Param('courseId', ParseIntPipe) courseId: number,
     @Query('limit') limit?: string
   ) {
-    const limitNumber = limit ? parseInt(limit, 20) : 5;
+    const limitNumber = Math.min(limit ? parseInt(limit, 10) : 5, 50); // max 50
     return this.commentsService.getLatestCommentsByCourse(courseId, limitNumber);
   }
 
@@ -89,8 +99,8 @@ export class CommentsController {
     @Query('page') page?: string,
     @Query('limit') limit?: string
   ) {
-    const pageNumber = page ? parseInt(page, 10) : 1;
-    const limitNumber = limit ? parseInt(limit, 10) : 20;
+    const pageNumber = Math.max(page ? parseInt(page, 10) : 1, 1);
+    const limitNumber = Math.min(limit ? parseInt(limit, 10) : 20, 100); // max 100
     return this.commentsService.getMyMentions(user.id, pageNumber, limitNumber);
   }
 

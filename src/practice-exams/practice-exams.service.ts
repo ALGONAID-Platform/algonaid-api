@@ -43,9 +43,9 @@ export class PracticeExamsService {
       }
 
       const isInstructor = course.instructorId === teacher.id;
-      const isOwnerOrAdmin = user?.role === Role.OWNER || user?.role === Role.ADMIN;
+      const isOwnerRole = user?.role === Role.OWNER;
 
-      if (!isInstructor && !isOwnerOrAdmin) {
+      if (!isInstructor && !isOwnerRole) {
         throw new ForbiddenException(MESSAGES.PRACTICE_EXAMS.UNAUTHORIZED_ADD);
       }
     }
@@ -105,9 +105,9 @@ export class PracticeExamsService {
     });
 
     const isOwner = exam.teacherId === teacher.id;
-    const isOwnerOrAdmin = user?.role === Role.OWNER || user?.role === Role.ADMIN;
+    const isOwnerRole = user?.role === Role.OWNER;
 
-    if (!isOwner && !isOwnerOrAdmin) {
+    if (!isOwner && !isOwnerRole) {
       throw new ForbiddenException(MESSAGES.PRACTICE_EXAMS.UNAUTHORIZED_UPDATE);
     }
 
@@ -152,9 +152,9 @@ export class PracticeExamsService {
     });
 
     const isOwner = exam.teacherId === teacher.id;
-    const isOwnerOrAdmin = user?.role === Role.OWNER || user?.role === Role.ADMIN;
+    const isOwnerRole = user?.role === Role.OWNER;
 
-    if (!isOwner && !isOwnerOrAdmin) {
+    if (!isOwner && !isOwnerRole) {
       throw new ForbiddenException(MESSAGES.PRACTICE_EXAMS.UNAUTHORIZED_DELETE);
     }
 
