@@ -20,7 +20,12 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
         // Ignore URL parsing errors
       }
     }
-    const pool = new Pool({ connectionString });
+    const pool = new Pool({ 
+      connectionString,
+      connectionTimeoutMillis: 5000, // Timeout after 5 seconds if unable to connect
+      query_timeout: 10000, // Timeout queries after 10 seconds to prevent hanging
+      idleTimeoutMillis: 30000, 
+    });
     const adapter = new PrismaPg(pool);
     super({ adapter });
   }
