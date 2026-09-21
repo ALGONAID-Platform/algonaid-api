@@ -1,5 +1,6 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
+import { AppService } from './app.service';
 import { json, urlencoded } from 'express';
 import { SwaggerModule } from '@nestjs/swagger';
 import { swaggerConfig } from './config/swagger/swagger.config';
@@ -39,6 +40,14 @@ async function bootstrap() {
     forbidNonWhitelisted: true,
   })); 
  
+  // Add a raw Express route for /posts/:id to return the redirect HTML page.
+  // This avoids conflicts with the /api/v1/posts API endpoints.
+  const expressApp = app.getHttpAdapter().getInstance();
+  expressApp.get('/posts/:id', (req, res) => {
+    const appService = app.get(AppService);
+    res.send(appService.getRedirectPage('post', req.params.id));
+  });
+
   app.useStaticAssets(join(__dirname, '..', 'public'), {
     prefix: '/',
     setHeaders: (res, path, stat) => {

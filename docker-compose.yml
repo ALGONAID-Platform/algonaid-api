@@ -1,35 +1,58 @@
-
 services:
   api:
-    build:
-      context: .
-      dockerfile: Dockerfile
+    image: algonaid-api-production-test:latest
     container_name: algonaid-api-api-1
-    restart: always
-    ports:
-      - '3000:3000'
+    restart: unless-stopped
     environment:
-      - DATABASE_URL=${DATABASE_URL}
-      - APP_URL=https://api.exchangesmangement.online
-    command: npm run start:dev
+      DATABASE_URL: ${DATABASE_URL}
+      APP_URL: https://api.exchangesmangement.online
+      NODE_ENV: production
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET}
+      GOOGLE_CALLBACK_URL: ${GOOGLE_CALLBACK_URL}
+      GOOGLE_ANDROID_CLIENT_IDS: ${GOOGLE_ANDROID_CLIENT_IDS}
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_EXPIRES_SECRET: ${JWT_EXPIRES_SECRET}
+      FRONTEND_URL: ${FRONTEND_URL}
+      APP_BASE_URL: ${APP_BASE_URL}
+      EMAIL_FROM: ${EMAIL_FROM}
+      RESEND_API_KEY: ${RESEND_API_KEY}
+      SMTP_USER: ${SMTP_USER}
+      SMTP_PASSWORD: ${SMTP_PASSWORD}
+      FIREBASE_SERVICE_ACCOUNT_JSON: ${FIREBASE_SERVICE_ACCOUNT_JSON}
+      SUPABASE_URL: ${SUPABASE_URL}
+      SUPABASE_ANON_KEY: ${SUPABASE_ANON_KEY}
+    ports:
+      - "127.0.0.1:3000:3000"
     volumes:
-      - .:/usr/src/app
       - ./uploads:/usr/src/app/uploads
-      - /usr/src/app/node_modules
     depends_on:
       db:
         condition: service_healthy
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    read_only: true
+    tmpfs:
+      - /tmp
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://127.0.0.1:3000/api/v1/courses || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
 
   db:
     image: postgres:16-alpine
     container_name: algonaid-api-db-1
-    restart: always
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
     environment:
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       POSTGRES_DB: ${POSTGRES_DB}
-    ports:
-      - '5434:5432'
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:

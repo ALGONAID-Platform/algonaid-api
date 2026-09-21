@@ -29,7 +29,7 @@ export class CoursesController {
   @SwaggerGetAllCourses()
   @UseGuards(OptionalAuthGuard)
   findAll(@CurrentUser() user?: types.JwtPayloadType) {
-    return this.coursesService.findAll(user?.id);
+    return this.coursesService.findAll(user?.id, user?.role);
   }
 
   @Get("my-courses")
@@ -68,5 +68,13 @@ export class CoursesController {
   @userRoles(Role.ADMIN, Role.OWNER)
   remove(@Param('id' , ParseIntPipe) id: number, @CurrentUser() user: types.JwtPayloadType) {
     return this.coursesService.remove(id, user.id);
+  }
+
+  @Get(':id/mentionable-users')
+  @UseGuards(AuthRollGuard)
+  @userRoles(Role.STUDENT, Role.ADMIN, Role.OWNER)
+  @ApiOperation({ summary: 'Get a list of users that can be mentioned in this course (instructor and enrolled students)' })
+  getMentionableUsers(@Param('id', ParseIntPipe) id: number) {
+    return this.coursesService.getMentionableUsers(id);
   }
 }

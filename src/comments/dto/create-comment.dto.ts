@@ -1,4 +1,4 @@
-import { IsString, IsNotEmpty, IsOptional, IsInt } from 'class-validator';
+import { IsString, IsNotEmpty, IsOptional, IsInt, IsArray } from 'class-validator';
 
 export class CreateCommentDto {
   @IsString()
@@ -12,5 +12,14 @@ export class CreateCommentDto {
   @IsInt()
   @IsOptional()
   parentId?: number;
+
+  @IsArray()
+  @IsInt({ each: true })
+  @IsOptional()
+  mentionedUserIds?: number[];
+
+  @IsString()
+  @IsOptional()
+  imageUrl?: string;
 }
  

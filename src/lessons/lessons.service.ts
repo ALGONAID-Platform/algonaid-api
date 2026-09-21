@@ -165,6 +165,7 @@ export class LessonsService {
             id: true,
             name: true,
             avatar: true,
+            createdAt: true,
           }
         },
       }
@@ -178,6 +179,7 @@ export class LessonsService {
 
     return {
       ...lesson,
+      courseId: lesson.module.course.id,
       commentsCount,
       latestComments: latestComments,
     };

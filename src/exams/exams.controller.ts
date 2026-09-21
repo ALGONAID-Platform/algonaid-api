@@ -85,7 +85,7 @@ export class ExamsController {
   }
 
   @Post(':examId/start')
-  @userRoles(Role.STUDENT)
+  @userRoles(Role.STUDENT, Role.ADMIN, Role.OWNER)
   @ApiOperation({ summary: 'Start a new exam attempt' })
   @ApiParam({ name: 'examId', description: 'ID of the exam to start' })
   @ApiResponse({ status: 201, description: 'Attempt started. Returns questions (without correct answers).' })
@@ -94,7 +94,7 @@ export class ExamsController {
   }
 
   @Post('attempts/:attemptId/submit')
-  @userRoles(Role.STUDENT)
+  @userRoles(Role.STUDENT, Role.ADMIN, Role.OWNER)
   @ApiOperation({ summary: 'Submit answers for an exam attempt' })
   @ApiParam({ name: 'attemptId', description: 'ID of the active attempt' })
   @ApiBody({ type: SubmitExamDto })
@@ -108,7 +108,7 @@ export class ExamsController {
   }
 
   @Get('attempts/:attemptId/result')
-  @userRoles(Role.STUDENT)
+  @userRoles(Role.STUDENT, Role.ADMIN, Role.OWNER)
   @ApiOperation({ summary: 'Fetch result of an exam attempt' })
   @ApiParam({ name: 'attemptId', description: 'ID of the completed attempt' })
   @ApiResponse({ status: 200, description: 'Detailed results including correct/incorrect indicators.' })

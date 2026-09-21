@@ -31,11 +31,11 @@ async isUserEnrolled(userId: number, courseId: number) {
         const { courseId } = enrollmentDto;
 
         // 1. جلب بيانات الطالب والكورس
-        const student = await this.prisma.student.findUnique({
+        let student = await this.prisma.student.findUnique({
             where: { userId }
         });
 
-        // 2. التحقق من وجود الكورس والطالب
+        // 2. التحقق من وجود الكورس
         const course = await this.prisma.course.findUnique({
             where: { id: courseId }
         });
@@ -43,8 +43,19 @@ async isUserEnrolled(userId: number, courseId: number) {
         if (!course) {
             throw new NotFoundException(MESSAGES.COURSES.COURSE_NOT_FOUND_DEFAULT);
         }
+
+        // إذا لم يكن لديه ملف طالب (مثل حالة الـ admin أو owner)، نقوم بإنشائه فوراً
         if (!student) {
-            throw new NotFoundException(MESSAGES.ENROLLMENT.STUDENT_PROFILE_NOT_FOUND);
+            const user = await this.prisma.user.findUnique({ where: { id: userId } });
+            if (!user) {
+                throw new NotFoundException('المستخدم غير موجود');
+            }
+            student = await this.prisma.student.create({
+                data: {
+                    userId,
+                    academicId: `STU-${Date.now()}-${userId}`,
+                }
+            });
         }
 
         // 🌟 3. التحقق من أن الطالب غير مسجل مسبقاً (هذا ما ينقصك)

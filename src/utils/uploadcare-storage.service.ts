@@ -17,12 +17,16 @@ export class UploadcareStorageService {
       'image/png',
       'image/gif',
       'image/webp',
-      'application/pdf', // تم السماح لملفات PDF بالمرور من هنا
+      'application/pdf',
+      'video/mp4',
+      'video/quicktime',
+      'video/x-msvideo',
+      'video/avi',
     ];
 
     if (!allowedMimeTypes.includes(file.mimetype)) {
       throw new BadRequestException(
-        'مسموح برفع صور وملفات PDF فقط',
+        'الملف المرفوع غير مدعوم. مسموح برفع صور، PDF، وفيديوهات (mp4, mov, avi) فقط.',
       );
     }
 
@@ -34,8 +38,14 @@ export class UploadcareStorageService {
       throw new BadRequestException('الملف فارغ أو غير صالح');
     }
 
-    // تحديد المجلد: إما المجلد المخصص (مثل avatars أو backgrounds) أو المجلد الافتراضي
-    const folderName = customFolder || (file.mimetype === 'application/pdf' ? 'docs' : 'images');
+    // تحديد المجلد: إما المجلد المخصص أو بناءً على نوع الملف
+    let defaultFolder = 'images';
+    if (file.mimetype === 'application/pdf') {
+      defaultFolder = 'docs';
+    } else if (file.mimetype.startsWith('video/')) {
+      defaultFolder = 'videos';
+    }
+    const folderName = customFolder || defaultFolder;
     const uploadDir = path.join('/usr/src/app/uploads', folderName);
 
     if (!fs.existsSync(uploadDir)) {

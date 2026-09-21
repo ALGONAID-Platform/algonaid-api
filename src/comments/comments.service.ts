@@ -7,7 +7,7 @@ export class CommentsService {
   constructor(private prisma: PrismaService) {}
 
   async create(userId: number, createCommentDto: CreateCommentDto) {
-    const { text, lessonId, parentId } = createCommentDto;
+    const { text, lessonId, parentId, mentionedUserIds, imageUrl } = createCommentDto;
 
     // Check if lesson exists
     const lesson = await this.prisma.lesson.findUnique({
@@ -17,6 +17,8 @@ export class CommentsService {
       throw new NotFoundException('Lesson not found');
     }
 
+    let finalMentionedUserIds = mentionedUserIds ? [...mentionedUserIds] : [];
+
     // Check if parent comment exists if parentId is provided
     if (parentId) {
       const parent = await this.prisma.comment.findUnique({
@@ -25,21 +27,42 @@ export class CommentsService {
       if (!parent) {
         throw new NotFoundException('Parent comment not found');
       }
+
+      // Automatically mention the author of the parent comment (if it's not the user replying to themselves)
+      if (parent.userId !== userId && !finalMentionedUserIds.includes(parent.userId)) {
+        finalMentionedUserIds.push(parent.userId);
+      }
+    }
+
+    // Build the data object
+    const commentData: any = {
+      text,
+      userId,
+      lessonId,
+      parentId,
+      ...(imageUrl && { imageUrl }),
+    };
+
+    // Remove the user's own ID from the mentions list so they don't get a notification for themselves
+    finalMentionedUserIds = finalMentionedUserIds.filter(id => id !== userId);
+
+    if (finalMentionedUserIds && finalMentionedUserIds.length > 0) {
+      commentData.mentions = {
+        create: finalMentionedUserIds.map(id => ({
+          mentionedUserId: id
+        }))
+      };
     }
 
     return this.prisma.comment.create({
-      data: {
-        text,
-        userId,
-        lessonId,
-        parentId,
-      },
+      data: commentData,
       include: {
         user: {
           select: {
             id: true,
             name: true,
             avatar: true,
+            createdAt: true,
           }
         }
       }
@@ -67,6 +90,7 @@ export class CommentsService {
             id: true,
             name: true,
             avatar: true,
+            createdAt: true,
           }
         },
         replies: {
@@ -76,6 +100,7 @@ export class CommentsService {
                 id: true,
                 name: true,
                 avatar: true,
+                createdAt: true,
               }
             }
           },
@@ -109,7 +134,8 @@ export class CommentsService {
           select: {
             id: true,
             name: true,
-            avatar: true
+            avatar: true,
+            createdAt: true
           }
         },
         lesson: {
@@ -171,6 +197,83 @@ export class CommentsService {
 
     return this.prisma.comment.delete({
       where: { id: commentId },
+    });
+  }
+
+  async getMyMentions(userId: number, page: number = 1, limit: number = 20) {
+    const skip = (page - 1) * limit;
+
+    const [data, total] = await Promise.all([
+      this.prisma.mention.findMany({
+        where: { mentionedUserId: userId },
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take: limit,
+        include: {
+          comment: {
+            include: {
+              user: {
+                select: { id: true, name: true, avatar: true }
+              },
+              lesson: {
+                select: { id: true, title: true }
+              },
+              parent: {
+                select: { userId: true }
+              }
+            }
+          }
+        }
+      }),
+      this.prisma.mention.count({
+        where: { mentionedUserId: userId }
+      })
+    ]);
+
+    const mappedData = data.map(mention => {
+      const isReply = mention.comment.parent && mention.comment.parent.userId === mention.mentionedUserId;
+      // We can remove parent from the final output if we want, or leave it. We'll leave it for simplicity.
+      return {
+        ...mention,
+        type: isReply ? 'REPLY' : 'MENTION'
+      };
+    });
+
+    return {
+      data: mappedData,
+      meta: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit)
+      }
+    };
+  }
+
+  async getUnreadMentionsCount(userId: number) {
+    const count = await this.prisma.mention.count({
+      where: {
+        mentionedUserId: userId,
+        isRead: false
+      }
+    });
+    return { count };
+  }
+
+  async markMentionAsRead(userId: number, mentionId: number) {
+    const mention = await this.prisma.mention.findUnique({
+      where: { id: mentionId }
+    });
+    if (!mention) {
+      throw new NotFoundException('Mention not found');
+    }
+    if (mention.mentionedUserId !== userId) {
+      throw new ForbiddenException('You do not have access to this mention');
+    }
+
+    return this.prisma.mention.update({
+      where: { id: mentionId },
+      data: { isRead: true }
     });
   }
 }

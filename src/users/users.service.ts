@@ -24,6 +24,7 @@ export class UsersService {
       avatarUrl: userWithoutPassword.avatar,
       ...(studentProfile ? {
         academicId: studentProfile.academicId,
+        bio: studentProfile.bio,
         grade: studentProfile.grade,
         birthDate: studentProfile.birthDate,
         address: studentProfile.address,
@@ -77,6 +78,7 @@ export class UsersService {
       role: user.role,
       ...(studentProfile ? {
         academicId: studentProfile.academicId,
+        bio: studentProfile.bio,
         grade: studentProfile.grade,
         birthDate: studentProfile.birthDate,
         address: studentProfile.address,
@@ -92,11 +94,11 @@ export class UsersService {
   }
 
   async updateProfile(userId: number, updateProfileDto: UpdateProfileDto, role: UserRole) {
-    const { name, avatar, background, grade, birthDate, address } = updateProfileDto;
+    const { name, avatar, background, grade, birthDate, address, bio, specialization, experience } = updateProfileDto;
     
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
-      include: { studentProfile: true }
+      include: { studentProfile: true, teacherProfile: true }
     }); 
 
     if (!user) {
@@ -115,7 +117,7 @@ export class UsersService {
 
     // If student specific details are provided and the user is a student
     if (role === UserRole.STUDENT || user.role === 'STUDENT') {
-      if (grade || birthDate || address) {
+      if (grade || birthDate || address || bio !== undefined) {
         if (user.studentProfile) {
           await this.prisma.student.update({
             where: { userId: userId },
@@ -123,9 +125,26 @@ export class UsersService {
               ...(grade && { grade }),
               ...(birthDate && { birthDate: new Date(birthDate) }),
               ...(address !== undefined && { address }),
+              ...(bio !== undefined && { bio }),
             }
           });
         }
+      }
+    } else if (role === UserRole.ADMIN || user.role === 'ADMIN' || role === UserRole.OWNER || user.role === 'OWNER') {
+      if ((bio !== undefined || specialization !== undefined || experience !== undefined) && user.teacherProfile) {
+        let experienceInt: number | undefined = undefined;
+        if (experience !== undefined) {
+          experienceInt = typeof experience === 'string' ? parseInt(experience, 10) : experience;
+        }
+        
+        await this.prisma.teacher.update({
+          where: { userId: userId },
+          data: {
+            ...(bio !== undefined && { bio }),
+            ...(specialization !== undefined && { specialization }),
+            ...(experienceInt !== undefined && !isNaN(experienceInt) && { experience: experienceInt }),
+          }
+        });
       }
     }
 
@@ -146,8 +165,10 @@ export class UsersService {
       data: {
         ...userWithoutPassword,
         avatarUrl: userWithoutPassword.avatar,
+        role: userWithoutPassword.role,
         ...(studentProfile ? {
           academicId: studentProfile.academicId,
+          bio: studentProfile.bio,
           grade: studentProfile.grade,
           birthDate: studentProfile.birthDate,
           address: studentProfile.address,

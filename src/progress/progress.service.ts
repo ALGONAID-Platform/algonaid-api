@@ -8,12 +8,15 @@ export class ProgressService {
  
 
   async updateProgress(studentUserId: number, dto: import('./dto/update-progress.dto').UpdateProgressDto) {
-    const student = await this.prisma.student.findUnique({
+    let student = await this.prisma.student.findUnique({
       where: { userId: studentUserId },
     });
 
     if (!student) {
-      throw new NotFoundException('Student profile not found');
+      student = await this.prisma.student.create({
+        data: { userId: studentUserId, academicId: `STU-${Date.now()}-${studentUserId}` },
+      }).catch(() => null);
+      if (!student) throw new NotFoundException('Student profile not found');
     }
 
     const { lessonId, isCompleted = true } = dto;
@@ -68,12 +71,18 @@ export class ProgressService {
   }
 
   async getCourseProgress(studentUserId: number, courseId: number) {
-    const student = await this.prisma.student.findUnique({
+    let student = await this.prisma.student.findUnique({
       where: { userId: studentUserId },
       include: { user: true },
     });
 
-    if (!student) throw new NotFoundException('Student profile not found');
+    if (!student) {
+      student = await this.prisma.student.create({
+        data: { userId: studentUserId, academicId: `STU-${Date.now()}-${studentUserId}` },
+        include: { user: true }
+      }).catch(() => null);
+      if (!student) throw new NotFoundException('Student profile not found');
+    }
 
     const isOwnerOrAdmin = student.user?.role === 'OWNER' || student.user?.role === 'ADMIN';
 
@@ -160,11 +169,16 @@ export class ProgressService {
   }
 
   async getLastWatched(studentUserId: number) {
-    const student = await this.prisma.student.findUnique({
+    let student = await this.prisma.student.findUnique({
       where: { userId: studentUserId },
     });
 
-    if (!student) throw new NotFoundException('Student profile not found');
+    if (!student) {
+      student = await this.prisma.student.create({
+        data: { userId: studentUserId, academicId: `STU-${Date.now()}-${studentUserId}` },
+      }).catch(() => null);
+      if (!student) throw new NotFoundException('Student profile not found');
+    }
 
     const lastProgress = await this.prisma.lessonProgress.findFirst({
       where: { studentId: student.id },
@@ -207,12 +221,18 @@ export class ProgressService {
   }
 
   async getLastAccessedModuleProgress(studentUserId: number) {
-    const student = await this.prisma.student.findUnique({
+    let student = await this.prisma.student.findUnique({
       where: { userId: studentUserId },
       include: { user: true },
     });
 
-    if (!student) throw new NotFoundException('Student profile not found');
+    if (!student) {
+      student = await this.prisma.student.create({
+        data: { userId: studentUserId, academicId: `STU-${Date.now()}-${studentUserId}` },
+        include: { user: true }
+      }).catch(() => null);
+      if (!student) throw new NotFoundException('Student profile not found');
+    }
 
     const lastProgress = await this.prisma.lessonProgress.findFirst({
       where: { studentId: student.id },
@@ -287,11 +307,16 @@ export class ProgressService {
   }
 
   async getModuleGrades(studentUserId: number, moduleId: number) {
-    const student = await this.prisma.student.findUnique({
+    let student = await this.prisma.student.findUnique({
       where: { userId: studentUserId },
     });
 
-    if (!student) throw new NotFoundException('Student profile not found');
+    if (!student) {
+      student = await this.prisma.student.create({
+        data: { userId: studentUserId, academicId: `STU-${Date.now()}-${studentUserId}` },
+      }).catch(() => null);
+      if (!student) throw new NotFoundException('Student profile not found');
+    }
 
     const exams = await this.prisma.exam.findMany({
       where: {
@@ -349,11 +374,16 @@ export class ProgressService {
   }
 
   async getCourseGrades(studentUserId: number, courseId: number) {
-    const student = await this.prisma.student.findUnique({
+    let student = await this.prisma.student.findUnique({
       where: { userId: studentUserId },
     });
 
-    if (!student) throw new NotFoundException('Student profile not found');
+    if (!student) {
+      student = await this.prisma.student.create({
+        data: { userId: studentUserId, academicId: `STU-${Date.now()}-${studentUserId}` },
+      }).catch(() => null);
+      if (!student) throw new NotFoundException('Student profile not found');
+    }
 
     const exams = await this.prisma.exam.findMany({
       where: {
@@ -419,7 +449,7 @@ async getExcellenceCourses(studentUserId: number) {
   }
 
   // 2. جلب بيانات الطالب مع سجلات التسجيل
-  const student = await this.prisma.student.findUnique({
+  let student = await this.prisma.student.findUnique({
     where: { userId: userId },
     include: {
       enrollments: true,
@@ -427,7 +457,11 @@ async getExcellenceCourses(studentUserId: number) {
   });
 
   if (!student) {
-    throw new NotFoundException('Student profile not found');
+    student = await this.prisma.student.create({
+      data: { userId: userId, academicId: `STU-${Date.now()}-${userId}` },
+      include: { enrollments: true }
+    }).catch(() => null);
+    if (!student) throw new NotFoundException('Student profile not found');
   }
 
   // 2.5 جلب الكورسات المميزة المحفوظة مسبقاً لهذا الطالب
@@ -518,12 +552,15 @@ async getExcellenceCourses(studentUserId: number) {
       throw new BadRequestException('Invalid student user ID');
     }
 
-    const student = await this.prisma.student.findUnique({
+    let student = await this.prisma.student.findUnique({
       where: { userId: userId },
     });
 
     if (!student) {
-      throw new NotFoundException('Student profile not found');
+      student = await this.prisma.student.create({
+        data: { userId: userId, academicId: `STU-${Date.now()}-${userId}` },
+      }).catch(() => null);
+      if (!student) throw new NotFoundException('Student profile not found');
     }
 
     const attempts = await this.prisma.examAttempt.groupBy({
@@ -545,12 +582,15 @@ async getExcellenceCourses(studentUserId: number) {
       throw new BadRequestException('Invalid student user ID');
     }
 
-    const student = await this.prisma.student.findUnique({
+    let student = await this.prisma.student.findUnique({
       where: { userId: userId },
     });
 
     if (!student) {
-      throw new NotFoundException('Student profile not found');
+      student = await this.prisma.student.create({
+        data: { userId: userId, academicId: `STU-${Date.now()}-${userId}` },
+      }).catch(() => null);
+      if (!student) throw new NotFoundException('Student profile not found');
     }
 
     const course = await this.prisma.course.findUnique({

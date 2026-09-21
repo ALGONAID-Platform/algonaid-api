@@ -7,7 +7,7 @@ export class ResetPasswordDto {
   @IsNotEmpty({ message: MESSAGES.VALIDATION.PASSWORD_REQUIRED })
   @IsString({ message: MESSAGES.VALIDATION.PASSWORD_STRING })
   @MinLength(8, { message: MESSAGES.VALIDATION.PASSWORD_MIN_LENGTH })
-  @Matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&#])[A-Za-z\d@$!%*?&#]{8,}$/, {
+  @Matches(/^(?=.*[a-zA-Z])(?=.*\d).+$/, {
     message: MESSAGES.VALIDATION.PASSWORD_COMPLEXITY,
   })
   newPassword: string;

@@ -19,9 +19,14 @@ import { PracticeExamsModule } from './practice-exams/practice-exams.module';
 import { MediaModule } from './media/media.module';
 import { CommentsModule } from './comments/comments.module';
 
- 
+import { ScheduleModule } from '@nestjs/schedule';
+import { ThrottlerModule } from '@nestjs/throttler';
+import { PostsModule } from './posts/posts.module';
+import { PostCommentsModule } from './post-comments/post-comments.module';
+
 @Module({
   imports: [
+    ScheduleModule.forRoot(),
     ConfigModule.forRoot({
       isGlobal: true,
       envFilePath: `.env`
@@ -48,9 +53,10 @@ import { CommentsModule } from './comments/comments.module';
     ExamsModule,
     ProgressModule,
     UsersModule,
-        CommentsModule,
-
+    CommentsModule,
     PracticeExamsModule,
+    PostsModule,
+    PostCommentsModule,
   ],
   controllers: [AppController],
   providers: [AppService, UploadcareStorageService],

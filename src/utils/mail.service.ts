@@ -10,7 +10,7 @@ export class MailService {
   constructor(private configService: ConfigService) {
     this.resend = new Resend(this.configService.get<string>('RESEND_API_KEY'));
     this.fromEmail =
-      this.configService.get<string>('EMAIL_FROM') || 'no-reply@algonaid.com';
+      this.configService.get<string>('EMAIL_FROM') || 'support@algonaid.com';
   }
 
   // ==================== Password Reset Email ====================
@@ -76,7 +76,7 @@ export class MailService {
       const info = await this.resend.emails.send({
         from: this.fromEmail,
         to: email,
-        subject: '✅ تأكيد البريد الإلكتروني - منصة الجنيد',
+        subject: ' تأكيد البريد الإلكتروني - منصة الجنيد',
         html: `
           <!DOCTYPE html>
           <html dir="rtl" lang="ar">
@@ -107,7 +107,7 @@ export class MailService {
                 <div style="text-align: center; margin: 35px 0;">
                   <a href="${verificationLink}" 
                      style="display: inline-block; padding: 16px 40px; background: linear-gradient(135deg, #4A9F8A 0%, #252641 100%); color: #ffffff; text-decoration: none; border-radius: 10px; font-size: 18px; font-weight: 700; letter-spacing: 0.5px; box-shadow: 0 4px 15px rgba(74,159,138,0.4);">
-                    ✅ تأكيد البريد الإلكتروني
+                     تأكيد البريد الإلكتروني
                   </a>
                 </div>
 

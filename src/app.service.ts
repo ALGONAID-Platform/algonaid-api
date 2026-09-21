@@ -6,7 +6,7 @@ export class AppService {
     return 'Hello World!';
   }
  
-  getRedirectPage(type: 'course' | 'lesson', id: string): string {
+  getRedirectPage(type: 'course' | 'lesson' | 'post', id: string): string {
     return `<!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
@@ -294,7 +294,12 @@ export class AppService {
     <script>
         const type = '${type}';
         const id = '${id}';
-        const path = type === 'course' ? 'modulesList' : 'lessonDetails';
+        
+        let path = '';
+        if (type === 'course') path = 'modulesList';
+        else if (type === 'post') path = 'posts';
+        else path = 'lessonDetails';
+        
         const rawUrl = 'https://api.exchangesmangement.online/' + path + '/' + id;
         
         // 1. Set the dynamic target link for "Open in App" button
@@ -304,9 +309,11 @@ export class AppService {
 
         // 2. Set dynamic text content
         const statusMsg = document.getElementById('status-msg');
-        statusMsg.innerText = type === 'course' 
-            ? 'جاري فتح محتوى الدورة في تطبيق منصة الجنيد...' 
-            : 'جاري فتح تفاصيل الدرس في تطبيق منصة الجنيد...';
+        let msg = 'جاري فتح المحتوى في تطبيق منصة الجنيد...';
+        if (type === 'course') msg = 'جاري فتح محتوى الدورة في تطبيق منصة الجنيد...';
+        else if (type === 'post') msg = 'جاري فتح المنشور في تطبيق منصة الجنيد...';
+        else if (type === 'lesson') msg = 'جاري فتح تفاصيل الدرس في تطبيق منصة الجنيد...';
+        statusMsg.innerText = msg;
 
         // 3. Auto-redirect attempts
         function attemptRedirect() {

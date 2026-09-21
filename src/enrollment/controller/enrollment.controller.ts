@@ -22,7 +22,7 @@ export class EnrollmentController {
 
   @Post()
   @UseGuards(AuthRollGuard)
-  @userRoles(Role.STUDENT)
+  @userRoles(Role.STUDENT, Role.ADMIN, Role.OWNER)
   @SwaggerEnrollInCourse()
   enroll(@Body() createDto: CreateEnrollmentDto, @CurrentUser() user: types.JwtPayloadType) {
     return this.enrollmentSevice.craete(user.id, createDto);

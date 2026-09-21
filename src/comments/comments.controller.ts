@@ -1,4 +1,6 @@
-import { Controller, Post, Get, Patch, Delete, Body, Param, ParseIntPipe, UseGuards, Req, Query } from '@nestjs/common';
+import { Controller, Post, Get, Patch, Delete, Body, Param, ParseIntPipe, UseGuards, Req, Query, UseInterceptors, UploadedFile, BadRequestException } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { UploadcareStorageService } from '../utils/uploadcare-storage.service';
 import { CommentsService } from './comments.service';
 import { CreateCommentDto } from './dto/create-comment.dto';
 import { AuthRollGuard } from '../auth/guards/auth-roll.guard';
@@ -12,7 +14,23 @@ import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
 @ApiBearerAuth('JWT-auth')
 @Controller('comments')
 export class CommentsController {
-  constructor(private readonly commentsService: CommentsService) {}
+  constructor(
+    private readonly commentsService: CommentsService,
+    private readonly uploadcareStorageService: UploadcareStorageService
+  ) {}
+
+  @Post('upload-image')
+  @UseGuards(AuthRollGuard)
+  @userRoles(Role.STUDENT, Role.ADMIN, Role.OWNER)
+  @UseInterceptors(FileInterceptor('image'))
+  @ApiOperation({ summary: 'Upload an image for a comment and get its URL' })
+  async uploadImage(@UploadedFile() file: Express.Multer.File) {
+    if (!file) {
+      throw new BadRequestException('No image file provided');
+    }
+    const imageUrl = await this.uploadcareStorageService.upload(file, 'comments');
+    return { imageUrl };
+  }
 
   @Post()
   @UseGuards(AuthRollGuard)
@@ -57,4 +75,35 @@ export class CommentsController {
   remove(@Param('id', ParseIntPipe) id: number, @CurrentUser() user: types.JwtPayloadType) {
     return this.commentsService.remove(user.id, user.role, id);
   }
+
+  @Get('mentions/my')
+  @UseGuards(AuthRollGuard)
+  @userRoles(Role.STUDENT, Role.ADMIN, Role.OWNER)
+  @ApiOperation({ summary: 'Get all mentions for the current user' })
+  getMyMentions(
+    @CurrentUser() user: types.JwtPayloadType,
+    @Query('page') page?: string,
+    @Query('limit') limit?: string
+  ) {
+    const pageNumber = page ? parseInt(page, 10) : 1;
+    const limitNumber = limit ? parseInt(limit, 10) : 20;
+    return this.commentsService.getMyMentions(user.id, pageNumber, limitNumber);
+  }
+
+  @Get('mentions/unread-count')
+  @UseGuards(AuthRollGuard)
+  @userRoles(Role.STUDENT, Role.ADMIN, Role.OWNER)
+  @ApiOperation({ summary: 'Get unread mentions count for the current user' })
+  getUnreadMentionsCount(@CurrentUser() user: types.JwtPayloadType) {
+    return this.commentsService.getUnreadMentionsCount(user.id);
+  }
+
+  @Patch('mentions/:id/read')
+  @UseGuards(AuthRollGuard)
+  @userRoles(Role.STUDENT, Role.ADMIN, Role.OWNER)
+  @ApiOperation({ summary: 'Mark a mention as read' })
+  markMentionAsRead(@Param('id', ParseIntPipe) id: number, @CurrentUser() user: types.JwtPayloadType) {
+    return this.commentsService.markMentionAsRead(user.id, id);
+  }
 }
+ 

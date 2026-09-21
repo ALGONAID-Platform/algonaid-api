@@ -2,3 +2,27 @@ node_modules
 dist
 .git
 .env
+
+# User uploads — kept on host, not inside the image
+uploads/
+
+# Logs and incident diagnostics
+*.log
+*-report.txt
+diagnosis.txt
+diagnostic-report.txt
+diagnose*.txt
+repair-api-db*.txt
+fix-startup-report.txt
+final-api-check-report.txt
+reproduce-browser-request-report.txt
+
+# Local backups
+db-backups/
+
+# Local development/repair scripts
+*.sh
+
+# Documentation not required in runtime image
+README.md
+postman-mock-data.md

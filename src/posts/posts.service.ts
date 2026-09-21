@@ -1,0 +1,152 @@
+import { Injectable, NotFoundException } from '@nestjs/common';
+import { PrismaService } from 'src/prisma/prisma.service';
+import { CreatePostDto } from './dto/create-post.dto';
+import { UpdatePostDto } from './dto/update-post.dto';
+
+@Injectable()
+export class PostsService {
+  constructor(private readonly prisma: PrismaService) {}
+
+  async create(createPostDto: CreatePostDto, authorId: number) {
+    const { pollOptions, ...postData } = createPostDto;
+    
+    return this.prisma.post.create({
+      data: {
+        ...postData,
+        authorId,
+        pollOptions: postData.isPoll && pollOptions ? {
+          create: pollOptions.map(text => ({ text }))
+        } : undefined
+      },
+    });
+  }
+
+  async findAll(userId: number, cursor?: number, limit: number = 10) {
+    const args: any = {
+      take: limit,
+      orderBy: { createdAt: 'desc' },
+      include: {
+        author: { select: { id: true, name: true, avatar: true, role: true } },
+        _count: { select: { comments: true, likes: true } },
+        pollOptions: { include: { _count: { select: { votes: true } } } },
+        likes: { where: { userId }, select: { id: true } },
+      },
+    };
+    if (cursor) {
+      args.cursor = { id: cursor };
+      args.skip = 1;
+    }
+    const posts = await this.prisma.post.findMany(args);
+    return posts.map((post: any) => {
+      const hasLiked = post.likes && post.likes.length > 0;
+      delete post.likes;
+      return { ...post, hasLiked };
+    });
+  }
+
+  async findOne(id: number, userId?: number) {
+    if (userId) {
+      // Unique View Tracking
+      const existingView = await this.prisma.postView.findUnique({
+        where: { postId_userId: { postId: id, userId } },
+      });
+      
+      if (!existingView) {
+        await this.prisma.$transaction([
+          this.prisma.postView.create({ data: { postId: id, userId } }),
+          this.prisma.post.update({ where: { id }, data: { views: { increment: 1 } } })
+        ]).catch(() => null); // Ignore race conditions
+      }
+    }
+    
+    const post = await this.prisma.post.findUnique({
+      where: { id },
+      include: {
+        author: { select: { id: true, name: true, avatar: true, role: true } },
+        _count: { select: { comments: true, likes: true } },
+        pollOptions: { include: { _count: { select: { votes: true } } } },
+        likes: userId ? { where: { userId }, select: { id: true } } : false,
+      },
+    });
+    
+    if (!post) {
+      throw new NotFoundException('المنشور غير موجود');
+    }
+    
+    let hasLiked = false;
+    const postAny = post as any;
+    if (postAny.likes) {
+      hasLiked = postAny.likes.length > 0;
+      delete postAny.likes;
+    }
+    
+    return { ...postAny, hasLiked };
+  }
+
+  async update(id: number, updatePostDto: UpdatePostDto) {
+    await this.findOne(id); // Check existence
+    
+    // We prevent updating poll options directly here to preserve vote integrity.
+    const { pollOptions, ...postData } = updatePostDto;
+    
+    return this.prisma.post.update({
+      where: { id },
+      data: postData,
+    });
+  }
+
+  async remove(id: number) {
+    await this.findOne(id); // Check existence
+    return this.prisma.post.delete({
+      where: { id },
+    });
+  }
+
+  async toggleLike(postId: number, userId: number) {
+    await this.findOne(postId); // Check existence
+    const existingLike = await this.prisma.postLike.findUnique({
+      where: { postId_userId: { postId, userId } },
+    });
+
+    if (existingLike) {
+      await this.prisma.postLike.delete({
+        where: { id: existingLike.id },
+      });
+      return { message: 'تم إزالة الإعجاب', liked: false };
+    } else {
+      await this.prisma.postLike.create({
+        data: { postId, userId },
+      });
+      return { message: 'تم الإعجاب', liked: true };
+    }
+  }
+
+  async votePoll(postId: number, optionId: number, userId: number) {
+    const post = await this.findOne(postId);
+    if (!post.isPoll) {
+      throw new NotFoundException('هذا المنشور ليس استطلاعاً');
+    }
+
+    const option = await this.prisma.pollOption.findFirst({
+      where: { id: optionId, postId }
+    });
+    if (!option) {
+      throw new NotFoundException('الخيار غير موجود');
+    }
+
+    // Check if user already voted in this poll
+    const existingVote = await this.prisma.pollVote.findUnique({
+      where: { postId_userId: { postId, userId } },
+    });
+
+    if (existingVote) {
+      throw new NotFoundException('لقد قمت بالتصويت مسبقاً في هذا الاستطلاع');
+    }
+
+    await this.prisma.pollVote.create({
+      data: { postId, optionId, userId },
+    });
+
+    return { message: 'تم تسجيل تصويتك بنجاح' };
+  }
+}

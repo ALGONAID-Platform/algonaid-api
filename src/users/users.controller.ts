@@ -55,12 +55,12 @@ export class UsersController {
     @UploadedFiles() files?: { avatar?: Express.Multer.File[], background?: Express.Multer.File[] },
   ) {
     if (files?.avatar?.[0]) {
-      updateProfileDto.avatar = await this.uploadcareStorageService.upload(files.avatar[0]);
+      updateProfileDto.avatar = await this.uploadcareStorageService.upload(files.avatar[0], 'avatars');
     } else if (updateProfileDto.avatarUrl) {
       updateProfileDto.avatar = updateProfileDto.avatarUrl;
     }
     if (files?.background?.[0]) {
-      updateProfileDto.background = await this.uploadcareStorageService.upload(files.background[0]);
+      updateProfileDto.background = await this.uploadcareStorageService.upload(files.background[0], 'backgrounds');
     }
     
     // Clean up avatarUrl before sending to service as it's not in Prisma schema
@@ -69,3 +69,4 @@ export class UsersController {
     return this.usersService.updateProfile(user.id, updateProfileDto, user.role);
   }
 }
+ 

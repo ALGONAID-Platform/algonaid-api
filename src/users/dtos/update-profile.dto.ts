@@ -22,6 +22,11 @@ export class UpdateProfileDto {
   @IsString()
   background?: string;
 
+  @ApiProperty({ description: 'User biography', example: 'Hello, I am a user.', required: false })
+  @IsOptional()
+  @IsString()
+  bio?: string;
+
   // Student specific details
   @ApiProperty({ description: 'Academic grade', example: '10th Grade', required: false })
   @IsOptional()
@@ -37,4 +42,14 @@ export class UpdateProfileDto {
   @IsOptional()
   @IsString()
   address?: string;
+
+  // Teacher specific details
+  @ApiProperty({ description: 'Teacher specialization', example: 'Mathematics', required: false })
+  @IsOptional()
+  @IsString()
+  specialization?: string;
+
+  @ApiProperty({ description: 'Years of experience', example: 5, required: false })
+  @IsOptional()
+  experience?: number;
 }

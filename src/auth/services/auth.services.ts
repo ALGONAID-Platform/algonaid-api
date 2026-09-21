@@ -19,7 +19,7 @@ import { ForgotPasswordDto } from '../dtos/forgot-password.dto';
 import { ResetPasswordDto } from '../dtos/reset-password.dto';
 import { MailService } from 'src/utils/mail.service';
 import { ResendVerificationDto } from '../dtos/resend-verification.dto';
-
+import { AuthenticateV2Dto } from '../dtos/authenticate-v2.dto';
 @Injectable()
 export class AuthService {
   constructor(
@@ -216,6 +216,83 @@ try {
         throw new ConflictException(MESSAGES.AUTH.EMAIL_ALREADY_REGISTERED);
       }
       throw error;
+    }
+  }
+
+  // ==================== Authenticate V2 (Unified Login/Register) ====================
+  async authenticateV2(dto: AuthenticateV2Dto) {
+    let { email, password, name } = dto;
+    email = email.toLowerCase().trim();
+
+    const user = await this.prisma.user.findUnique({
+      where: { email },
+      include: { studentProfile: true, teacherProfile: true },
+    });
+
+    if (user) {
+      // User exists -> Login Flow
+      if (!user.password) {
+        throw new UnauthorizedException(MESSAGES.AUTH.GOOGLE_ACCOUNT_LOGIN_REQUIRED);
+      }
+
+      const isPasswordValid = await bcrypt.compare(password, user.password);
+      if (!isPasswordValid) {
+        throw new UnauthorizedException(MESSAGES.AUTH.INVALID_CREDENTIALS);
+      }
+
+      const token = await this.generateToken(user.id, user.email, user.role);
+
+      return {
+        message: MESSAGES.AUTH.LOGGED_IN,
+        user: this.formatUserResponse(user),
+        access_token: token,
+        isNewUser: false,
+      };
+    } else {
+      // User doesn't exist -> Register Flow
+      if (!name) {
+        throw new BadRequestException({
+          statusCode: 400,
+          action: 'NAME_REQUIRED',
+          message: 'يجب إدخال الاسم لإنشاء حساب جديد',
+        });
+      }
+
+      const hashedPassword = await bcrypt.hash(password, 10);
+      const rawVerificationToken = crypto.randomBytes(32).toString('hex');
+      const hashedVerificationToken = await bcrypt.hash(rawVerificationToken, 10);
+      const verificationTokenExpiry = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
+
+      const newUser = await this.prisma.user.create({
+        data: {
+          email,
+          password: hashedPassword,
+          name,
+          role: Role.STUDENT,
+          verificationToken: hashedVerificationToken,
+          verificationTokenExpiry,
+          studentProfile: {
+            create: {
+              academicId: `STU-${Date.now()}`,
+            },
+          },
+        },
+        include: { studentProfile: true, teacherProfile: true },
+      });
+
+      // Send email asynchronously without blocking
+      this.mailService.sendVerificationEmail(email, rawVerificationToken).catch(err => {
+        console.error('❌ Verification email failed:', err);
+      });
+
+      const token = await this.generateToken(newUser.id, newUser.email, newUser.role);
+
+      return {
+        message: MESSAGES.AUTH.USER_REGISTERED,
+        user: this.formatUserResponse(newUser),
+        access_token: token,
+        isNewUser: true,
+      };
     }
   }
 

@@ -50,6 +50,7 @@ export class AuthRollGuard implements CanActivate {
         }
 
         if (rolls.includes(user.user.role)) {
+            payload.emailVerified = user.user.emailVerified;
             request[CURRENT_USER_KEY] = payload;
             return true;
         }

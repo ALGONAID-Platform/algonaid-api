@@ -33,4 +33,31 @@ export class MediaController {
       throw new BadRequestException(error.message);
     }
   }
+
+  @Post('videos')
+  @UseInterceptors(FileInterceptor('file', {
+    storage: memoryStorage(),
+    fileFilter: (req, file, cb) => {
+      if (!file.mimetype.match(/\/(mp4|mov|avi|quicktime|x-msvideo)$/)) {
+        return cb(new BadRequestException('Only video files (mp4, mov, avi) are allowed!'), false);
+      }
+      cb(null, true);
+    },
+    limits: { fileSize: 50 * 1024 * 1024 }, // 50MB
+  }))
+  async uploadVideo(@UploadedFile() file: Express.Multer.File) {
+    if (!file) {
+      throw new BadRequestException('No file uploaded');
+    }
+    
+    try {
+      const url = await this.uploadcareStorageService.upload(file);
+      return {
+        url,
+        message: 'Video uploaded successfully'
+      };
+    } catch (error) {
+      throw new BadRequestException(error.message);
+    }
+  }
 }

@@ -32,18 +32,28 @@ export class CoursesService {
     });
     
     const student = user?.studentProfile;
+
+    if (!student) {
+      return [];
+    }
+
     const isOwnerOrAdmin = user?.role === 'OWNER' || user?.role === 'ADMIN';
    
     const myEnrollments = await this.prisma.enrollment.findMany({
       where: { 
-        studentId: student?.id,
+        studentId: student.id,
         status: 'ACTIVE',
       },
       include: {
         course: {
           include: {
             teacher: { include: { user: { select: { name: true, email: true } } } },
-            _count: { select: { modules: true } },
+            _count: { 
+              select: { 
+                modules: true,
+                enrollments: { where: { status: 'ACTIVE' } }
+              } 
+            },
             practiceExams: {
               select: { createdAt: true },
               orderBy: { createdAt: 'desc' },
@@ -117,6 +127,7 @@ export class CoursesService {
       ...rest,
       moduleTitles: modules.slice(0, 3).map((m) => m.title),
       modulesCount: _count.modules,
+      enrollmentsCount: _count.enrollments || 0,
       isEnrolled: true, // دائماً ترو لأننا جلبناها من جدول التسجيلات
       enrollmentStatus: enrol.status,
       totalLessons,
@@ -128,39 +139,48 @@ export class CoursesService {
 }
 
 
-async findAll(userId?: number) {
-  const student = userId ? await this.prisma.student.findUnique({ where: { userId } }) : null;
-  const studentId = student?.id;
+  async findAll(userId?: number, role?: string) {
+    const student = userId ? await this.prisma.student.findUnique({ where: { userId } }) : null;
+    const studentId = student?.id;
+    const isOwnerOrAdmin = role === 'OWNER' || role === 'ADMIN';
 
-  const courses = await this.prisma.course.findMany({
-    where: studentId ? {
-      enrollments: {
-        none: { // تعني "لا يوجد أي سجل اشتراك يطابق الآتي"
-          studentId: studentId,
+    const courses = await this.prisma.course.findMany({
+      where: (studentId && !isOwnerOrAdmin) ? {
+        NOT: {
+          enrollments: {
+            some: {
+              studentId: studentId,
+              status: 'ACTIVE',
+            },
+          },
         },
+      } : {},
+      include: {
+        teacher: { include: { user: { select: { name: true, email: true } } } },
+        modules: { select: { title: true }, take: 3 },
+        _count: { 
+          select: { 
+            modules: true,
+            enrollments: { where: { status: 'ACTIVE' } } 
+          } 
+        },
+        // ملاحظة: بما أننا استبعدنا المشتركين، الـ enrollments هنا ستكون دائماً فارغة لهذا الطالب
+        enrollments: studentId ? { where: { studentId }, select: { id: true } } : false,
       },
-    } : {}, // إذا لم يوجد userId، أجلب كل الكورسات كالمعتاد
-    
-    include: {
-      teacher: { include: { user: { select: { name: true, email: true } } } },
-      modules: { select: { title: true }, take: 3 },
-      _count: { select: { modules: true } },
-      // ملاحظة: بما أننا استبعدنا المشتركين، الـ enrollments هنا ستكون دائماً فارغة لهذا الطالب
-      enrollments: studentId ? { where: { studentId }, select: { id: true } } : false,
-    },
-  });
+    });
 
-  return courses.map((course) => {
-    const { modules, enrollments, _count, ...rest } = course;
-    return {
-      ...rest,
-      moduleTitles: modules.map((m) => m.title),
-      modulesCount: _count.modules,
-      // ستكون دائماً false الآن في قائمة الاكتشاف، وهذا هو المنطق السليم
-      isEnrolled: !!(enrollments && enrollments.length > 0),
-    };
-  });
-}
+    return courses.map((course) => {
+      const { modules, enrollments, _count, ...rest } = course;
+      return {
+        ...rest,
+        moduleTitles: modules.map((m) => m.title),
+        modulesCount: _count.modules,
+        enrollmentsCount: _count.enrollments || 0,
+        // ستكون دائماً false الآن في قائمة الاكتشاف، وهذا هو المنطق السليم
+        isEnrolled: !!(enrollments && enrollments.length > 0),
+      };
+    });
+  }
 
   async search(query: string, userId?: number) {
     if (!query) {
@@ -310,6 +330,15 @@ async findAll(userId?: number) {
             },
           },
         },
+        _count: {
+          select: {
+            enrollments: {
+              where: {
+                status: 'ACTIVE'
+              }
+            }
+          }
+        }
       },
     });
 
@@ -337,6 +366,7 @@ async findAll(userId?: number) {
             id: true,
             name: true,
             avatar: true,
+            createdAt: true,
           }
         },
         lesson: {
@@ -348,8 +378,11 @@ async findAll(userId?: number) {
       }
     });
 
+    const { _count, ...courseData } = course;
+
     return {
-      ...course,
+      ...courseData,
+      enrollmentsCount: _count?.enrollments || 0,
       latestComments: latestComments,
     };
   }
@@ -402,5 +435,62 @@ async findAll(userId?: number) {
     return {
       message: MESSAGES.COURSES.COURSE_DELETED
     }
+  }
+
+  async getMentionableUsers(courseId: number) {
+    const course = await this.prisma.course.findUnique({
+      where: { id: courseId },
+      include: {
+        teacher: {
+          include: {
+            user: {
+              select: { id: true, name: true, avatar: true, createdAt: true }
+            }
+          }
+        },
+        enrollments: {
+          where: { status: 'ACTIVE' },
+          include: {
+            student: {
+              include: {
+                user: {
+                  select: { id: true, name: true, avatar: true, createdAt: true }
+                }
+              }
+            }
+          }
+        }
+      }
+    });
+
+    if (!course) {
+      throw new NotFoundException('Course not found');
+    }
+
+    const mentionableUsers = [];
+
+    // Add instructor
+    if (course.teacher && course.teacher.user) {
+      mentionableUsers.push({
+        id: course.teacher.user.id,
+        name: course.teacher.user.name,
+        avatar: course.teacher.user.avatar,
+        role: 'INSTRUCTOR'
+      });
+    }
+
+    // Add students
+    for (const enrollment of course.enrollments) {
+      if (enrollment.student && enrollment.student.user) {
+        mentionableUsers.push({
+          id: enrollment.student.user.id,
+          name: enrollment.student.user.name,
+          avatar: enrollment.student.user.avatar,
+          role: 'STUDENT'
+        });
+      }
+    }
+
+    return mentionableUsers;
   }
 }

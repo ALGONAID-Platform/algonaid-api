@@ -184,11 +184,16 @@ export class ExamsService {
 
 
   async startExam(studentUserId: number, examId: number) {
-    const student = await this.prisma.student.findUnique({
+    let student = await this.prisma.student.findUnique({
       where: { userId: studentUserId },
     });
 
-    if (!student) throw new NotFoundException('Student profile not found');
+    if (!student) {
+      student = await this.prisma.student.create({
+        data: { userId: studentUserId, academicId: `STU-${Date.now()}-${studentUserId}` },
+      }).catch(() => null);
+      if (!student) throw new NotFoundException('Student profile not found');
+    }
 
     const exam = await this.prisma.exam.findUnique({
       where: { id: examId },
@@ -235,9 +240,14 @@ export class ExamsService {
   }
 
   async submitExam(studentUserId: number, attemptId: number, submission: SubmitExamDto) {
-    const student = await this.prisma.student.findUnique({
+    let student = await this.prisma.student.findUnique({
       where: { userId: studentUserId },
     });
+    if (!student) {
+      student = await this.prisma.student.create({
+        data: { userId: studentUserId, academicId: `STU-${Date.now()}-${studentUserId}` },
+      }).catch(() => null);
+    }
 
     const attempt = await this.prisma.examAttempt.findUnique({
       where: { id: attemptId },
@@ -322,9 +332,14 @@ export class ExamsService {
   }
 
   async getResult(studentUserId: number, attemptId: number) {
-    const student = await this.prisma.student.findUnique({
+    let student = await this.prisma.student.findUnique({
       where: { userId: studentUserId },
     });
+    if (!student) {
+      student = await this.prisma.student.create({
+        data: { userId: studentUserId, academicId: `STU-${Date.now()}-${studentUserId}` },
+      }).catch(() => null);
+    }
 
     const attempt = await this.prisma.examAttempt.findUnique({
       where: { id: attemptId },

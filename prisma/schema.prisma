@@ -42,11 +42,20 @@ model User {
   studentProfile           Student?
   teacherProfile           Teacher?
   comments                 Comment[]
+  mentionsReceived         Mention[]
+
+  // ==================== Posts Relations ====================
+  posts                    Post[]
+  postComments             PostComment[]
+  postLikes                PostLike[]
+  pollVotes                PollVote[]
+  postViews                PostView[]
 }
 
 model Student {
   id             Int              @id @default(autoincrement())
   academicId     String           @unique
+  bio            String?          @db.Text
   grade          String? // الصف الدراسي
   birthDate      DateTime?
   address        String?
@@ -267,6 +276,7 @@ model PracticeExam {
 model Comment {
   id        Int       @id @default(autoincrement())
   text      String    @db.Text
+  imageUrl  String?
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
 
@@ -279,4 +289,123 @@ model Comment {
   parentId  Int?
   parent    Comment?  @relation("CommentReplies", fields: [parentId], references: [id], onDelete: Cascade)
   replies   Comment[] @relation("CommentReplies")
+
+  mentions  Mention[]
+}
+
+model Mention {
+  id              Int      @id @default(autoincrement())
+  isRead          Boolean  @default(false)
+  createdAt       DateTime @default(now())
+
+  commentId       Int
+  comment         Comment  @relation(fields: [commentId], references: [id], onDelete: Cascade)
+
+  mentionedUserId Int
+  mentionedUser   User     @relation(fields: [mentionedUserId], references: [id], onDelete: Cascade)
+
+  @@index([mentionedUserId])
+}
+
+// ===========================================================
+// Posts & Comments Module
+// ===========================================================
+
+model Post {
+  id        Int      @id @default(autoincrement())
+  title     String?
+  content   String   @db.Text
+  imageUrl  String?
+  videoUrl  String?
+  views     Int      @default(0)
+  isPoll    Boolean  @default(false)
+  allowComments Boolean @default(true)
+  
+  authorId  Int
+  author    User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  
+  comments  PostComment[]
+  likes     PostLike[]
+  pollOptions PollOption[]
+  pollVotes PollVote[]
+  postViews PostView[]
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model PostView {
+  id        Int      @id @default(autoincrement())
+  
+  postId    Int
+  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  createdAt DateTime @default(now())
+
+  @@unique([postId, userId])
+}
+
+model PollOption {
+  id        Int      @id @default(autoincrement())
+  text      String
+  
+  postId    Int
+  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  
+  votes     PollVote[]
+}
+
+model PollVote {
+  id        Int      @id @default(autoincrement())
+  
+  optionId  Int
+  option    PollOption @relation(fields: [optionId], references: [id], onDelete: Cascade)
+  
+  userId    Int
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  // We want to ensure a user only votes once per post, not just per option.
+  // To do that easily in Prisma, we can store postId in PollVote too.
+  postId    Int
+  post      Post       @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime   @default(now())
+
+  @@unique([postId, userId])
+}
+
+model PostLike {
+  id        Int      @id @default(autoincrement())
+  
+  postId    Int
+  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@unique([postId, userId])
+}
+
+model PostComment {
+  id        Int       @id @default(autoincrement())
+  text      String    @db.Text
+  imageUrl  String?
+  
+  postId    Int
+  post      Post      @relation(fields: [postId], references: [id], onDelete: Cascade)
+  
+  userId    Int
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  parentId  Int?
+  parent    PostComment?  @relation("PostCommentReplies", fields: [parentId], references: [id], onDelete: Cascade)
+  replies   PostComment[] @relation("PostCommentReplies")
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
 }

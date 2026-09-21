@@ -13,9 +13,11 @@ import {
   Res,
   UseGuards,
 } from '@nestjs/common';
+import { Throttle, ThrottlerGuard } from '@nestjs/throttler';
 import { UserRegisterDto } from '../dtos/user-register.dto';
 import { AuthService } from '../services/auth.services';
 import { UserLoginDto } from '../dtos/user-login.dto';
+import { AuthenticateV2Dto } from '../dtos/authenticate-v2.dto';
 import { ForgotPasswordDto } from '../dtos/forgot-password.dto';
 import { ResetPasswordDto } from '../dtos/reset-password.dto';
 import { GoogleMobileLoginDto } from '../dtos/google-mobile-login.dto';
@@ -47,6 +49,15 @@ export class AuthController {
   @Post('signup')
   async register(@Body() userDto: UserRegisterDto) {
     return await this.authService.register(userDto);
+  }
+
+  // ==================== Authenticate V2 (Unified) ====================
+  @Post('v2/authenticate')
+  @UseGuards(ThrottlerGuard)
+  @Throttle({ default: { limit: 5, ttl: 60000 } }) // 5 requests per minute per IP
+  @HttpCode(HttpStatus.OK)
+  async authenticateV2(@Body() dto: AuthenticateV2Dto) {
+    return await this.authService.authenticateV2(dto);
   }
 
   // ==================== Signin ====================
