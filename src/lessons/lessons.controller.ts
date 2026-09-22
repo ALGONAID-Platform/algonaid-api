@@ -78,6 +78,13 @@ export class LessonsController {
     return this.lessonsService.findAllByModule(moduleId, +page, +limit);
   }
 
+  @Get('latest-enrolled')
+  @UseGuards(AuthRollGuard)
+  @userRoles(Role.STUDENT, Role.ADMIN, Role.OWNER)
+  findLatestEnrolledLessons(@CurrentUser() user: types.JwtPayloadType) {
+    return this.lessonsService.findLatestEnrolledLessons(user.id);
+  }
+
   @Get(':id')
   @UseGuards(AuthRollGuard)
   @userRoles(Role.STUDENT, Role.ADMIN, Role.OWNER)

@@ -115,6 +115,75 @@ export class LessonsService {
     };
   }
 
+  async findLatestEnrolledLessons(userId: number) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      include: { studentProfile: true }
+    });
+
+    const studentId = user?.studentProfile?.id;
+    if (!studentId) {
+      throw new ForbiddenException('Only students can access this endpoint');
+    }
+
+    const lessons = await this.prisma.lesson.findMany({
+      where: {
+        status: LessonStatus.PUBLISHED,
+        module: {
+          course: {
+            enrollments: {
+              some: {
+                studentId: studentId,
+                status: 'ACTIVE',
+              }
+            }
+          }
+        }
+      },
+      include: {
+        lessonProgress: {
+          where: { studentId },
+        },
+        exam: {
+          select: { id: true }
+        },
+        _count: {
+          select: { comments: true }
+        },
+        module: {
+          select: {
+            id: true,
+            title: true,
+            course: {
+              select: {
+                id: true,
+                title: true,
+              }
+            }
+          }
+        }
+      },
+      orderBy: { createdAt: 'desc' },
+      take: 10,
+    });
+
+    const mappedLessons = lessons.map(lesson => {
+      const { exam, _count, module, ...rest } = lesson;
+      return {
+        ...rest,
+        commentsCount: _count.comments,
+        hasTest: !!exam,
+        moduleName: module.title,
+        courseName: module.course.title,
+        moduleId: module.id,
+        courseId: module.course.id,
+      };
+    });
+
+    return mappedLessons;
+  }
+
+
   async findOne(id: number, userId?: number) {
     const lesson = await this.prisma.lesson.findUnique({
       where: { id },
