@@ -1,4 +1,4 @@
-import { Controller, Post, Get, Patch, Delete, Body, Param, ParseIntPipe, UseGuards, Req, Query, UseInterceptors, UploadedFile, BadRequestException } from '@nestjs/common';
+import { Controller, Post, Get, Patch, Delete, Body, Param, ParseIntPipe, UseGuards, Req, Query, UseInterceptors, UploadedFile, BadRequestException, ParseFilePipe, MaxFileSizeValidator, FileTypeValidator } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { UploadcareStorageService } from '../utils/uploadcare-storage.service';
 import { CommentsService } from './comments.service';

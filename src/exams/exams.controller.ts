@@ -1,4 +1,4 @@
-import { Controller, Post, Body, Param, Get, Patch, Delete, UseGuards, ParseIntPipe, UseInterceptors, UploadedFile } from '@nestjs/common';
+import { Controller, Post, Body, Param, Get, Patch, Delete, UseGuards, ParseIntPipe, UseInterceptors, UploadedFile, ParseFilePipe, MaxFileSizeValidator, FileTypeValidator } from '@nestjs/common';
 import { ExamsService } from './exams.service';
 import { SubmitExamDto } from './dto/exam-submission.dto';
 import { CreateExamDto } from './dto/create-exam.dto';
