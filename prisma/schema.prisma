@@ -122,6 +122,7 @@ model Course {
   teacher      Teacher  @relation(fields: [instructorId], references: [id])
   modules      Module[]
   practiceExams PracticeExam[]
+  exam          Exam?  // اختبار الكورس
 }
 
 model Module {
@@ -168,8 +169,15 @@ model Exam {
   maxAttempts  Int      @default(3)
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
-  lessonId Int    @unique
-  lesson   Lesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+
+  // اختبار درس (اختياري)
+  lessonId Int?    @unique
+  lesson   Lesson? @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+
+  // اختبار كورس (اختياري)
+  courseId Int?    @unique
+  course   Course? @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
   questions Question[]
   attempts  ExamAttempt[]
 }

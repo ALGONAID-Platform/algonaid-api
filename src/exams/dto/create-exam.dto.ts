@@ -64,10 +64,15 @@ export class CreateExamDto {
   @Min(1)
   maxAttempts: number;
 
-  @ApiProperty()
+  @ApiProperty({ required: false, description: 'اختبار على مستوى درس معين (يجب تحديد lessonId أو courseId)' })
   @IsInt()
-  @IsNotEmpty()
-  lessonId: number;
+  @IsOptional()
+  lessonId?: number;
+
+  @ApiProperty({ required: false, description: 'اختبار على مستوى كورس كامل (يجب تحديد lessonId أو courseId)' })
+  @IsInt()
+  @IsOptional()
+  courseId?: number;
 
   @ApiProperty({ type: [CreateQuestionDto] })
   @IsArray()

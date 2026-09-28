@@ -29,6 +29,17 @@ export class ExamsController {
     return this.examsService.findAll(user.id, user.role);
   }
 
+  @Get('course/:courseId')
+  @userRoles(Role.STUDENT, Role.ADMIN, Role.OWNER)
+  @ApiOperation({ summary: 'Get exam for a specific course' })
+  @ApiParam({ name: 'courseId', description: 'Course ID' })
+  getExamByCourse(
+    @Param('courseId', ParseIntPipe) courseId: number,
+    @CurrentUser() user: types.JwtPayloadType,
+  ) {
+    return this.examsService.getExamByCourse(courseId, user.id);
+  }
+
   @Post('upload-image')
   @userRoles(Role.ADMIN, Role.OWNER)
   @UseInterceptors(FileInterceptor('image'))
