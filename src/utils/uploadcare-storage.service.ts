@@ -2,7 +2,7 @@ import { Injectable, BadRequestException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import * as fs from 'fs';
 import * as path from 'path';
-import { fileTypeFromBuffer } from 'file-type';
+
 
 @Injectable()
 export class UploadcareStorageService {
@@ -41,6 +41,7 @@ export class UploadcareStorageService {
     }
 
     // Step 2: Validate actual file content (magic bytes) — prevents MIME type spoofing
+    const { fileTypeFromBuffer } = await eval('import("file-type")');
     const detectedType = await fileTypeFromBuffer(file.buffer);
     const allowedRealMimes = new Set([
       'image/jpeg', 'image/png', 'image/gif', 'image/webp',
