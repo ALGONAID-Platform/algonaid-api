@@ -19,18 +19,6 @@ enum Role {
   OWNER // who has all privalges
 }
 
-enum ExamType {
-  LESSON_QUIZ  // اختبار درس عادي
-  COURSE_QUIZ  // اختبار كورس دائم مع Leaderboard
-  CHALLENGE    // تحدي مؤقت له وقت بداية ونهاية
-}
-
-enum RankingCriteria {
-  SCORE  // الترتيب بالدرجة فقط
-  SPEED  // الترتيب بالسرعة فقط
-  BOTH   // الدرجة أولاً ثم السرعة كفاصل (افتراضي)
-}
-
 model User {
   id                       Int       @id @default(autoincrement())
   name                     String
@@ -174,20 +162,11 @@ model Lesson {
 }
 
 model Exam {
-  id              Int              @id @default(autoincrement())
-  title           String
-  description     String?          @db.Text
-  imageUrl        String?          // صورة الاختبار
-  passingScore    Int              @default(50)
-  maxAttempts     Int              @default(1)   // 1 افتراضي للتحديات، يمكن تغييره للاختبارات العادية
-  timeLimit       Int?             // مدة الاختبار بالدقائق (null = بلا حد)
-  examType        ExamType         @default(LESSON_QUIZ)
-  rankingCriteria RankingCriteria  @default(BOTH)
-
-  // حقول خاصة بالتحدي (CHALLENGE)
-  startTime       DateTime?        // وقت بدء التحدي
-  endTime         DateTime?        // وقت انتهاء التحدي
-
+  id           Int      @id @default(autoincrement())
+  title        String
+  description  String?  @db.Text
+  passingScore Int      @default(50)
+  maxAttempts  Int      @default(3)
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
@@ -237,8 +216,6 @@ model ExamAttempt {
   status      ExamStatus @default(IN_PROGRESS)
   startedAt   DateTime   @default(now())
   completedAt DateTime?
-  timeTaken   Int?       // الوقت المستغرق بالميلي ثانية (للدقة العالية)
-  isRanked    Boolean    @default(false) // هل هذه المحاولة محسوبة في الترتيب؟
 
   studentId Int
   student   Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
