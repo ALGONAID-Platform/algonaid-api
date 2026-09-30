@@ -1,4 +1,5 @@
 import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, ParseIntPipe } from '@nestjs/common';
+import { SkipThrottle } from '@nestjs/throttler';
 import { CreateModuleDto } from '../dto/create-module.dto';
 import { UpdateModuleDto } from '../dto/update-module.dto';
 import { ModulesService } from '../services/modules.service';
@@ -26,6 +27,7 @@ export class ModulesController {
   }
 
   @Get()
+  @SkipThrottle()
   @UseGuards(AuthRollGuard)
   @userRoles(Role.STUDENT, Role.ADMIN, Role.OWNER)
   @ApiOperation({ summary: 'Get all modules' })
@@ -34,6 +36,7 @@ export class ModulesController {
   }
 
   @Get('course/:courseId')
+  @SkipThrottle()
   @UseGuards(AuthRollGuard)
   @userRoles(Role.STUDENT, Role.ADMIN, Role.OWNER)
   @ApiOperation({ summary: 'Get all modules for a specific course' })
@@ -42,12 +45,14 @@ export class ModulesController {
   }
 
   @Get('course/:courseId/guest')
+  @SkipThrottle()
   @ApiOperation({ summary: 'Get all modules for a specific course for a guest' })
   findByCourseGuest(@Param('courseId', ParseIntPipe) courseId: number) {
     return this.modulesService.findByCourse(courseId);
   }
 
   @Get(':id')
+  @SkipThrottle()
   @UseGuards(AuthRollGuard)
   @userRoles(Role.STUDENT, Role.ADMIN, Role.OWNER)
   @ApiOperation({ summary: 'Get a specific module by ID' })

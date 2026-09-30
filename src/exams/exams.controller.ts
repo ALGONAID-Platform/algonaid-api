@@ -1,4 +1,5 @@
 import { Controller, Post, Body, Param, Get, Patch, Delete, UseGuards, ParseIntPipe, UseInterceptors, UploadedFile, ParseFilePipe, MaxFileSizeValidator, FileTypeValidator } from '@nestjs/common';
+import { SkipThrottle } from '@nestjs/throttler';
 import { ExamsService } from './exams.service';
 import { SubmitExamDto } from './dto/exam-submission.dto';
 import { CreateExamDto } from './dto/create-exam.dto';
@@ -23,6 +24,7 @@ export class ExamsController {
   ) {}
 
   @Get()
+  @SkipThrottle()
   @userRoles(Role.STUDENT, Role.ADMIN, Role.OWNER)
   @ApiOperation({ summary: 'Get all exams' })
   findAll(@CurrentUser() user: types.JwtPayloadType) {
@@ -30,6 +32,7 @@ export class ExamsController {
   }
 
   @Get('course/:courseId')
+  @SkipThrottle()
   @userRoles(Role.STUDENT, Role.ADMIN, Role.OWNER)
   @ApiOperation({ summary: 'Get exam for a specific course' })
   @ApiParam({ name: 'courseId', description: 'Course ID' })
@@ -94,6 +97,7 @@ export class ExamsController {
   }
 
   @Get(':id')
+  @SkipThrottle()
   @userRoles(Role.STUDENT, Role.ADMIN, Role.OWNER)
   @ApiOperation({ summary: 'Get exam details' })
   @ApiParam({ name: 'id', description: 'Exam ID' })
@@ -129,6 +133,7 @@ export class ExamsController {
   }
 
   @Get('attempts/:attemptId/result')
+  @SkipThrottle()
   @userRoles(Role.STUDENT, Role.ADMIN, Role.OWNER)
   @ApiOperation({ summary: 'Fetch result of an exam attempt' })
   @ApiParam({ name: 'attemptId', description: 'ID of the completed attempt' })
