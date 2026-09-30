@@ -1,4 +1,5 @@
 import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, ParseIntPipe, Query, HttpCode, HttpStatus, Req } from '@nestjs/common';
+import { SkipThrottle } from '@nestjs/throttler';
 import { CoursesService } from './courses.service';
 import { CreateCourseDto } from './dto/create-course.dto';
 import { AuthRollGuard } from 'src/auth/guards/auth-roll.guard';
@@ -26,6 +27,7 @@ export class CoursesController {
   }
 
   @Get()
+  @SkipThrottle()
   @SwaggerGetAllCourses()
   @UseGuards(OptionalAuthGuard)
   findAll(@CurrentUser() user?: types.JwtPayloadType) {
@@ -33,6 +35,7 @@ export class CoursesController {
   }
 
   @Get("my-courses")
+  @SkipThrottle()
   @SwaggerGetAllCourses()
   @UseGuards(AuthRollGuard)
   @userRoles(Role.STUDENT, Role.ADMIN, Role.OWNER)
@@ -41,6 +44,7 @@ export class CoursesController {
   }
 
   @Get('search')
+  @SkipThrottle()
   @SwaggerSearchCourses()
   @UseGuards(OptionalAuthGuard)
   search(@Query('q') query: string, @CurrentUser() user?: types.JwtPayloadType) {
@@ -51,6 +55,7 @@ export class CoursesController {
 
 
   @Get(':id')
+  @SkipThrottle()
   @SwaggerGetCourse()
   findOne(@Param('id') id: string) {
     return this.coursesService.findOne(+id);
@@ -73,6 +78,7 @@ export class CoursesController {
   }
 
   @Get(':id/mentionable-users')
+  @SkipThrottle()
   @UseGuards(AuthRollGuard)
   @userRoles(Role.STUDENT, Role.ADMIN, Role.OWNER)
   @ApiOperation({ summary: 'Get a list of users that can be mentioned in this course (instructor and enrolled students)' })

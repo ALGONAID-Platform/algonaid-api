@@ -1,4 +1,5 @@
 import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, ParseIntPipe, UseInterceptors, UploadedFile, BadRequestException, ParseFilePipe, MaxFileSizeValidator, FileTypeValidator, Query } from '@nestjs/common';
+import { SkipThrottle } from '@nestjs/throttler';
 import { LessonsService } from './lessons.service';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { AuthRollGuard } from 'src/auth/guards/auth-roll.guard';
@@ -56,6 +57,7 @@ export class LessonsController {
   }
 
   @Get('module/:moduleId')
+  @SkipThrottle()
   @UseGuards(AuthRollGuard)
   @userRoles(Role.STUDENT, Role.ADMIN, Role.OWNER)
   @SwaggerGetAllLessonsByModule()
@@ -69,6 +71,7 @@ export class LessonsController {
   }
 
   @Get('module/:moduleId/guest')
+  @SkipThrottle()
   @SwaggerGetAllLessonsByModule()
   findAllByModuleGuest(
     @Param('moduleId', ParseIntPipe) moduleId: number,
@@ -79,6 +82,7 @@ export class LessonsController {
   }
 
   @Get('latest-enrolled')
+  @SkipThrottle()
   @UseGuards(AuthRollGuard)
   @userRoles(Role.STUDENT, Role.ADMIN, Role.OWNER)
   findLatestEnrolledLessons(@CurrentUser() user: types.JwtPayloadType) {
@@ -86,6 +90,7 @@ export class LessonsController {
   }
 
   @Get(':id')
+  @SkipThrottle()
   @UseGuards(AuthRollGuard)
   @userRoles(Role.STUDENT, Role.ADMIN, Role.OWNER)
   @SwaggerGetLesson()
