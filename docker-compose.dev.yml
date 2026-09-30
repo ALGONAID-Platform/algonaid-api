@@ -1,0 +1,60 @@
+# ================================================
+# Development Docker Compose — Hot Reload
+# الاستخدام: docker compose -f docker-compose.dev.yml up
+# ================================================
+
+services:
+  api:
+    image: node:22-alpine
+    container_name: algonaid-api-dev
+    working_dir: /usr/src/app
+    command: sh -c "npm install && npx prisma generate && npm run start:dev"
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: ${DATABASE_URL}
+      NODE_ENV: development
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET}
+      GOOGLE_CALLBACK_URL: ${GOOGLE_CALLBACK_URL}
+      GOOGLE_ANDROID_CLIENT_IDS: ${GOOGLE_ANDROID_CLIENT_IDS}
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_EXPIRES_SECRET: ${JWT_EXPIRES_SECRET}
+      FRONTEND_URL: ${FRONTEND_URL}
+      APP_BASE_URL: ${APP_BASE_URL}
+      EMAIL_FROM: ${EMAIL_FROM}
+      RESEND_API_KEY: ${RESEND_API_KEY}
+      SMTP_USER: ${SMTP_USER}
+      SMTP_PASSWORD: ${SMTP_PASSWORD}
+      FIREBASE_SERVICE_ACCOUNT_JSON: ${FIREBASE_SERVICE_ACCOUNT_JSON}
+      SUPABASE_URL: ${SUPABASE_URL}
+      SUPABASE_ANON_KEY: ${SUPABASE_ANON_KEY}
+    ports:
+      - "3000:3000"
+    volumes:
+      # كود المشروع يُربط مباشرة — أي تعديل يُطبَّق فوراً
+      - .:/usr/src/app
+      # node_modules منفصل داخل الـ container لتجنب تعارض المنصات
+      - /usr/src/app/node_modules
+      - ./uploads:/usr/src/app/uploads
+    depends_on:
+      db:
+        condition: service_healthy
+
+  db:
+    image: postgres:16-alpine
+    container_name: algonaid-api-db-dev
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    volumes:
+      - postgres_data_dev:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  postgres_data_dev:
