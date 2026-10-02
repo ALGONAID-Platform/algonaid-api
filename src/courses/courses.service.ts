@@ -142,10 +142,10 @@ export class CoursesService {
   async findAll(userId?: number, role?: string) {
     const student = userId ? await this.prisma.student.findUnique({ where: { userId } }) : null;
     const studentId = student?.id;
-    const isOwner = role === 'OWNER';
+    const isPrivileged = role === 'OWNER' || role === 'ADMIN';
 
     const courses = await this.prisma.course.findMany({
-      where: (studentId && !isOwner) ? {
+      where: (studentId && !isPrivileged) ? {
         NOT: {
           enrollments: {
             some: {
