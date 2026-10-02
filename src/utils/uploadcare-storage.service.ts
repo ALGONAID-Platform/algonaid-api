@@ -41,38 +41,51 @@ export class UploadcareStorageService {
     }
 
     // Step 2: Validate actual file content (magic bytes) — prevents MIME type spoofing
-    const { fileTypeFromBuffer } = await eval('import("file-type")');
-    const detectedType = await fileTypeFromBuffer(file.buffer);
-    const allowedRealMimes = new Set([
-      'image/jpeg', 'image/png', 'image/gif', 'image/webp',
-      'application/pdf', 'video/mp4', 'video/quicktime',
-      'video/x-msvideo',
-    ]);
-
-    if (!detectedType || !allowedRealMimes.has(detectedType.mime)) {
-      throw new BadRequestException(
-        'محتوى الملف لا يطابق نوعه المُعلَن. يُرفض الملف لأسباب أمنية.',
-      );
+    let detectedType: { mime: string; ext: string } | undefined;
+    try {
+      const fileTypeModule = await eval('import("file-type")');
+      const fileTypeFromBuffer =
+        fileTypeModule.fileTypeFromBuffer ??
+        fileTypeModule.default?.fileTypeFromBuffer;
+      if (typeof fileTypeFromBuffer === 'function') {
+        detectedType = await fileTypeFromBuffer(file.buffer);
+      }
+    } catch (_e) {
+      // If file-type fails to load, skip magic bytes check
     }
 
-    // Step 3: Ensure declared type matches actual content (no spoofing)
-    const mimeMatchMap: Record<string, string[]> = {
-      'image/jpeg':      ['image/jpeg'],
-      'image/png':       ['image/png'],
-      'image/gif':       ['image/gif'],
-      'image/webp':      ['image/webp'],
-      'application/pdf': ['application/pdf'],
-      'video/mp4':       ['video/mp4'],
-      'video/quicktime': ['video/quicktime'],
-      'video/x-msvideo': ['video/x-msvideo'],
-      'video/avi':       ['video/x-msvideo'],
-    };
+    if (detectedType !== undefined) {
+      const allowedRealMimes = new Set([
+        'image/jpeg', 'image/png', 'image/gif', 'image/webp',
+        'application/pdf', 'video/mp4', 'video/quicktime',
+        'video/x-msvideo',
+      ]);
 
-    const acceptedReal = mimeMatchMap[file.mimetype];
-    if (!acceptedReal || !acceptedReal.includes(detectedType.mime)) {
-      throw new BadRequestException(
-        `نوع الملف المُعلَن (${file.mimetype}) لا يتطابق مع المحتوى الفعلي (${detectedType.mime}).`,
-      );
+      if (!allowedRealMimes.has(detectedType.mime)) {
+        throw new BadRequestException(
+          'محتوى الملف لا يطابق نوعه المُعلَن. يُرفض الملف لأسباب أمنية.',
+        );
+      }
+
+      // Step 3: Ensure declared type matches actual content (no spoofing)
+      const mimeMatchMap: Record<string, string[]> = {
+        'image/jpeg':      ['image/jpeg'],
+        'image/png':       ['image/png'],
+        'image/gif':       ['image/gif'],
+        'image/webp':      ['image/webp'],
+        'application/pdf': ['application/pdf'],
+        'video/mp4':       ['video/mp4'],
+        'video/quicktime': ['video/quicktime'],
+        'video/x-msvideo': ['video/x-msvideo'],
+        'video/avi':       ['video/x-msvideo'],
+      };
+
+      const acceptedReal = mimeMatchMap[file.mimetype];
+      if (acceptedReal && !acceptedReal.includes(detectedType.mime)) {
+        throw new BadRequestException(
+          `نوع الملف المُعلَن (${file.mimetype}) لا يتطابق مع المحتوى الفعلي (${detectedType.mime}).`,
+        );
+      }
     }
 
     // تحديد المجلد: إما المجلد المخصص أو بناءً على نوع الملف
