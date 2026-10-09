@@ -389,16 +389,7 @@ export class ExamsService {
     const now = new Date();
     const timeTakenMs = now.getTime() - attempt.startedAt.getTime();
 
-    if (attempt.exam.timeLimit) {
-      const limitMs = attempt.exam.timeLimit * 60 * 1000;
-      if (timeTakenMs > limitMs + 30000) { 
-        return this.prisma.examAttempt.update({
-          where: { id: attempt.id },
-          data: { score: 0, status: ExamStatus.FAILED, completedAt: now, timeTaken: timeTakenMs },
-          include: { exam: true },
-        });
-      }
-    }
+
 
     let score = 0;
     let totalPoints = 0;
@@ -458,7 +449,7 @@ export class ExamsService {
     const attempt = await this.prisma.examAttempt.findUnique({
       where: { id: attemptId },
       include: {
-        exam: true,
+        exam: { include: { questions: { include: { options: true } } } },
         answers: {
           include: {
             question: { include: { options: true } },
