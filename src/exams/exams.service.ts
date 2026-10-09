@@ -9,6 +9,7 @@ import { ExamStatus, ExamType, LessonStatus, Role } from '@prisma/client';
 import { SubmitExamDto } from './dto/exam-submission.dto';
 import { CreateExamDto, CreateQuestionDto, CreateOptionDto } from './dto/create-exam.dto';
 import { UpdateExamDto } from './dto/update-exam.dto';
+import { sortByRankingCriteria } from './helpers/ranking.helper';
 
 @Injectable()
 export class ExamsService {
@@ -186,9 +187,6 @@ export class ExamsService {
     if (!isInstructor && !isOwner)
       throw new ForbiddenException('لا تملك صلاحية إضافة اختبار لهذا الكورس');
 
-    const existing = await this.prisma.exam.findUnique({ where: { courseId } });
-    if (existing) throw new BadRequestException('يوجد اختبار لهذا الكورس بالفعل');
-
     return this.prisma.exam.create({
       data: { ...extraData, courseId, questions: { create: questionData } },
       include: { course: true, questions: { include: { options: true } } },
@@ -258,7 +256,7 @@ export class ExamsService {
   }
 
   async getExamByCourse(courseId: number) {
-    const exam = await this.prisma.exam.findUnique({
+    const exams = await this.prisma.exam.findMany({
       where: { courseId },
       include: {
         course: true,
@@ -273,10 +271,45 @@ export class ExamsService {
           },
         },
         _count: { select: { attempts: true } },
+        attempts: {
+          where: { isRanked: true, status: ExamStatus.PASSED },
+          select: {
+            id: true,
+            score: true,
+            timeTaken: true,
+            completedAt: true,
+            student: {
+              select: {
+                id: true,
+                user: { select: { name: true, avatar: true } },
+              },
+            },
+          },
+        },
       },
+      orderBy: { createdAt: 'desc' },
     });
-    if (!exam) throw new NotFoundException('No exam found for this course');
-    return exam;
+    if (!exams || exams.length === 0) throw new NotFoundException('No exams found for this course');
+
+    return exams.map(exam => {
+      // Sort attempts to get top 3
+      const sortedAttempts = sortByRankingCriteria(exam.attempts as any, exam.rankingCriteria);
+      const topParticipants = sortedAttempts.slice(0, 3).map((attempt, index) => ({
+        rank: index + 1,
+        studentId: attempt.student.id,
+        name: attempt.student.user.name,
+        avatar: attempt.student.user.avatar,
+        score: attempt.score,
+        timeTakenMs: attempt.timeTaken,
+      }));
+
+      const { attempts, ...examData } = exam;
+      return {
+        ...examData,
+        participantsCount: exam._count.attempts,
+        topParticipants,
+      };
+    });
   }
 
   async startExam(studentUserId: number, examId: number) {

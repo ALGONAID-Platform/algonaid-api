@@ -196,7 +196,7 @@ model Exam {
   lesson   Lesson? @relation(fields: [lessonId], references: [id], onDelete: Cascade)
 
   // اختبار كورس (اختياري)
-  courseId Int?    @unique
+  courseId Int?
   course   Course? @relation(fields: [courseId], references: [id], onDelete: Cascade)
 
   questions Question[]
