@@ -122,7 +122,7 @@ model Course {
   teacher      Teacher  @relation(fields: [instructorId], references: [id])
   modules      Module[]
   practiceExams PracticeExam[]
-  exam          Exam?  // اختبار الكورس
+  exams         Exam[]  // اختبارات الكورس
 }
 
 model Module {
