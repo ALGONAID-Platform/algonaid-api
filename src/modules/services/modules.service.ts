@@ -110,7 +110,6 @@ export class ModulesService {
 
       return {
         ...rest,
-        lessons: mappedLessons,
         totalLessons,
         completedLessons,
         progressPercentage: studentId ? progressPercentage : undefined,
@@ -185,7 +184,6 @@ export class ModulesService {
 
       return {
         ...rest,
-        lessons: mappedLessons,
         totalLessons,
         completedLessons,
         progressPercentage: studentId ? progressPercentage : undefined,
