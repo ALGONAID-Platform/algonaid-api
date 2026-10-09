@@ -25,7 +25,7 @@ export class CoursesService {
     });
   }
 
-  async findMyCourses(userId: number) {
+  async findMyCourses(userId: number, limit?: number) {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
       include: { studentProfile: true },
@@ -44,6 +44,8 @@ export class CoursesService {
         studentId: student.id,
         status: 'ACTIVE',
       },
+      orderBy: { createdAt: 'desc' },
+      ...(limit ? { take: limit } : {}),
       include: {
         course: {
           include: {

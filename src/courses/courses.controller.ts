@@ -34,6 +34,15 @@ export class CoursesController {
     return this.coursesService.findAll(user?.id, user?.role);
   }
 
+  @Get("my-courses/recent")
+  @SkipThrottle()
+  @ApiOperation({ summary: 'Get up to 5 recent enrolled courses' })
+  @UseGuards(AuthRollGuard)
+  @userRoles(Role.STUDENT, Role.ADMIN, Role.OWNER)
+  findMyRecentCourses(@CurrentUser() user: types.JwtPayloadType) {
+    return this.coursesService.findMyCourses(user.id, 5);
+  }
+
   @Get("my-courses")
   @SkipThrottle()
   @SwaggerGetAllCourses()
