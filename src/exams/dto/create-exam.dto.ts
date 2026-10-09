@@ -1,26 +1,30 @@
-import { IsString, IsNotEmpty, IsOptional, IsInt, Min, Max, IsArray, ValidateNested, IsBoolean, IsEnum, ArrayMinSize } from 'class-validator';
+import {
+  IsString, IsNotEmpty, IsOptional, IsInt, Min, Max,
+  IsArray, ValidateNested, IsBoolean, IsEnum, ArrayMinSize,
+  IsDateString,
+} from 'class-validator';
 import { Type } from 'class-transformer';
 import { ApiProperty } from '@nestjs/swagger';
-import { QuestionType } from '@prisma/client';
+import { ExamType, QuestionType, RankingCriteria } from '@prisma/client';
 
 export class CreateOptionDto {
-  @ApiProperty()
+  @ApiProperty({ description: 'نص الخيار' })
   @IsString()
   @IsNotEmpty()
   text: string;
 
-  @ApiProperty()
+  @ApiProperty({ description: 'هل هذا الخيار صحيح؟' })
   @IsBoolean()
   isCorrect: boolean;
 }
 
 export class CreateQuestionDto {
-  @ApiProperty()
+  @ApiProperty({ description: 'نص السؤال' })
   @IsString()
   @IsNotEmpty()
   text: string;
 
-  @ApiProperty({ required: false })
+  @ApiProperty({ required: false, description: 'رابط صورة السؤال' })
   @IsString()
   @IsOptional()
   imageUrl?: string;
@@ -38,7 +42,7 @@ export class CreateQuestionDto {
   @IsArray()
   @ValidateNested({ each: true })
   @Type(() => CreateOptionDto)
-  @ArrayMinSize(2, { message: 'Question must have at least 2 options' })
+  @ArrayMinSize(2, { message: 'يجب أن يحتوي السؤال على خيارين على الأقل' })
   options: CreateOptionDto[];
 }
 
@@ -53,23 +57,54 @@ export class CreateExamDto {
   @IsOptional()
   description?: string;
 
+  @ApiProperty({ required: false })
+  @IsString()
+  @IsOptional()
+  imageUrl?: string;
+
   @ApiProperty({ default: 50 })
   @IsInt()
   @Min(0)
   @Max(100)
   passingScore: number;
 
-  @ApiProperty({ default: 3 })
+  @ApiProperty({ default: 1 })
   @IsInt()
   @Min(1)
   maxAttempts: number;
 
-  @ApiProperty({ required: false, description: 'اختبار على مستوى درس معين (يجب تحديد lessonId أو courseId)' })
+  @ApiProperty({ required: false })
+  @IsInt()
+  @Min(1)
+  @IsOptional()
+  timeLimit?: number;
+
+  @ApiProperty({ enum: ExamType, default: ExamType.LESSON_QUIZ })
+  @IsEnum(ExamType)
+  @IsOptional()
+  examType?: ExamType;
+
+  @ApiProperty({ enum: RankingCriteria, default: RankingCriteria.BOTH })
+  @IsEnum(RankingCriteria)
+  @IsOptional()
+  rankingCriteria?: RankingCriteria;
+
+  @ApiProperty({ required: false })
+  @IsDateString()
+  @IsOptional()
+  startTime?: string;
+
+  @ApiProperty({ required: false })
+  @IsDateString()
+  @IsOptional()
+  endTime?: string;
+
+  @ApiProperty({ required: false })
   @IsInt()
   @IsOptional()
   lessonId?: number;
 
-  @ApiProperty({ required: false, description: 'اختبار على مستوى كورس كامل (يجب تحديد lessonId أو courseId)' })
+  @ApiProperty({ required: false })
   @IsInt()
   @IsOptional()
   courseId?: number;

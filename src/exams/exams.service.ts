@@ -1,6 +1,11 @@
-import { Injectable, NotFoundException, BadRequestException, ForbiddenException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+  ForbiddenException,
+} from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
-import { ExamStatus, LessonStatus, Role } from '@prisma/client';
+import { ExamStatus, ExamType, LessonStatus, Role } from '@prisma/client';
 import { SubmitExamDto } from './dto/exam-submission.dto';
 import { CreateExamDto, CreateQuestionDto, CreateOptionDto } from './dto/create-exam.dto';
 import { UpdateExamDto } from './dto/update-exam.dto';
@@ -9,49 +14,6 @@ import { UpdateExamDto } from './dto/update-exam.dto';
 export class ExamsService {
   constructor(private readonly prisma: PrismaService) {}
 
-  // =============================================
-  // Helper: التحقق من صلاحية إدارة الاختبار
-  // =============================================
-  private async checkExamPermission(userId: number, role: Role, examId: number) {
-    const exam = await this.prisma.exam.findUnique({
-      where: { id: examId },
-      include: {
-        lesson: { include: { module: { include: { course: true } } } },
-        course: true,
-      },
-    });
-
-    if (!exam) throw new NotFoundException('Exam not found');
-
-    const user = await this.prisma.user.findUnique({
-      where: { id: userId },
-      include: { teacherProfile: true },
-    });
-
-    const isOwner = role === Role.OWNER;
-
-    if (exam.lesson) {
-      const isInstructor =
-        user?.teacherProfile &&
-        exam.lesson.module.course.instructorId === user.teacherProfile.id;
-      if (!isInstructor && !isOwner) {
-        throw new ForbiddenException('You are not authorized to manage this exam');
-      }
-    } else if (exam.course) {
-      const isInstructor =
-        user?.teacherProfile &&
-        exam.course.instructorId === user.teacherProfile.id;
-      if (!isInstructor && !isOwner) {
-        throw new ForbiddenException('You are not authorized to manage this exam');
-      }
-    }
-
-    return exam;
-  }
-
-  // =============================================
-  // Helper: بناء بيانات الأسئلة عند الإنشاء
-  // =============================================
   private buildQuestionsData(questions: CreateQuestionDto[]) {
     return questions.map((q: CreateQuestionDto) => ({
       text: q.text,
@@ -67,47 +29,118 @@ export class ExamsService {
     }));
   }
 
-  // =============================================
-  // جلب جميع الاختبارات
-  // =============================================
+  private async checkExamPermission(userId: number, role: Role, examId: number) {
+    const exam = await this.prisma.exam.findUnique({
+      where: { id: examId },
+      include: {
+        lesson: { include: { module: { include: { course: true } } } },
+        course: true,
+      },
+    });
+    if (!exam) throw new NotFoundException('Exam not found');
+
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      include: { teacherProfile: true },
+    });
+    const isOwner = role === Role.OWNER;
+
+    if (exam.lesson) {
+      const isInstructor =
+        user?.teacherProfile &&
+        exam.lesson.module.course.instructorId === user.teacherProfile.id;
+      if (!isInstructor && !isOwner)
+        throw new ForbiddenException('You are not authorized to manage this exam');
+    } else if (exam.course) {
+      const isInstructor =
+        user?.teacherProfile &&
+        exam.course.instructorId === user.teacherProfile.id;
+      if (!isInstructor && !isOwner)
+        throw new ForbiddenException('You are not authorized to manage this exam');
+    }
+
+    return exam;
+  }
+
+  private async resolveStudentAndCheckAttempts(
+    studentUserId: number,
+    examId: number,
+  ): Promise<{ student: any; shouldBeRanked: boolean }> {
+    let student = await this.prisma.student.findUnique({ where: { userId: studentUserId } });
+    if (!student) {
+      student = await this.prisma.student
+        .create({ data: { userId: studentUserId, academicId: `STU-${Date.now()}-${studentUserId}` } })
+        .catch(() => null);
+      if (!student) throw new NotFoundException('Student profile not found');
+    }
+
+    const exam = await this.prisma.exam.findUnique({
+      where: { id: examId },
+      select: { maxAttempts: true, examType: true, endTime: true },
+    });
+    if (!exam) throw new NotFoundException('Exam not found');
+
+    const allAttempts = await this.prisma.examAttempt.findMany({
+      where: { examId, studentId: student.id },
+      orderBy: { startedAt: 'desc' },
+    });
+
+    const completedAttempts = allAttempts.filter(
+      (a) => a.status !== ExamStatus.IN_PROGRESS,
+    );
+
+    const now = new Date();
+    const challengeEnded =
+      exam.examType === ExamType.CHALLENGE && exam.endTime && exam.endTime < now;
+
+    if (!challengeEnded && completedAttempts.length >= exam.maxAttempts) {
+      throw new ForbiddenException('لقد استنفدت جميع محاولاتك المسموح بها');
+    }
+
+    const hasRankedAttempt = allAttempts.some((a) => a.isRanked);
+    const shouldBeRanked = !hasRankedAttempt && !challengeEnded;
+
+    return { student, shouldBeRanked };
+  }
+
   async findAll(userId: number, role: Role) {
     if (role === Role.ADMIN || role === Role.OWNER) {
       return this.prisma.exam.findMany({
         include: {
           lesson: { include: { module: { include: { course: true } } } },
           course: true,
-          questions: true,
-        },
-      });
-    } else {
-      return this.prisma.exam.findMany({
-        where: {
-          OR: [
-            { lesson: { status: LessonStatus.PUBLISHED } },
-            { courseId: { not: null } },
-          ],
-        },
-        include: {
-          lesson: { include: { module: { include: { course: true } } } },
-          course: true,
-          questions: true,
+          questions: { select: { id: true } },
+          _count: { select: { attempts: true } },
         },
       });
     }
+    return this.prisma.exam.findMany({
+      where: {
+        OR: [
+          { lesson: { status: LessonStatus.PUBLISHED } },
+          { courseId: { not: null } },
+        ],
+      },
+      include: {
+        lesson: { include: { module: { include: { course: true } } } },
+        course: true,
+        questions: { select: { id: true } },
+        _count: { select: { attempts: true } },
+      },
+    });
   }
 
-  // =============================================
-  // إنشاء اختبار (درس أو كورس)
-  // =============================================
-  async createExam(userId: number, role: Role, createExamDto: CreateExamDto) {
-    const { lessonId, courseId, questions, ...examData } = createExamDto;
+  async createExam(userId: number, role: Role, dto: CreateExamDto) {
+    const { lessonId, courseId, questions, startTime, endTime, ...examData } = dto;
 
-    // التحقق من وجود lessonId أو courseId على الأقل
     if (!lessonId && !courseId) {
-      throw new BadRequestException('يجب تحديد lessonId أو courseId لإنشاء الاختبار');
+      throw new BadRequestException('يجب تحديد lessonId أو courseId');
     }
     if (lessonId && courseId) {
       throw new BadRequestException('لا يمكن ربط الاختبار بدرس وكورس في نفس الوقت');
+    }
+    if (dto.examType === ExamType.CHALLENGE && (!startTime || !endTime)) {
+      throw new BadRequestException('التحدي يتطلب تحديد startTime و endTime');
     }
 
     const user = await this.prisma.user.findUnique({
@@ -116,7 +149,13 @@ export class ExamsService {
     });
     const isOwner = role === Role.OWNER;
 
-    // --- اختبار على مستوى درس ---
+    const questionData = this.buildQuestionsData(questions);
+    const extraData = {
+      ...examData,
+      ...(startTime && { startTime: new Date(startTime) }),
+      ...(endTime && { endTime: new Date(endTime) }),
+    };
+
     if (lessonId) {
       const lesson = await this.prisma.lesson.findUnique({
         where: { id: lessonId },
@@ -127,53 +166,38 @@ export class ExamsService {
       const isInstructor =
         user?.teacherProfile &&
         lesson.module.course.instructorId === user.teacherProfile.id;
-      if (!isInstructor && !isOwner) {
-        throw new ForbiddenException('You are not authorized to add an exam to this lesson');
-      }
+      if (!isInstructor && !isOwner)
+        throw new ForbiddenException('لا تملك صلاحية إضافة اختبار لهذا الدرس');
 
-      const existingExam = await this.prisma.exam.findUnique({ where: { lessonId } });
-      if (existingExam) throw new BadRequestException('Exam already exists for this lesson');
+      const existing = await this.prisma.exam.findUnique({ where: { lessonId } });
+      if (existing) throw new BadRequestException('يوجد اختبار لهذا الدرس بالفعل');
 
       return this.prisma.exam.create({
-        data: {
-          ...examData,
-          lessonId,
-          questions: { create: this.buildQuestionsData(questions) },
-        },
+        data: { ...extraData, lessonId, questions: { create: questionData } },
         include: { questions: { include: { options: true } } },
       });
     }
 
-    // --- اختبار على مستوى كورس ---
     const course = await this.prisma.course.findUnique({ where: { id: courseId } });
     if (!course) throw new NotFoundException('Course not found');
 
     const isInstructor =
       user?.teacherProfile && course.instructorId === user.teacherProfile.id;
-    if (!isInstructor && !isOwner) {
-      throw new ForbiddenException('You are not authorized to add an exam to this course');
-    }
+    if (!isInstructor && !isOwner)
+      throw new ForbiddenException('لا تملك صلاحية إضافة اختبار لهذا الكورس');
 
-    const existingExam = await this.prisma.exam.findUnique({ where: { courseId } });
-    if (existingExam) throw new BadRequestException('Exam already exists for this course');
+    const existing = await this.prisma.exam.findUnique({ where: { courseId } });
+    if (existing) throw new BadRequestException('يوجد اختبار لهذا الكورس بالفعل');
 
     return this.prisma.exam.create({
-      data: {
-        ...examData,
-        courseId,
-        questions: { create: this.buildQuestionsData(questions) },
-      },
+      data: { ...extraData, courseId, questions: { create: questionData } },
       include: { course: true, questions: { include: { options: true } } },
     });
   }
 
-  // =============================================
-  // تحديث اختبار
-  // =============================================
-  async updateExam(userId: number, role: Role, examId: number, updateExamDto: UpdateExamDto) {
+  async updateExam(userId: number, role: Role, examId: number, dto: UpdateExamDto) {
     await this.checkExamPermission(userId, role, examId);
-
-    const { questions, ...metadata } = updateExamDto;
+    const { questions, ...metadata } = dto;
 
     return this.prisma.$transaction(async (tx) => {
       if (questions) {
@@ -196,18 +220,12 @@ export class ExamsService {
     });
   }
 
-  // =============================================
-  // حذف اختبار
-  // =============================================
   async deleteExam(userId: number, role: Role, examId: number) {
     await this.checkExamPermission(userId, role, examId);
     await this.prisma.exam.delete({ where: { id: examId } });
     return { message: 'Exam deleted successfully' };
   }
 
-  // =============================================
-  // جلب اختبار معين بالـ ID
-  // =============================================
   async getExam(examId: number, userId?: number) {
     const exam = await this.prisma.exam.findUnique({
       where: { id: examId },
@@ -224,27 +242,22 @@ export class ExamsService {
             options: { select: { id: true, text: true } },
           },
         },
+        _count: { select: { attempts: true } },
       },
     });
-
     if (!exam) throw new NotFoundException('Exam not found');
 
-    // اختبار الدرس: نتحقق من حالة الدرس
-    if (exam.lesson && exam.lesson.status === LessonStatus.DRAFT) {
+    if (exam.lesson?.status === LessonStatus.DRAFT) {
       if (!userId) throw new NotFoundException('Exam not found');
       const user = await this.prisma.user.findUnique({ where: { id: userId } });
-      if (user?.role !== Role.OWNER && user?.role !== Role.ADMIN) {
+      if (user?.role !== Role.OWNER && user?.role !== Role.ADMIN)
         throw new NotFoundException('Exam not found');
-      }
     }
 
     return exam;
   }
 
-  // =============================================
-  // جلب اختبار الكورس بالـ courseId
-  // =============================================
-  async getExamByCourse(courseId: number, userId?: number) {
+  async getExamByCourse(courseId: number) {
     const exam = await this.prisma.exam.findUnique({
       where: { courseId },
       include: {
@@ -259,69 +272,65 @@ export class ExamsService {
             options: { select: { id: true, text: true } },
           },
         },
+        _count: { select: { attempts: true } },
       },
     });
-
     if (!exam) throw new NotFoundException('No exam found for this course');
-
     return exam;
   }
 
-  // =============================================
-  // بدء محاولة الاختبار
-  // =============================================
   async startExam(studentUserId: number, examId: number) {
-    let student = await this.prisma.student.findUnique({ where: { userId: studentUserId } });
-
-    if (!student) {
-      student = await this.prisma.student
-        .create({ data: { userId: studentUserId, academicId: `STU-${Date.now()}-${studentUserId}` } })
-        .catch(() => null);
-      if (!student) throw new NotFoundException('Student profile not found');
-    }
-
     const exam = await this.prisma.exam.findUnique({
       where: { id: examId },
-      include: {
-        lesson: true,
-        _count: { select: { attempts: { where: { studentId: student.id } } } },
-      },
+      include: { lesson: true },
     });
-
     if (!exam) throw new NotFoundException('Exam not found');
 
-    // إذا كان اختبار درس، نتحقق من حالة الدرس
-    if (exam.lesson && exam.lesson.status === LessonStatus.DRAFT) {
+    if (exam.lesson?.status === LessonStatus.DRAFT) {
       throw new NotFoundException('Exam not found');
     }
 
-    if (exam._count.attempts >= exam.maxAttempts) {
-      throw new ForbiddenException('Maximum attempts reached for this exam');
+    const now = new Date();
+    if (exam.examType === ExamType.CHALLENGE && exam.startTime && exam.startTime > now) {
+      throw new ForbiddenException(
+        `التحدي لم يبدأ بعد. يبدأ في: ${exam.startTime.toISOString()}`,
+      );
     }
 
+    const { student, shouldBeRanked } =
+      await this.resolveStudentAndCheckAttempts(studentUserId, examId);
+
     const attempt = await this.prisma.examAttempt.create({
-      data: { studentId: student.id, examId: exam.id, status: ExamStatus.IN_PROGRESS },
+      data: {
+        studentId: student.id,
+        examId: exam.id,
+        status: ExamStatus.IN_PROGRESS,
+        isRanked: shouldBeRanked,
+      },
+    });
+
+    const questions = await this.prisma.question.findMany({
+      where: { examId },
+      select: {
+        id: true,
+        text: true,
+        type: true,
+        imageUrl: true,
+        points: true,
+        options: { select: { id: true, text: true } },
+      },
     });
 
     return {
       message: 'Exam started successfully',
       attemptId: attempt.id,
-      questions: await this.prisma.question.findMany({
-        where: { examId },
-        select: {
-          id: true,
-          text: true,
-          type: true,
-          imageUrl: true,
-          options: { select: { id: true, text: true } },
-        },
-      }),
+      isRanked: shouldBeRanked,
+      timeLimitMinutes: exam.timeLimit,
+      startedAt: attempt.startedAt,
+      questions,
     };
   }
 
-  // =============================================
-  // تسليم الاختبار
-  // =============================================
   async submitExam(studentUserId: number, attemptId: number, submission: SubmitExamDto) {
     let student = await this.prisma.student.findUnique({ where: { userId: studentUserId } });
     if (!student) {
@@ -332,20 +341,35 @@ export class ExamsService {
 
     const attempt = await this.prisma.examAttempt.findUnique({
       where: { id: attemptId },
-      include: { exam: { include: { questions: { include: { options: true } } } } },
+      include: {
+        exam: { include: { questions: { include: { options: true } } } },
+      },
     });
 
     if (!attempt || attempt.studentId !== student?.id) {
       throw new NotFoundException('Exam attempt not found');
     }
-
     if (attempt.status !== ExamStatus.IN_PROGRESS) {
       throw new BadRequestException('Exam already submitted');
     }
 
+    const now = new Date();
+    const timeTakenMs = now.getTime() - attempt.startedAt.getTime();
+
+    if (attempt.exam.timeLimit) {
+      const limitMs = attempt.exam.timeLimit * 60 * 1000;
+      if (timeTakenMs > limitMs + 30000) { 
+        return this.prisma.examAttempt.update({
+          where: { id: attempt.id },
+          data: { score: 0, status: ExamStatus.FAILED, completedAt: now, timeTaken: timeTakenMs },
+          include: { exam: true },
+        });
+      }
+    }
+
     let score = 0;
     let totalPoints = 0;
-    const userAnswersData = [];
+    const userAnswersData: Array<{ questionId: number; selectedOptionId: number; attemptId: number }> = [];
 
     for (const question of attempt.exam.questions) {
       totalPoints += question.points;
@@ -363,7 +387,7 @@ export class ExamsService {
       }
     }
 
-    const percentage = (score / totalPoints) * 100;
+    const percentage = totalPoints > 0 ? (score / totalPoints) * 100 : 0;
     let status: ExamStatus = ExamStatus.FAILED;
     if (percentage >= attempt.exam.passingScore) {
       status = ExamStatus.PASSED;
@@ -373,32 +397,23 @@ export class ExamsService {
 
     await this.prisma.userAnswer.createMany({ data: userAnswersData });
 
-    // إذا نجح واختبار كان على مستوى درس، نحدّث تقدم الدرس
     if (status === ExamStatus.PASSED && attempt.exam.lessonId) {
       await this.prisma.lessonProgress.upsert({
         where: {
           studentId_lessonId: { studentId: student.id, lessonId: attempt.exam.lessonId },
         },
-        update: { isCompleted: true, completedAt: new Date() },
-        create: {
-          studentId: student.id,
-          lessonId: attempt.exam.lessonId,
-          isCompleted: true,
-          completedAt: new Date(),
-        },
+        update: { isCompleted: true, completedAt: now },
+        create: { studentId: student.id, lessonId: attempt.exam.lessonId, isCompleted: true, completedAt: now },
       });
     }
 
-    return await this.prisma.examAttempt.update({
+    return this.prisma.examAttempt.update({
       where: { id: attempt.id },
-      data: { score, status, completedAt: new Date() },
-      include: { exam: true },
+      data: { score, status, completedAt: now, timeTaken: timeTakenMs },
+      include: { exam: { select: { title: true, passingScore: true } } },
     });
   }
 
-  // =============================================
-  // جلب نتيجة المحاولة
-  // =============================================
   async getResult(studentUserId: number, attemptId: number) {
     let student = await this.prisma.student.findUnique({ where: { userId: studentUserId } });
     if (!student) {

@@ -1,17 +1,41 @@
-import { Controller, Post, Body, Param, Get, Patch, Delete, UseGuards, ParseIntPipe, UseInterceptors, UploadedFile, ParseFilePipe, MaxFileSizeValidator, FileTypeValidator } from '@nestjs/common';
-import { SkipThrottle } from '@nestjs/throttler';
+import {
+  Controller,
+  Post,
+  Body,
+  Param,
+  Get,
+  Patch,
+  Delete,
+  UseGuards,
+  ParseIntPipe,
+  UseInterceptors,
+  UploadedFile,
+  ParseFilePipe,
+  MaxFileSizeValidator,
+  FileTypeValidator,
+} from '@nestjs/common';
+import {
+  ApiTags,
+  ApiBearerAuth,
+  ApiOperation,
+  ApiResponse,
+  ApiParam,
+  ApiBody,
+  ApiConsumes,
+} from '@nestjs/swagger';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { Role } from '@prisma/client';
+
 import { ExamsService } from './exams.service';
-import { SubmitExamDto } from './dto/exam-submission.dto';
+import { LeaderboardService } from './leaderboard.service';
 import { CreateExamDto } from './dto/create-exam.dto';
 import { UpdateExamDto } from './dto/update-exam.dto';
+import { SubmitExamDto } from './dto/exam-submission.dto';
 import { AuthRollGuard } from 'src/auth/guards/auth-roll.guard';
 import { userRoles } from 'src/auth/decorators/user_roll.decorator';
-import { Role } from '@prisma/client';
 import { CurrentUser } from 'src/auth/decorators/current-user.decorator';
-import { ApiTags, ApiBearerAuth, ApiOperation, ApiResponse, ApiParam, ApiBody, ApiConsumes } from '@nestjs/swagger';
-import * as types from 'src/utils/types';
-import { FileInterceptor } from '@nestjs/platform-express';
 import { UploadcareStorageService } from 'src/utils/uploadcare-storage.service';
+import * as types from 'src/utils/types';
 
 @ApiTags('exams')
 @ApiBearerAuth('JWT-auth')
@@ -20,33 +44,29 @@ import { UploadcareStorageService } from 'src/utils/uploadcare-storage.service';
 export class ExamsController {
   constructor(
     private readonly examsService: ExamsService,
+    private readonly leaderboardService: LeaderboardService,
     private readonly uploadcareStorageService: UploadcareStorageService,
   ) {}
 
   @Get()
-  @SkipThrottle()
   @userRoles(Role.STUDENT, Role.ADMIN, Role.OWNER)
-  @ApiOperation({ summary: 'Get all exams' })
+  @ApiOperation({ summary: 'جلب جميع الاختبارات' })
   findAll(@CurrentUser() user: types.JwtPayloadType) {
     return this.examsService.findAll(user.id, user.role);
   }
 
   @Get('course/:courseId')
-  @SkipThrottle()
   @userRoles(Role.STUDENT, Role.ADMIN, Role.OWNER)
-  @ApiOperation({ summary: 'Get exam for a specific course' })
-  @ApiParam({ name: 'courseId', description: 'Course ID' })
-  getExamByCourse(
-    @Param('courseId', ParseIntPipe) courseId: number,
-    @CurrentUser() user: types.JwtPayloadType,
-  ) {
-    return this.examsService.getExamByCourse(courseId, user.id);
+  @ApiOperation({ summary: 'جلب اختبار كورس معين' })
+  @ApiParam({ name: 'courseId', description: 'معرّف الكورس' })
+  getExamByCourse(@Param('courseId', ParseIntPipe) courseId: number) {
+    return this.examsService.getExamByCourse(courseId);
   }
 
   @Post('upload-image')
   @userRoles(Role.ADMIN, Role.OWNER)
   @UseInterceptors(FileInterceptor('image'))
-  @ApiOperation({ summary: 'Upload an image for an exam' })
+  @ApiOperation({ summary: 'رفع صورة للاختبار' })
   @ApiConsumes('multipart/form-data')
   async uploadImage(
     @UploadedFile(
@@ -57,7 +77,8 @@ export class ExamsController {
         ],
         fileIsRequired: true,
       }),
-    ) file: Express.Multer.File
+    )
+    file: Express.Multer.File,
   ) {
     const imageUrl = await this.uploadcareStorageService.upload(file);
     return { imageUrl };
@@ -65,20 +86,31 @@ export class ExamsController {
 
   @Post()
   @userRoles(Role.ADMIN, Role.OWNER)
-  @ApiOperation({ summary: 'Create a new exam (Admin/Owner only)' })
+  @ApiOperation({ summary: 'إنشاء اختبار جديد (درس أو كورس أو تحدي)' })
   @ApiBody({ type: CreateExamDto })
-  @ApiResponse({ status: 201, description: 'Exam created successfully.' })
-  @ApiResponse({ status: 403, description: 'Forbidden: Only the course instructor or owner can create exams.' })
-  createExam(@Body() createExamDto: CreateExamDto, @CurrentUser() user: types.JwtPayloadType) {
+  @ApiResponse({ status: 201, description: 'تم إنشاء الاختبار بنجاح' })
+  createExam(
+    @Body() createExamDto: CreateExamDto,
+    @CurrentUser() user: types.JwtPayloadType,
+  ) {
     return this.examsService.createExam(user.id, user.role, createExamDto);
+  }
+
+  @Get(':id')
+  @userRoles(Role.STUDENT, Role.ADMIN, Role.OWNER)
+  @ApiOperation({ summary: 'جلب تفاصيل اختبار معين' })
+  @ApiParam({ name: 'id', description: 'معرّف الاختبار' })
+  getExam(
+    @Param('id', ParseIntPipe) id: number,
+    @CurrentUser() user: types.JwtPayloadType,
+  ) {
+    return this.examsService.getExam(id, user.id);
   }
 
   @Patch(':id')
   @userRoles(Role.ADMIN, Role.OWNER)
-  @ApiOperation({ summary: 'Update an exam (Admin/Owner only)' })
-  @ApiParam({ name: 'id', description: 'Exam ID' })
-  @ApiBody({ type: UpdateExamDto })
-  @ApiResponse({ status: 200, description: 'Exam updated successfully.' })
+  @ApiOperation({ summary: 'تحديث اختبار (الأدمن/المالك فقط)' })
+  @ApiParam({ name: 'id', description: 'معرّف الاختبار' })
   updateExam(
     @Param('id', ParseIntPipe) id: number,
     @Body() updateExamDto: UpdateExamDto,
@@ -89,41 +121,61 @@ export class ExamsController {
 
   @Delete(':id')
   @userRoles(Role.ADMIN, Role.OWNER)
-  @ApiOperation({ summary: 'Delete an exam (Admin/Owner only)' })
-  @ApiParam({ name: 'id', description: 'Exam ID' })
-  @ApiResponse({ status: 200, description: 'Exam deleted successfully.' })
-  remove(@Param('id', ParseIntPipe) id: number, @CurrentUser() user: types.JwtPayloadType) {
+  @ApiOperation({ summary: 'حذف اختبار (الأدمن/المالك فقط)' })
+  @ApiParam({ name: 'id', description: 'معرّف الاختبار' })
+  remove(
+    @Param('id', ParseIntPipe) id: number,
+    @CurrentUser() user: types.JwtPayloadType,
+  ) {
     return this.examsService.deleteExam(user.id, user.role, id);
   }
 
-  @Get(':id')
-  @SkipThrottle()
+  @Get(':id/leaderboard')
   @userRoles(Role.STUDENT, Role.ADMIN, Role.OWNER)
-  @ApiOperation({ summary: 'Get exam details' })
-  @ApiParam({ name: 'id', description: 'Exam ID' })
-  @ApiResponse({ status: 200, description: 'Exam details retrieved successfully.' })
-  getExam(
+  @ApiOperation({ summary: 'قائمة الشرف للاختبار' })
+  @ApiParam({ name: 'id', description: 'معرّف الاختبار' })
+  getLeaderboard(@Param('id', ParseIntPipe) id: number) {
+    return this.leaderboardService.getLeaderboard(id);
+  }
+
+  @Get(':id/my-result')
+  @userRoles(Role.STUDENT, Role.ADMIN, Role.OWNER)
+  @ApiOperation({ summary: 'جلب نتيجتي التفصيلية مع الإجابات الصح/الغلط' })
+  @ApiParam({ name: 'id', description: 'معرّف الاختبار' })
+  getMyResult(
     @Param('id', ParseIntPipe) id: number,
-    @CurrentUser() user: types.JwtPayloadType
+    @CurrentUser() user: types.JwtPayloadType,
   ) {
-    return this.examsService.getExam(id, user.id);
+    return this.leaderboardService.getMyResult(id, user.id);
+  }
+
+  @Get(':id/stats')
+  @userRoles(Role.STUDENT, Role.ADMIN, Role.OWNER)
+  @ApiOperation({ summary: 'إحصائيات شاملة للاختبار (متاحة بعد انتهاء التحدي)' })
+  @ApiParam({ name: 'id', description: 'معرّف الاختبار' })
+  getStats(
+    @Param('id', ParseIntPipe) id: number,
+    @CurrentUser() user: types.JwtPayloadType,
+  ) {
+    return this.leaderboardService.getStats(id, user.id, user.role);
   }
 
   @Post(':examId/start')
   @userRoles(Role.STUDENT, Role.ADMIN, Role.OWNER)
-  @ApiOperation({ summary: 'Start a new exam attempt' })
-  @ApiParam({ name: 'examId', description: 'ID of the exam to start' })
-  @ApiResponse({ status: 201, description: 'Attempt started. Returns questions (without correct answers).' })
-  startExam(@Param('examId', ParseIntPipe) examId: number, @CurrentUser() user: types.JwtPayloadType) {
+  @ApiOperation({ summary: 'بدء محاولة جديدة للاختبار' })
+  @ApiParam({ name: 'examId', description: 'معرّف الاختبار' })
+  startExam(
+    @Param('examId', ParseIntPipe) examId: number,
+    @CurrentUser() user: types.JwtPayloadType,
+  ) {
     return this.examsService.startExam(user.id, examId);
   }
 
   @Post('attempts/:attemptId/submit')
   @userRoles(Role.STUDENT, Role.ADMIN, Role.OWNER)
-  @ApiOperation({ summary: 'Submit answers for an exam attempt' })
-  @ApiParam({ name: 'attemptId', description: 'ID of the active attempt' })
+  @ApiOperation({ summary: 'تسليم إجابات الاختبار' })
+  @ApiParam({ name: 'attemptId', description: 'معرّف المحاولة' })
   @ApiBody({ type: SubmitExamDto })
-  @ApiResponse({ status: 201, description: 'Exam submitted and graded.' })
   submitExam(
     @Param('attemptId', ParseIntPipe) attemptId: number,
     @Body() submission: SubmitExamDto,
@@ -133,12 +185,13 @@ export class ExamsController {
   }
 
   @Get('attempts/:attemptId/result')
-  @SkipThrottle()
   @userRoles(Role.STUDENT, Role.ADMIN, Role.OWNER)
-  @ApiOperation({ summary: 'Fetch result of an exam attempt' })
-  @ApiParam({ name: 'attemptId', description: 'ID of the completed attempt' })
-  @ApiResponse({ status: 200, description: 'Detailed results including correct/incorrect indicators.' })
-  getResult(@Param('attemptId', ParseIntPipe) attemptId: number, @CurrentUser() user: types.JwtPayloadType) {
+  @ApiOperation({ summary: 'جلب نتيجة محاولة معينة' })
+  @ApiParam({ name: 'attemptId', description: 'معرّف المحاولة' })
+  getResult(
+    @Param('attemptId', ParseIntPipe) attemptId: number,
+    @CurrentUser() user: types.JwtPayloadType,
+  ) {
     return this.examsService.getResult(user.id, attemptId);
   }
 }
