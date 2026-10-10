@@ -4,7 +4,6 @@
 // Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
 // Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
 
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -20,36 +19,36 @@ enum Role {
 }
 
 model User {
-  id                       Int       @id @default(autoincrement())
-  name                     String
-  email                    String    @unique
-  password                 String?
-  googleId                 String?   @unique
-  resetPasswordToken       String?   @unique
-  resetPasswordExpires     DateTime?
-  role                     Role      @default(STUDENT)
-  avatar                   String?
-  background               String?
-  createdAt                DateTime  @default(now())
-  updatedAt                DateTime  @updatedAt
+  id                   Int       @id @default(autoincrement())
+  name                 String
+  email                String    @unique
+  password             String?
+  googleId             String?   @unique
+  resetPasswordToken   String?   @unique
+  resetPasswordExpires DateTime?
+  role                 Role      @default(STUDENT)
+  avatar               String?
+  background           String?
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
 
   // ==================== Email Verification ====================
-  emailVerified            Boolean   @default(false)
-  verificationToken        String?   @unique
-  verificationTokenExpiry  DateTime?
+  emailVerified           Boolean   @default(false)
+  verificationToken       String?   @unique
+  verificationTokenExpiry DateTime?
   // ===========================================================
 
-  studentProfile           Student?
-  teacherProfile           Teacher?
-  comments                 Comment[]
-  mentionsReceived         Mention[]
+  studentProfile   Student?
+  teacherProfile   Teacher?
+  comments         Comment[]
+  mentionsReceived Mention[]
 
   // ==================== Posts Relations ====================
-  posts                    Post[]
-  postComments             PostComment[]
-  postLikes                PostLike[]
-  pollVotes                PollVote[]
-  postViews                PostView[]
+  posts        Post[]
+  postComments PostComment[]
+  postLikes    PostLike[]
+  pollVotes    PollVote[]
+  postViews    PostView[]
 }
 
 model Student {
@@ -64,43 +63,44 @@ model Student {
   enrollments    Enrollment[] // one user can have many courses  
   examAttempts   ExamAttempt[]
   lessonProgress LessonProgress[]
-  earnedBadges   EarnedBadge[]   // الأوسمة المكتسبة بشكل دائم
+  earnedBadges   EarnedBadge[] // الأوسمة المكتسبة بشكل دائم
 }
 
 // جدول الأوسمة المكتسبة بشكل دائم
 // بمجرد إدراج سجل هنا، لا يمكن سحب الوسام حتى لو أضاف الأستاذ محتوى جديد
 model EarnedBadge {
-  id        Int      @id @default(autoincrement())
-  key       String   // مفتاح الوسام (starter, marathon, nerd, etc.)
-  tier      String   @default("STANDARD") // STANDARD | PRO | PRO_MAX
-  earnedAt  DateTime @default(now())
+  id       Int      @id @default(autoincrement())
+  key      String // مفتاح الوسام (starter, marathon, nerd, etc.)
+  tier     String   @default("STANDARD") // STANDARD | PRO | PRO_MAX
+  earnedAt DateTime @default(now())
 
   studentId Int
-  student   Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  student   Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
 
   @@unique([studentId, key]) // كل طالب لا يحصل على نفس الوسام مرتين
 }
 
 model Teacher {
-  id             Int      @id @default(autoincrement())
+  id             Int            @id @default(autoincrement())
   specialization String
-  bio            String?  @db.Text
-  experience     Int      @default(0) // سنوات الخبرة
-  userId         Int      @unique
-  user           User     @relation(fields: [userId], references: [id])
+  bio            String?        @db.Text
+  experience     Int            @default(0) // سنوات الخبرة
+  userId         Int            @unique
+  user           User           @relation(fields: [userId], references: [id])
   courses        Course[]
   practiceExams  PracticeExam[]
 }
 
 model Enrollment {
-  id        Int      @id @default(autoincrement())
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id        Int              @id @default(autoincrement())
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
   studentId Int
-  student   Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
-  courseId Int
-  course   Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
-  status EnrollmentStatus @default(ACTIVE)
+  student   Student          @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  courseId  Int
+  course    Course           @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  status    EnrollmentStatus @default(ACTIVE)
+
   @@unique([studentId, courseId]) // لمنع المستخدم من التسجيل في نفس الكورس مرتين
 }
 
@@ -111,30 +111,30 @@ enum EnrollmentStatus {
 }
 
 model Course {
-  id          Int     @id @default(autoincrement())
-  title       String
-  description String? @db.Text
-  thumbnail   String? // رابط صورة الغلاف
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  enrollments Enrollment[]
-  instructorId Int
-  teacher      Teacher  @relation(fields: [instructorId], references: [id])
-  modules      Module[]
+  id            Int            @id @default(autoincrement())
+  title         String
+  description   String?        @db.Text
+  thumbnail     String? // رابط صورة الغلاف
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  enrollments   Enrollment[]
+  instructorId  Int
+  teacher       Teacher        @relation(fields: [instructorId], references: [id])
+  modules       Module[]
   practiceExams PracticeExam[]
-  exams         Exam[]  // اختبارات الكورس
+  exams         Exam[] // اختبارات الكورس
 }
 
 model Module {
-  id          Int     @id @default(autoincrement())
+  id          Int      @id @default(autoincrement())
   title       String
-  description String? @db.Text
+  description String?  @db.Text
   imageUrl    String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  courseId Int
-  course   Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
-  lessons Lesson[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  courseId    Int
+  course      Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  lessons     Lesson[]
 }
 
 enum LessonStatus {
@@ -143,53 +143,53 @@ enum LessonStatus {
 }
 
 model Lesson {
-  id          Int     @id @default(autoincrement())
-  title       String
-  description String? @db.Text
-  content     String? @db.Text
-  videoUrl    String?
-  pdfUrl      String?
-  status      LessonStatus @default(DRAFT)
+  id             Int              @id @default(autoincrement())
+  title          String
+  description    String?          @db.Text
+  content        String?          @db.Text
+  videoUrl       String?
+  pdfUrl         String?
+  status         LessonStatus     @default(DRAFT)
   isReading      Boolean          @default(false)
-  order       Int     @default(0)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  moduleId Int
-  module   Module @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  order          Int              @default(0)
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+  moduleId       Int
+  module         Module           @relation(fields: [moduleId], references: [id], onDelete: Cascade)
   exam           Exam?
   lessonProgress LessonProgress[]
   comments       Comment[]
 }
 
 enum ExamType {
-  LESSON_QUIZ  // اختبار درس عادي
-  COURSE_QUIZ  // اختبار كورس دائم مع Leaderboard
-  CHALLENGE    // تحدي مؤقت له وقت بداية ونهاية
+  LESSON_QUIZ // اختبار درس عادي
+  COURSE_QUIZ // اختبار كورس دائم مع Leaderboard
+  CHALLENGE // تحدي مؤقت له وقت بداية ونهاية
 }
 
 enum RankingCriteria {
-  SCORE  // الترتيب بالدرجة فقط
-  SPEED  // الترتيب بالسرعة فقط
-  BOTH   // الدرجة أولاً ثم السرعة كفاصل (افتراضي)
+  SCORE // الترتيب بالدرجة فقط
+  SPEED // الترتيب بالسرعة فقط
+  BOTH // الدرجة أولاً ثم السرعة كفاصل (افتراضي)
 }
 
 model Exam {
-  id              Int              @id @default(autoincrement())
+  id              Int             @id @default(autoincrement())
   title           String
-  description     String?          @db.Text
-  imageUrl        String?          // صورة الاختبار
-  passingScore    Int              @default(50)
-  maxAttempts     Int              @default(1)
-  timeLimit       Int?             // مدة الاختبار بالدقائق (null = بلا حد)
-  examType        ExamType         @default(LESSON_QUIZ)
-  rankingCriteria RankingCriteria  @default(BOTH)
+  description     String?         @db.Text
+  imageUrl        String? // صورة الاختبار
+  passingScore    Int             @default(50)
+  maxAttempts     Int             @default(1)
+  timeLimit       Int? // مدة الاختبار بالدقائق (null = بلا حد)
+  examType        ExamType        @default(LESSON_QUIZ)
+  rankingCriteria RankingCriteria @default(BOTH)
 
   // حقول خاصة بالتحدي (CHALLENGE)
-  startTime       DateTime?        // وقت بدء التحدي
-  endTime         DateTime?        // وقت انتهاء التحدي
+  startTime DateTime? // وقت بدء التحدي
+  endTime   DateTime? // وقت انتهاء التحدي
 
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   // اختبار درس (اختياري)
   lessonId Int?    @unique
@@ -201,6 +201,7 @@ model Exam {
 
   questions Question[]
   attempts  ExamAttempt[]
+  comments  Comment[]
 }
 
 model Question {
@@ -237,7 +238,7 @@ model ExamAttempt {
   status      ExamStatus @default(IN_PROGRESS)
   startedAt   DateTime   @default(now())
   completedAt DateTime?
-  timeTaken   Int?       // الوقت المستغرق بالميلي ثانية
+  timeTaken   Int? // الوقت المستغرق بالميلي ثانية
   isRanked    Boolean    @default(false) // هل هذه المحاولة محسوبة في الترتيب؟
 
   studentId Int
@@ -305,35 +306,38 @@ model PracticeExam {
 }
 
 model Comment {
-  id        Int       @id @default(autoincrement())
-  text      String    @db.Text
+  id        Int      @id @default(autoincrement())
+  text      String   @db.Text
   imageUrl  String?
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  userId    Int
-  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId Int
+  user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  lessonId  Int
-  lesson    Lesson    @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  lessonId Int?
+  lesson   Lesson? @relation(fields: [lessonId], references: [id], onDelete: Cascade)
 
-  parentId  Int?
-  parent    Comment?  @relation("CommentReplies", fields: [parentId], references: [id], onDelete: Cascade)
-  replies   Comment[] @relation("CommentReplies")
+  examId Int?
+  exam   Exam? @relation(fields: [examId], references: [id], onDelete: Cascade)
 
-  mentions  Mention[]
+  parentId Int?
+  parent   Comment?  @relation("CommentReplies", fields: [parentId], references: [id], onDelete: Cascade)
+  replies  Comment[] @relation("CommentReplies")
+
+  mentions Mention[]
 }
 
 model Mention {
-  id              Int      @id @default(autoincrement())
-  isRead          Boolean  @default(false)
-  createdAt       DateTime @default(now())
+  id        Int      @id @default(autoincrement())
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
 
-  commentId       Int
-  comment         Comment  @relation(fields: [commentId], references: [id], onDelete: Cascade)
+  commentId Int
+  comment   Comment @relation(fields: [commentId], references: [id], onDelete: Cascade)
 
   mentionedUserId Int
-  mentionedUser   User     @relation(fields: [mentionedUserId], references: [id], onDelete: Cascade)
+  mentionedUser   User @relation(fields: [mentionedUserId], references: [id], onDelete: Cascade)
 
   @@index([mentionedUserId])
 }
@@ -343,79 +347,79 @@ model Mention {
 // ===========================================================
 
 model Post {
-  id        Int      @id @default(autoincrement())
-  title     String?
-  content   String   @db.Text
-  imageUrl  String?
-  videoUrl  String?
-  views     Int      @default(0)
-  isPoll    Boolean  @default(false)
+  id            Int     @id @default(autoincrement())
+  title         String?
+  content       String  @db.Text
+  imageUrl      String?
+  videoUrl      String?
+  views         Int     @default(0)
+  isPoll        Boolean @default(false)
   allowComments Boolean @default(true)
-  
-  authorId  Int
-  author    User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
-  
-  comments  PostComment[]
-  likes     PostLike[]
+
+  authorId Int
+  author   User @relation(fields: [authorId], references: [id], onDelete: Cascade)
+
+  comments    PostComment[]
+  likes       PostLike[]
   pollOptions PollOption[]
-  pollVotes PollVote[]
-  postViews PostView[]
-  
+  pollVotes   PollVote[]
+  postViews   PostView[]
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
 
 model PostView {
-  id        Int      @id @default(autoincrement())
-  
-  postId    Int
-  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
-  
-  userId    Int
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
+  id Int @id @default(autoincrement())
+
+  postId Int
+  post   Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  userId Int
+  user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
   createdAt DateTime @default(now())
 
   @@unique([postId, userId])
 }
 
 model PollOption {
-  id        Int      @id @default(autoincrement())
-  text      String
-  
-  postId    Int
-  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
-  
-  votes     PollVote[]
+  id   Int    @id @default(autoincrement())
+  text String
+
+  postId Int
+  post   Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  votes PollVote[]
 }
 
 model PollVote {
-  id        Int      @id @default(autoincrement())
-  
-  optionId  Int
-  option    PollOption @relation(fields: [optionId], references: [id], onDelete: Cascade)
-  
-  userId    Int
-  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
+  id Int @id @default(autoincrement())
+
+  optionId Int
+  option   PollOption @relation(fields: [optionId], references: [id], onDelete: Cascade)
+
+  userId Int
+  user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
   // We want to ensure a user only votes once per post, not just per option.
   // To do that easily in Prisma, we can store postId in PollVote too.
-  postId    Int
-  post      Post       @relation(fields: [postId], references: [id], onDelete: Cascade)
+  postId Int
+  post   Post @relation(fields: [postId], references: [id], onDelete: Cascade)
 
-  createdAt DateTime   @default(now())
+  createdAt DateTime @default(now())
 
   @@unique([postId, userId])
 }
 
 model PostLike {
-  id        Int      @id @default(autoincrement())
-  
-  postId    Int
-  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
-  
-  userId    Int
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id Int @id @default(autoincrement())
+
+  postId Int
+  post   Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  userId Int
+  user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   createdAt DateTime @default(now())
 
@@ -423,20 +427,20 @@ model PostLike {
 }
 
 model PostComment {
-  id        Int       @id @default(autoincrement())
-  text      String    @db.Text
-  imageUrl  String?
-  
-  postId    Int
-  post      Post      @relation(fields: [postId], references: [id], onDelete: Cascade)
-  
-  userId    Int
-  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id       Int     @id @default(autoincrement())
+  text     String  @db.Text
+  imageUrl String?
 
-  parentId  Int?
-  parent    PostComment?  @relation("PostCommentReplies", fields: [parentId], references: [id], onDelete: Cascade)
-  replies   PostComment[] @relation("PostCommentReplies")
+  postId Int
+  post   Post @relation(fields: [postId], references: [id], onDelete: Cascade)
 
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
+  userId Int
+  user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  parentId Int?
+  parent   PostComment?  @relation("PostCommentReplies", fields: [parentId], references: [id], onDelete: Cascade)
+  replies  PostComment[] @relation("PostCommentReplies")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }

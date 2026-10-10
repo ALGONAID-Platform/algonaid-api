@@ -6,8 +6,12 @@ export class CreateCommentDto {
   text: string;
 
   @IsInt()
-  @IsNotEmpty()
-  lessonId: number;
+  @IsOptional()
+  lessonId?: number;
+
+  @IsInt()
+  @IsOptional()
+  examId?: number;
 
   @IsInt()
   @IsOptional()

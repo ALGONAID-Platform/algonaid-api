@@ -58,6 +58,14 @@ export class CommentsController {
     return this.commentsService.getCommentsByLesson(lessonId);
   }
 
+  @Get('exam/:examId')
+  @UseGuards(AuthRollGuard)
+  @userRoles(Role.STUDENT, Role.ADMIN, Role.OWNER)
+  @ApiOperation({ summary: 'Get all comments and replies for an exam/challenge' })
+  getByExam(@Param('examId', ParseIntPipe) examId: number) {
+    return this.commentsService.getCommentsByExam(examId);
+  }
+
   @Get('course/:courseId/latest')
   @UseGuards(AuthRollGuard)
   @userRoles(Role.STUDENT, Role.ADMIN, Role.OWNER)

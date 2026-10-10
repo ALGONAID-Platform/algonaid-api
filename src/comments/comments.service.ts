@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
+import { Injectable, NotFoundException, ForbiddenException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateCommentDto } from './dto/create-comment.dto';
 
@@ -7,18 +7,23 @@ export class CommentsService {
   constructor(private prisma: PrismaService) {}
 
   async create(userId: number, createCommentDto: CreateCommentDto) {
-    const { text, lessonId, parentId, mentionedUserIds, imageUrl } = createCommentDto;
+    const { text, lessonId, examId, parentId, mentionedUserIds, imageUrl } = createCommentDto;
 
-    // Check if lesson exists
-    const lesson = await this.prisma.lesson.findUnique({
-      where: { id: lessonId },
-    });
-    if (!lesson) {
-      throw new NotFoundException('Lesson not found');
+    if (!lessonId && !examId) {
+      throw new BadRequestException('Must provide either lessonId or examId');
     }
-    if (lesson.status !== 'PUBLISHED') {
-      throw new ForbiddenException('Comments are unavailable for unpublished lessons');
+
+    if (lessonId) {
+      const lesson = await this.prisma.lesson.findUnique({ where: { id: lessonId } });
+      if (!lesson) throw new NotFoundException('Lesson not found');
+      if (lesson.status !== 'PUBLISHED') throw new ForbiddenException('Comments are unavailable for unpublished lessons');
     }
+
+    if (examId) {
+      const exam = await this.prisma.exam.findUnique({ where: { id: examId } });
+      if (!exam) throw new NotFoundException('Exam not found');
+    }
+
 
     let finalMentionedUserIds = mentionedUserIds ? [...mentionedUserIds] : [];
 
@@ -37,12 +42,12 @@ export class CommentsService {
       }
     }
 
-    // Build the data object
     const commentData: any = {
       text,
       userId,
-      lessonId,
       parentId,
+      ...(lessonId && { lessonId }),
+      ...(examId && { examId }),
       ...(imageUrl && { imageUrl }),
     };
 
@@ -85,6 +90,50 @@ export class CommentsService {
     return this.prisma.comment.findMany({
       where: {
         lessonId,
+        parentId: null,
+      },
+      include: {
+        user: {
+          select: {
+            id: true,
+            name: true,
+            avatar: true,
+            createdAt: true,
+          }
+        },
+        replies: {
+          include: {
+            user: {
+              select: {
+                id: true,
+                name: true,
+                avatar: true,
+                createdAt: true,
+              }
+            }
+          },
+          orderBy: {
+            createdAt: 'asc',
+          }
+        }
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
+    });
+  }
+
+  async getCommentsByExam(examId: number) {
+    const exam = await this.prisma.exam.findUnique({
+      where: { id: examId },
+    });
+    if (!exam) {
+      throw new NotFoundException('Exam not found');
+    }
+
+    return this.prisma.comment.findMany({
+      where: {
+        examId,
         parentId: null,
       },
       include: {
@@ -177,15 +226,13 @@ export class CommentsService {
       include: {
         lesson: {
           include: {
-            module: {
-              include: {
-                course: {
-                  include: {
-                    teacher: true
-                  }
-                }
-              }
-            }
+            module: { include: { course: { include: { teacher: true } } } }
+          }
+        },
+        exam: {
+          include: {
+            course: { include: { teacher: true } },
+            lesson: { include: { module: { include: { course: { include: { teacher: true } } } } } }
           }
         }
       }
@@ -197,7 +244,17 @@ export class CommentsService {
 
     const isOwner = comment.userId === userId;
     const isOwnerRole = userRole === 'OWNER';
-    const isInstructor = comment.lesson.module.course.teacher.userId === userId;
+    let isInstructor = false;
+
+    if (comment.lesson) {
+      isInstructor = comment.lesson.module.course.teacher.userId === userId;
+    } else if (comment.exam) {
+      if (comment.exam.course) {
+        isInstructor = comment.exam.course.teacher.userId === userId;
+      } else if (comment.exam.lesson) {
+        isInstructor = comment.exam.lesson.module.course.teacher.userId === userId;
+      }
+    }
 
     if (!isOwner && !isOwnerRole && !isInstructor) {
       throw new ForbiddenException('You are not allowed to delete this comment');
@@ -224,6 +281,9 @@ export class CommentsService {
                 select: { id: true, name: true, avatar: true }
               },
               lesson: {
+                select: { id: true, title: true }
+              },
+              exam: {
                 select: { id: true, title: true }
               },
               parent: {
