@@ -24,6 +24,7 @@ import {
   ApiConsumes,
 } from '@nestjs/swagger';
 import { FileInterceptor } from '@nestjs/platform-express';
+import { SkipThrottle } from '@nestjs/throttler';
 import { Role } from '@prisma/client';
 
 import { ExamsService } from './exams.service';
@@ -41,6 +42,7 @@ import * as types from 'src/utils/types';
 @ApiBearerAuth('JWT-auth')
 @Controller('exams')
 @UseGuards(AuthRollGuard)
+@SkipThrottle()
 export class ExamsController {
   constructor(
     private readonly examsService: ExamsService,
