@@ -272,7 +272,7 @@ export class ExamsService {
         },
         _count: { select: { attempts: true } },
         attempts: {
-          where: { isRanked: true, status: ExamStatus.PASSED },
+          where: { isRanked: true },
           select: {
             id: true,
             score: true,
@@ -293,7 +293,13 @@ export class ExamsService {
 
     return exams.map(exam => {
       // Sort attempts to get top 3
-      const sortedAttempts = sortByRankingCriteria(exam.attempts as any, exam.rankingCriteria);
+      let sortedAttempts = sortByRankingCriteria(exam.attempts as any, exam.rankingCriteria);
+      
+      // If no one got a score > 0, hide the leaderboard to prevent a 0% solo "winner"
+      if (!sortedAttempts.some(a => a.score > 0)) {
+        sortedAttempts = [];
+      }
+
       const topParticipants = sortedAttempts.slice(0, 3).map((attempt, index) => ({
         rank: index + 1,
         studentId: attempt.student.id,

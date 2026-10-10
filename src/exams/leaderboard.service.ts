@@ -18,7 +18,6 @@ export class LeaderboardService {
       where: {
         examId,
         isRanked: true,
-        status: ExamStatus.PASSED,
       },
       select: {
         id: true,
@@ -34,7 +33,12 @@ export class LeaderboardService {
       },
     });
 
-    const sorted = sortByRankingCriteria(rankedAttempts, exam.rankingCriteria);
+    let sorted = sortByRankingCriteria(rankedAttempts, exam.rankingCriteria);
+
+    // If no one got a score > 0, hide the leaderboard to prevent a 0% solo "winner"
+    if (!sorted.some(a => a.score > 0)) {
+      sorted = [];
+    }
 
     return {
       examId,
