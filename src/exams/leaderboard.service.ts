@@ -50,7 +50,7 @@ export class LeaderboardService {
         name: attempt.student.user.name,
         avatar: attempt.student.user.avatar,
         score: attempt.score,
-        timeTakenMs: attempt.timeTaken,
+        timeTakenMs: attempt.timeTaken ?? 0,
         completedAt: attempt.completedAt,
       })),
     };
@@ -117,7 +117,7 @@ export class LeaderboardService {
       totalPoints,
       percentage: totalPoints > 0 ? Math.round((attempt.score / totalPoints) * 100) : 0,
       status: attempt.status,
-      timeTakenMs: attempt.timeTaken,
+      timeTakenMs: attempt.timeTaken ?? 0,
       completedAt: attempt.completedAt,
       questions,
     };

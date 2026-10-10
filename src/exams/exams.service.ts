@@ -306,7 +306,7 @@ export class ExamsService {
         name: attempt.student.user.name,
         avatar: attempt.student.user.avatar,
         score: attempt.score,
-        timeTakenMs: attempt.timeTaken,
+        timeTakenMs: attempt.timeTaken ?? 0,
       }));
 
       const { attempts, ...examData } = exam;
