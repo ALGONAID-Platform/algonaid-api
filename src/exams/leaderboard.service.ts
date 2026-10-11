@@ -10,19 +10,32 @@ export class LeaderboardService {
   async getLeaderboard(examId: number) {
     const exam = await this.prisma.exam.findUnique({
       where: { id: examId },
-      select: { id: true, rankingCriteria: true, title: true },
+      select: {
+        id: true,
+        rankingCriteria: true,
+        title: true,
+        startTime: true,
+        endTime: true,
+        examType: true,
+      },
     });
     if (!exam) throw new NotFoundException('Exam not found');
+
+    const now = new Date();
+    const hasEndTime = exam.endTime !== null && exam.endTime !== undefined;
+    const isEnded = !hasEndTime || exam.endTime <= now;
 
     const rankedAttempts = await this.prisma.examAttempt.findMany({
       where: {
         examId,
         isRanked: true,
+        status: { not: ExamStatus.IN_PROGRESS },
       },
       select: {
         id: true,
         score: true,
         timeTaken: true,
+        startedAt: true,
         completedAt: true,
         student: {
           select: {
@@ -33,26 +46,63 @@ export class LeaderboardService {
       },
     });
 
+    if (!isEnded) {
+      // أثناء سير الاختبار: عرض أسماء المشاركين وصورهم وتوقيت المشاركة فقط بدون درجات وبدون ترتيب
+      const participants = [...rankedAttempts]
+        .sort((a, b) => {
+          const timeA = a.completedAt ? new Date(a.completedAt).getTime() : (a.startedAt ? new Date(a.startedAt).getTime() : 0);
+          const timeB = b.completedAt ? new Date(b.completedAt).getTime() : (b.startedAt ? new Date(b.startedAt).getTime() : 0);
+          return timeB - timeA;
+        })
+        .map((attempt) => ({
+          studentId: attempt.student.id,
+          name: attempt.student.user.name,
+          avatar: attempt.student.user.avatar,
+          completedAt: attempt.completedAt || attempt.startedAt,
+          participatedAt: attempt.completedAt || attempt.startedAt,
+        }));
+
+      return {
+        examId,
+        examTitle: exam.title,
+        rankingCriteria: exam.rankingCriteria,
+        isEnded: false,
+        status: 'ONGOING',
+        endTime: exam.endTime,
+        participantsCount: rankedAttempts.length,
+        leaderboard: participants,
+        participants,
+      };
+    }
+
+    // بعد انتهاء الاختبار: عرض قائمة المتصدرين الكاملة بالدرجات والمراكز والوقت المستغرق
     let sorted = sortByRankingCriteria(rankedAttempts, exam.rankingCriteria);
 
-    // If no one got a score > 0, hide the leaderboard to prevent a 0% solo "winner"
-    if (!sorted.some(a => a.score > 0)) {
+    if (!sorted.some((a) => a.score > 0)) {
       sorted = [];
     }
+
+    const leaderboard = sorted.map((attempt, index) => ({
+      rank: index + 1,
+      studentId: attempt.student.id,
+      name: attempt.student.user.name,
+      avatar: attempt.student.user.avatar,
+      score: attempt.score,
+      timeTakenMs: attempt.timeTaken ?? 0,
+      completedAt: attempt.completedAt,
+      participatedAt: attempt.completedAt || attempt.startedAt,
+    }));
 
     return {
       examId,
       examTitle: exam.title,
       rankingCriteria: exam.rankingCriteria,
-      leaderboard: sorted.map((attempt, index) => ({
-        rank: index + 1,
-        studentId: attempt.student.id,
-        name: attempt.student.user.name,
-        avatar: attempt.student.user.avatar,
-        score: attempt.score,
-        timeTakenMs: attempt.timeTaken ?? 0,
-        completedAt: attempt.completedAt,
-      })),
+      isEnded: true,
+      status: 'ENDED',
+      endTime: exam.endTime,
+      participantsCount: rankedAttempts.length,
+      leaderboard,
+      participants: leaderboard,
     };
   }
 

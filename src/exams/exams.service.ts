@@ -354,36 +354,52 @@ export class ExamsService {
   }
 
   private formatExamCard(exam: any) {
-    // Sort attempts to get top 3
-    let sortedAttempts = sortByRankingCriteria(exam.attempts as any, exam.rankingCriteria);
+    const now = new Date();
+    const hasEndTime = exam.endTime !== null && exam.endTime !== undefined;
+    const isEnded = !hasEndTime || new Date(exam.endTime) <= now;
 
-    // If no one got a score > 0, hide the leaderboard to prevent a 0% solo "winner"
-    if (!sortedAttempts.some((a: any) => a.score > 0)) {
-      sortedAttempts = [];
+    let timeStatus: 'UPCOMING' | 'ONGOING' | 'ENDED' = 'ONGOING';
+    if (exam.startTime && new Date(exam.startTime) > now) {
+      timeStatus = 'UPCOMING';
+    } else if (hasEndTime && new Date(exam.endTime) < now) {
+      timeStatus = 'ENDED';
     }
 
-    const topParticipants = sortedAttempts.slice(0, 3).map((attempt: any, index: number) => ({
-      rank: index + 1,
-      studentId: attempt.student.id,
-      name: attempt.student.user.name,
-      avatar: attempt.student.user.avatar,
-      score: attempt.score,
-      timeTakenMs: attempt.timeTaken ?? 0,
-    }));
+    let topParticipants: any[] = [];
+    if (!isEnded) {
+      // أثناء سير الاختبار: عرض أحدث المشاركين بدون درجات وبدون ترتيب
+      topParticipants = (exam.attempts || [])
+        .slice(0, 3)
+        .map((attempt: any) => ({
+          studentId: attempt.student.id,
+          name: attempt.student.user.name,
+          avatar: attempt.student.user.avatar,
+          completedAt: attempt.completedAt,
+          participatedAt: attempt.completedAt,
+        }));
+    } else {
+      // بعد انتهاء الاختبار: عرض أفضل 3 متصدرين بالدرجات والمراكز
+      let sortedAttempts = sortByRankingCriteria(exam.attempts as any, exam.rankingCriteria);
+      if (!sortedAttempts.some((a: any) => a.score > 0)) {
+        sortedAttempts = [];
+      }
+      topParticipants = sortedAttempts.slice(0, 3).map((attempt: any, index: number) => ({
+        rank: index + 1,
+        studentId: attempt.student.id,
+        name: attempt.student.user.name,
+        avatar: attempt.student.user.avatar,
+        score: attempt.score,
+        timeTakenMs: attempt.timeTaken ?? 0,
+        completedAt: attempt.completedAt,
+        participatedAt: attempt.completedAt,
+      }));
+    }
 
     const totalPoints = (exam.questions || []).reduce(
       (sum: number, q: { points: number }) => sum + (q.points || 0),
       0,
     );
     const passingPoints = totalPoints > 0 ? Math.ceil((exam.passingScore / 100) * totalPoints) : 0;
-
-    const now = new Date();
-    let timeStatus: 'UPCOMING' | 'ONGOING' | 'ENDED' = 'ONGOING';
-    if (exam.startTime && new Date(exam.startTime) > now) {
-      timeStatus = 'UPCOMING';
-    } else if (exam.endTime && new Date(exam.endTime) < now) {
-      timeStatus = 'ENDED';
-    }
 
     const course = exam.course || exam.lesson?.module?.course || null;
 
@@ -392,6 +408,7 @@ export class ExamsService {
       ...examData,
       course,
       timeStatus,
+      isEnded,
       totalPoints,
       passingPoints,
       minPassingScore: passingPoints,
