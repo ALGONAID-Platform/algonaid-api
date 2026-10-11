@@ -252,7 +252,15 @@ export class ExamsService {
         throw new NotFoundException('Exam not found');
     }
 
-    return exam;
+    const totalPoints = exam.questions.reduce((sum, q) => sum + q.points, 0);
+    const passingPoints = totalPoints > 0 ? Math.ceil((exam.passingScore / 100) * totalPoints) : 0;
+
+    return {
+      ...exam,
+      totalPoints,
+      passingPoints,
+      minPassingScore: passingPoints,
+    };
   }
 
   async getExamByCourse(courseId: number) {
@@ -309,9 +317,15 @@ export class ExamsService {
         timeTakenMs: attempt.timeTaken ?? 0,
       }));
 
+      const totalPoints = exam.questions.reduce((sum, q) => sum + q.points, 0);
+      const passingPoints = totalPoints > 0 ? Math.ceil((exam.passingScore / 100) * totalPoints) : 0;
+
       const { attempts, ...examData } = exam;
       return {
         ...examData,
+        totalPoints,
+        passingPoints,
+        minPassingScore: passingPoints,
         participantsCount: exam._count.attempts,
         topParticipants,
       };
@@ -360,11 +374,18 @@ export class ExamsService {
       },
     });
 
+    const totalPoints = questions.reduce((sum, q) => sum + q.points, 0);
+    const passingPoints = totalPoints > 0 ? Math.ceil((exam.passingScore / 100) * totalPoints) : 0;
+
     return {
       message: 'Exam started successfully',
       attemptId: attempt.id,
       isRanked: shouldBeRanked,
       timeLimitMinutes: exam.timeLimit,
+      passingScore: exam.passingScore,
+      passingPoints,
+      minPassingScore: passingPoints,
+      totalPoints,
       startedAt: attempt.startedAt,
       questions,
     };
@@ -437,11 +458,22 @@ export class ExamsService {
       });
     }
 
-    return this.prisma.examAttempt.update({
+    const updatedAttempt = await this.prisma.examAttempt.update({
       where: { id: attempt.id },
       data: { score, status, completedAt: now, timeTaken: timeTakenMs },
       include: { exam: { select: { title: true, passingScore: true } } },
     });
+
+    const passingPoints = totalPoints > 0 ? Math.ceil((attempt.exam.passingScore / 100) * totalPoints) : 0;
+
+    return {
+      ...updatedAttempt,
+      totalPoints,
+      percentage: Math.round(percentage),
+      passingScore: attempt.exam.passingScore,
+      passingPoints,
+      minPassingScore: passingPoints,
+    };
   }
 
   async getResult(studentUserId: number, attemptId: number) {
@@ -469,6 +501,17 @@ export class ExamsService {
       throw new NotFoundException('Exam result not found');
     }
 
-    return attempt;
+    const totalPoints = attempt.exam.questions.reduce((sum, q) => sum + q.points, 0);
+    const percentage = totalPoints > 0 ? Math.round((attempt.score / totalPoints) * 100) : 0;
+    const passingPoints = totalPoints > 0 ? Math.ceil((attempt.exam.passingScore / 100) * totalPoints) : 0;
+
+    return {
+      ...attempt,
+      totalPoints,
+      percentage,
+      passingScore: attempt.exam.passingScore,
+      passingPoints,
+      minPassingScore: passingPoints,
+    };
   }
 }

@@ -111,11 +111,16 @@ export class LeaderboardService {
       };
     });
 
+    const passingPoints = totalPoints > 0 ? Math.ceil((attempt.exam.passingScore / 100) * totalPoints) : 0;
+
     return {
       examTitle: attempt.exam.title,
       score: attempt.score,
       totalPoints,
       percentage: totalPoints > 0 ? Math.round((attempt.score / totalPoints) * 100) : 0,
+      passingScore: attempt.exam.passingScore,
+      passingPoints,
+      minPassingScore: passingPoints,
       status: attempt.status,
       timeTakenMs: attempt.timeTaken ?? 0,
       completedAt: attempt.completedAt,
