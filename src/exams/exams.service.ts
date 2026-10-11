@@ -15,6 +15,35 @@ import { sortByRankingCriteria } from './helpers/ranking.helper';
 export class ExamsService {
   constructor(private readonly prisma: PrismaService) {}
 
+  private formatLatestComment(comments?: Array<{
+    id: number;
+    text: string;
+    imageUrl: string | null;
+    createdAt: Date;
+    user: { id: number; name: string; avatar: string | null };
+  }>) {
+    if (!comments || comments.length === 0) return null;
+    const c = comments[0];
+    return {
+      id: c.id,
+      text: c.text,
+      imageUrl: c.imageUrl,
+      createdAt: c.createdAt,
+      userName: c.user.name,
+      userAvatar: c.user.avatar,
+      user: {
+        id: c.user.id,
+        name: c.user.name,
+        avatar: c.user.avatar,
+      },
+      student: {
+        id: c.user.id,
+        name: c.user.name,
+        avatar: c.user.avatar,
+      },
+    };
+  }
+
   private buildQuestionsData(questions: CreateQuestionDto[]) {
     return questions.map((q: CreateQuestionDto) => ({
       text: q.text,
@@ -105,29 +134,62 @@ export class ExamsService {
   }
 
   async findAll(userId: number, role: Role) {
-    if (role === Role.ADMIN || role === Role.OWNER) {
-      return this.prisma.exam.findMany({
-        include: {
-          lesson: { include: { module: { include: { course: true } } } },
-          course: true,
-          questions: { select: { id: true } },
-          _count: { select: { attempts: true } },
+    const commentsInclude = {
+      orderBy: { createdAt: 'desc' as const },
+      take: 1,
+      select: {
+        id: true,
+        text: true,
+        imageUrl: true,
+        createdAt: true,
+        user: {
+          select: {
+            id: true,
+            name: true,
+            avatar: true,
+          },
         },
-      });
-    }
-    return this.prisma.exam.findMany({
-      where: {
-        OR: [
-          { lesson: { status: LessonStatus.PUBLISHED } },
-          { courseId: { not: null } },
-        ],
       },
-      include: {
-        lesson: { include: { module: { include: { course: true } } } },
-        course: true,
-        questions: { select: { id: true } },
-        _count: { select: { attempts: true } },
-      },
+    };
+
+    const commonInclude = {
+      lesson: { include: { module: { include: { course: true } } } },
+      course: true,
+      questions: { select: { id: true, points: true } },
+      _count: { select: { attempts: true, comments: true } },
+      comments: commentsInclude,
+    };
+
+    const exams = await this.prisma.exam.findMany({
+      where:
+        role === Role.ADMIN || role === Role.OWNER
+          ? undefined
+          : {
+              OR: [
+                { lesson: { status: LessonStatus.PUBLISHED } },
+                { courseId: { not: null } },
+              ],
+            },
+      include: commonInclude,
+    });
+
+    return exams.map((exam) => {
+      const totalPoints = exam.questions.reduce((sum, q) => sum + q.points, 0);
+      const passingPoints =
+        totalPoints > 0
+          ? Math.ceil((exam.passingScore / 100) * totalPoints)
+          : 0;
+
+      const { comments, ...examData } = exam;
+      return {
+        ...examData,
+        totalPoints,
+        passingPoints,
+        minPassingScore: passingPoints,
+        commentsCount: exam._count.comments,
+        totalComments: exam._count.comments,
+        latestComment: this.formatLatestComment(comments),
+      };
     });
   }
 
@@ -240,7 +302,24 @@ export class ExamsService {
             options: { select: { id: true, text: true } },
           },
         },
-        _count: { select: { attempts: true } },
+        _count: { select: { attempts: true, comments: true } },
+        comments: {
+          orderBy: { createdAt: 'desc' },
+          take: 1,
+          select: {
+            id: true,
+            text: true,
+            imageUrl: true,
+            createdAt: true,
+            user: {
+              select: {
+                id: true,
+                name: true,
+                avatar: true,
+              },
+            },
+          },
+        },
       },
     });
     if (!exam) throw new NotFoundException('Exam not found');
@@ -255,11 +334,16 @@ export class ExamsService {
     const totalPoints = exam.questions.reduce((sum, q) => sum + q.points, 0);
     const passingPoints = totalPoints > 0 ? Math.ceil((exam.passingScore / 100) * totalPoints) : 0;
 
+    const { comments, ...examData } = exam;
+
     return {
-      ...exam,
+      ...examData,
       totalPoints,
       passingPoints,
       minPassingScore: passingPoints,
+      commentsCount: exam._count.comments,
+      totalComments: exam._count.comments,
+      latestComment: this.formatLatestComment(comments),
     };
   }
 
@@ -278,7 +362,24 @@ export class ExamsService {
             options: { select: { id: true, text: true } },
           },
         },
-        _count: { select: { attempts: true } },
+        _count: { select: { attempts: true, comments: true } },
+        comments: {
+          orderBy: { createdAt: 'desc' },
+          take: 1,
+          select: {
+            id: true,
+            text: true,
+            imageUrl: true,
+            createdAt: true,
+            user: {
+              select: {
+                id: true,
+                name: true,
+                avatar: true,
+              },
+            },
+          },
+        },
         attempts: {
           where: { isRanked: true },
           select: {
@@ -320,7 +421,7 @@ export class ExamsService {
       const totalPoints = exam.questions.reduce((sum, q) => sum + q.points, 0);
       const passingPoints = totalPoints > 0 ? Math.ceil((exam.passingScore / 100) * totalPoints) : 0;
 
-      const { attempts, ...examData } = exam;
+      const { attempts, comments, ...examData } = exam;
       return {
         ...examData,
         totalPoints,
@@ -328,6 +429,9 @@ export class ExamsService {
         minPassingScore: passingPoints,
         participantsCount: exam._count.attempts,
         topParticipants,
+        commentsCount: exam._count.comments,
+        totalComments: exam._count.comments,
+        latestComment: this.formatLatestComment(comments),
       };
     });
   }
