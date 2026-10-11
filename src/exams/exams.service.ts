@@ -174,7 +174,10 @@ export class ExamsService {
     });
 
     return exams.map((exam) => {
-      const totalPoints = exam.questions.reduce((sum, q) => sum + q.points, 0);
+      const totalPoints = exam.questions.reduce(
+        (sum: number, q: { points: number }) => sum + q.points,
+        0,
+      );
       const passingPoints =
         totalPoints > 0
           ? Math.ceil((exam.passingScore / 100) * totalPoints)
@@ -331,7 +334,10 @@ export class ExamsService {
         throw new NotFoundException('Exam not found');
     }
 
-    const totalPoints = exam.questions.reduce((sum, q) => sum + q.points, 0);
+    const totalPoints = exam.questions.reduce(
+      (sum: number, q: { points: number }) => sum + q.points,
+      0,
+    );
     const passingPoints = totalPoints > 0 ? Math.ceil((exam.passingScore / 100) * totalPoints) : 0;
 
     const { comments, ...examData } = exam;
@@ -352,11 +358,11 @@ export class ExamsService {
     let sortedAttempts = sortByRankingCriteria(exam.attempts as any, exam.rankingCriteria);
 
     // If no one got a score > 0, hide the leaderboard to prevent a 0% solo "winner"
-    if (!sortedAttempts.some((a) => a.score > 0)) {
+    if (!sortedAttempts.some((a: any) => a.score > 0)) {
       sortedAttempts = [];
     }
 
-    const topParticipants = sortedAttempts.slice(0, 3).map((attempt, index) => ({
+    const topParticipants = sortedAttempts.slice(0, 3).map((attempt: any, index: number) => ({
       rank: index + 1,
       studentId: attempt.student.id,
       name: attempt.student.user.name,
@@ -365,7 +371,10 @@ export class ExamsService {
       timeTakenMs: attempt.timeTaken ?? 0,
     }));
 
-    const totalPoints = exam.questions.reduce((sum, q) => sum + q.points, 0);
+    const totalPoints = (exam.questions || []).reduce(
+      (sum: number, q: { points: number }) => sum + (q.points || 0),
+      0,
+    );
     const passingPoints = totalPoints > 0 ? Math.ceil((exam.passingScore / 100) * totalPoints) : 0;
 
     const now = new Date();
@@ -607,7 +616,10 @@ export class ExamsService {
       },
     });
 
-    const totalPoints = questions.reduce((sum, q) => sum + q.points, 0);
+    const totalPoints = questions.reduce(
+      (sum: number, q: { points: number }) => sum + q.points,
+      0,
+    );
     const passingPoints = totalPoints > 0 ? Math.ceil((exam.passingScore / 100) * totalPoints) : 0;
 
     return {
@@ -734,7 +746,10 @@ export class ExamsService {
       throw new NotFoundException('Exam result not found');
     }
 
-    const totalPoints = attempt.exam.questions.reduce((sum, q) => sum + q.points, 0);
+    const totalPoints = attempt.exam.questions.reduce(
+      (sum: number, q: { points: number }) => sum + q.points,
+      0,
+    );
     const percentage = totalPoints > 0 ? Math.round((attempt.score / totalPoints) * 100) : 0;
     const passingPoints = totalPoints > 0 ? Math.ceil((attempt.exam.passingScore / 100) * totalPoints) : 0;
 
