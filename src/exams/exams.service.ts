@@ -347,6 +347,53 @@ export class ExamsService {
     };
   }
 
+  private formatExamCard(exam: any) {
+    // Sort attempts to get top 3
+    let sortedAttempts = sortByRankingCriteria(exam.attempts as any, exam.rankingCriteria);
+
+    // If no one got a score > 0, hide the leaderboard to prevent a 0% solo "winner"
+    if (!sortedAttempts.some((a) => a.score > 0)) {
+      sortedAttempts = [];
+    }
+
+    const topParticipants = sortedAttempts.slice(0, 3).map((attempt, index) => ({
+      rank: index + 1,
+      studentId: attempt.student.id,
+      name: attempt.student.user.name,
+      avatar: attempt.student.user.avatar,
+      score: attempt.score,
+      timeTakenMs: attempt.timeTaken ?? 0,
+    }));
+
+    const totalPoints = exam.questions.reduce((sum, q) => sum + q.points, 0);
+    const passingPoints = totalPoints > 0 ? Math.ceil((exam.passingScore / 100) * totalPoints) : 0;
+
+    const now = new Date();
+    let timeStatus: 'UPCOMING' | 'ONGOING' | 'ENDED' = 'ONGOING';
+    if (exam.startTime && new Date(exam.startTime) > now) {
+      timeStatus = 'UPCOMING';
+    } else if (exam.endTime && new Date(exam.endTime) < now) {
+      timeStatus = 'ENDED';
+    }
+
+    const course = exam.course || exam.lesson?.module?.course || null;
+
+    const { attempts, comments, ...examData } = exam;
+    return {
+      ...examData,
+      course,
+      timeStatus,
+      totalPoints,
+      passingPoints,
+      minPassingScore: passingPoints,
+      participantsCount: exam._count.attempts,
+      topParticipants,
+      commentsCount: exam._count.comments,
+      totalComments: exam._count.comments,
+      latestComment: this.formatLatestComment(comments),
+    };
+  }
+
   async getExamByCourse(courseId: number) {
     const exams = await this.prisma.exam.findMany({
       where: { courseId },
@@ -400,39 +447,121 @@ export class ExamsService {
     });
     if (!exams || exams.length === 0) throw new NotFoundException('No exams found for this course');
 
-    return exams.map(exam => {
-      // Sort attempts to get top 3
-      let sortedAttempts = sortByRankingCriteria(exam.attempts as any, exam.rankingCriteria);
-      
-      // If no one got a score > 0, hide the leaderboard to prevent a 0% solo "winner"
-      if (!sortedAttempts.some(a => a.score > 0)) {
-        sortedAttempts = [];
-      }
+    return exams.map((exam) => this.formatExamCard(exam));
+  }
 
-      const topParticipants = sortedAttempts.slice(0, 3).map((attempt, index) => ({
-        rank: index + 1,
-        studentId: attempt.student.id,
-        name: attempt.student.user.name,
-        avatar: attempt.student.user.avatar,
-        score: attempt.score,
-        timeTakenMs: attempt.timeTaken ?? 0,
-      }));
+  async getHomeExams(userId: number, role: Role) {
+    const student = await this.prisma.student.findUnique({
+      where: { userId },
+      include: {
+        enrollments: {
+          where: { status: 'ACTIVE' },
+          select: { courseId: true },
+        },
+      },
+    });
 
-      const totalPoints = exam.questions.reduce((sum, q) => sum + q.points, 0);
-      const passingPoints = totalPoints > 0 ? Math.ceil((exam.passingScore / 100) * totalPoints) : 0;
+    let enrolledCourseIds: number[] = [];
+    if (student && student.enrollments.length > 0) {
+      enrolledCourseIds = student.enrollments.map((e) => e.courseId);
+    } else if (role === Role.ADMIN || role === Role.OWNER) {
+      // For Admin/Owner without enrollments, fetch all courses for testing
+      const allCourses = await this.prisma.course.findMany({ select: { id: true } });
+      enrolledCourseIds = allCourses.map((c) => c.id);
+    } else {
+      return [];
+    }
 
-      const { attempts, comments, ...examData } = exam;
-      return {
-        ...examData,
-        totalPoints,
-        passingPoints,
-        minPassingScore: passingPoints,
-        participantsCount: exam._count.attempts,
-        topParticipants,
-        commentsCount: exam._count.comments,
-        totalComments: exam._count.comments,
-        latestComment: this.formatLatestComment(comments),
-      };
+    if (enrolledCourseIds.length === 0) {
+      return [];
+    }
+
+    const now = new Date();
+    const twelveHoursAgo = new Date(now.getTime() - 12 * 60 * 60 * 1000);
+
+    const exams = await this.prisma.exam.findMany({
+      where: {
+        OR: [
+          { courseId: { in: enrolledCourseIds } },
+          {
+            lesson: {
+              status: LessonStatus.PUBLISHED,
+              module: { courseId: { in: enrolledCourseIds } },
+            },
+          },
+        ],
+        AND: [
+          {
+            OR: [
+              { endTime: null },
+              { endTime: { gte: twelveHoursAgo } },
+            ],
+          },
+        ],
+      },
+      include: {
+        course: true,
+        lesson: { include: { module: { include: { course: true } } } },
+        questions: {
+          select: {
+            id: true,
+            text: true,
+            type: true,
+            points: true,
+            imageUrl: true,
+            options: { select: { id: true, text: true } },
+          },
+        },
+        _count: { select: { attempts: true, comments: true } },
+        comments: {
+          orderBy: { createdAt: 'desc' },
+          take: 1,
+          select: {
+            id: true,
+            text: true,
+            imageUrl: true,
+            createdAt: true,
+            user: {
+              select: {
+                id: true,
+                name: true,
+                avatar: true,
+              },
+            },
+          },
+        },
+        attempts: {
+          where: { isRanked: true },
+          select: {
+            id: true,
+            score: true,
+            timeTaken: true,
+            completedAt: true,
+            student: {
+              select: {
+                id: true,
+                user: { select: { name: true, avatar: true } },
+              },
+            },
+          },
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    const formatted = exams.map((exam) => this.formatExamCard(exam));
+
+    // Sort order: ONGOING (1), UPCOMING (2), ENDED (3)
+    const statusPriority: Record<string, number> = {
+      ONGOING: 1,
+      UPCOMING: 2,
+      ENDED: 3,
+    };
+
+    return formatted.sort((a, b) => {
+      const priorityDiff = statusPriority[a.timeStatus] - statusPriority[b.timeStatus];
+      if (priorityDiff !== 0) return priorityDiff;
+      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
     });
   }
 

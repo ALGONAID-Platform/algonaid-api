@@ -65,6 +65,20 @@ export class ExamsController {
     return this.examsService.getExamByCourse(courseId);
   }
 
+  @Get('home')
+  @userRoles(Role.STUDENT, Role.ADMIN, Role.OWNER)
+  @ApiOperation({ summary: 'جلب أحدث اختبارات الكورسات المسجل فيها الطالب للصفحة الرئيسية (الجارية والقادمة والمنتهية حديثاً)' })
+  getHomeExams(@CurrentUser() user: types.JwtPayloadType) {
+    return this.examsService.getHomeExams(user.id, user.role);
+  }
+
+  @Get('enrolled')
+  @userRoles(Role.STUDENT, Role.ADMIN, Role.OWNER)
+  @ApiOperation({ summary: 'جلب اختبارات الكورسات المسجل فيها الطالب' })
+  getEnrolledExams(@CurrentUser() user: types.JwtPayloadType) {
+    return this.examsService.getHomeExams(user.id, user.role);
+  }
+
   @Post('upload-image')
   @userRoles(Role.ADMIN, Role.OWNER)
   @UseInterceptors(FileInterceptor('image'))
