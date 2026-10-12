@@ -22,8 +22,7 @@ export class LeaderboardService {
     if (!exam) throw new NotFoundException('Exam not found');
 
     const now = new Date();
-    const hasEndTime = exam.endTime !== null && exam.endTime !== undefined;
-    const isEnded = !hasEndTime || exam.endTime <= now;
+    const isEnded = exam.endTime ? exam.endTime <= now : true;
 
     const rankedAttempts = await this.prisma.examAttempt.findMany({
       where: {

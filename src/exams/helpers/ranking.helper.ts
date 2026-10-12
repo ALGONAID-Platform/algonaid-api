@@ -4,6 +4,7 @@ export interface RankedAttempt {
   id: number;
   score: number;
   timeTaken: number | null;
+  startedAt?: Date | null;
   completedAt: Date | null;
   student: {
     id: number;
