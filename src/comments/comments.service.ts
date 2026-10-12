@@ -306,8 +306,10 @@ export class CommentsService {
       });
       const teacherCourseIds = teacher ? teacher.courses.map(c => c.id) : [];
 
-      const orConditions: Prisma.MentionWhereInput[] = [
-        { mentionedUserId: userId }
+      const orConditions: any[] = [
+        { mentionedUserId: userId },
+        { postComment: { post: { authorId: userId } } },
+        { post: { authorId: userId } },
       ];
 
       if (teacherCourseIds.length > 0) {
@@ -361,6 +363,26 @@ export class CommentsService {
                 select: { userId: true }
               }
             }
+          },
+          postComment: {
+            include: {
+              user: {
+                select: { id: true, name: true, avatar: true }
+              },
+              post: {
+                select: { id: true, title: true, content: true }
+              },
+              parent: {
+                select: { userId: true }
+              }
+            }
+          },
+          post: {
+            include: {
+              author: {
+                select: { id: true, name: true, avatar: true }
+              }
+            }
           }
         }
       }),
@@ -369,11 +391,77 @@ export class CommentsService {
       })
     ]);
 
-    const mappedData = data.map(mention => {
-      const isReply = mention.comment.parent && mention.comment.parent.userId === mention.mentionedUserId;
+    const mappedData = data.map((mention: any) => {
+      if (mention.comment) {
+        const isReply = mention.comment.parent && mention.comment.parent.userId === mention.mentionedUserId;
+        return {
+          ...mention,
+          type: isReply ? 'REPLY' : 'MENTION'
+        };
+      }
+
+      if (mention.postComment) {
+        const isReply = (mention.postComment.parent && mention.postComment.parent.userId === mention.mentionedUserId) ||
+                        (mention.postComment.post.authorId === mention.mentionedUserId && !mention.postComment.parent);
+        return {
+          id: mention.id,
+          isRead: mention.isRead,
+          createdAt: mention.createdAt,
+          commentId: mention.postComment.id,
+          mentionedUserId: mention.mentionedUserId,
+          type: isReply ? 'REPLY' : 'MENTION',
+          comment: {
+            id: mention.postComment.id,
+            text: mention.postComment.text,
+            imageUrl: mention.postComment.imageUrl,
+            createdAt: mention.postComment.createdAt,
+            updatedAt: mention.postComment.updatedAt,
+            lessonId: null,
+            examId: null,
+            postId: mention.postComment.postId,
+            post: {
+              id: mention.postComment.post.id,
+              title: mention.postComment.post.title || (mention.postComment.post.content ? mention.postComment.post.content.substring(0, 30) : 'منشور'),
+            },
+            user: mention.postComment.user,
+            parentId: mention.postComment.parentId,
+            parent: mention.postComment.parent ? { userId: mention.postComment.parent.userId } : null,
+            replies: [],
+          }
+        };
+      }
+
+      if (mention.post) {
+        return {
+          id: mention.id,
+          isRead: mention.isRead,
+          createdAt: mention.createdAt,
+          commentId: mention.post.id,
+          mentionedUserId: mention.mentionedUserId,
+          type: 'MENTION',
+          comment: {
+            id: mention.post.id,
+            text: mention.post.content,
+            imageUrl: mention.post.imageUrl,
+            createdAt: mention.post.createdAt,
+            updatedAt: mention.post.updatedAt,
+            lessonId: null,
+            examId: null,
+            postId: mention.post.id,
+            post: {
+              id: mention.post.id,
+              title: mention.post.title || (mention.post.content ? mention.post.content.substring(0, 30) : 'منشور'),
+            },
+            user: mention.post.author,
+            parentId: null,
+            replies: [],
+          }
+        };
+      }
+
       return {
         ...mention,
-        type: isReply ? 'REPLY' : 'MENTION'
+        type: 'MENTION'
       };
     });
 
@@ -403,8 +491,10 @@ export class CommentsService {
       });
       const teacherCourseIds = teacher ? teacher.courses.map(c => c.id) : [];
 
-      const orConditions: Prisma.MentionWhereInput[] = [
-        { mentionedUserId: userId }
+      const orConditions: any[] = [
+        { mentionedUserId: userId },
+        { postComment: { post: { authorId: userId } } },
+        { post: { authorId: userId } },
       ];
 
       if (teacherCourseIds.length > 0) {

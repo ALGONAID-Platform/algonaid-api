@@ -333,13 +333,21 @@ model Mention {
   isRead    Boolean  @default(false)
   createdAt DateTime @default(now())
 
-  commentId Int
-  comment   Comment @relation(fields: [commentId], references: [id], onDelete: Cascade)
+  commentId Int?
+  comment   Comment? @relation(fields: [commentId], references: [id], onDelete: Cascade)
+
+  postCommentId Int?
+  postComment   PostComment? @relation(fields: [postCommentId], references: [id], onDelete: Cascade)
+
+  postId Int?
+  post   Post? @relation(fields: [postId], references: [id], onDelete: Cascade)
 
   mentionedUserId Int
   mentionedUser   User @relation(fields: [mentionedUserId], references: [id], onDelete: Cascade)
 
   @@index([mentionedUserId])
+  @@index([postCommentId])
+  @@index([postId])
 }
 
 // ===========================================================
@@ -364,6 +372,7 @@ model Post {
   pollOptions PollOption[]
   pollVotes   PollVote[]
   postViews   PostView[]
+  mentions    Mention[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -440,6 +449,8 @@ model PostComment {
   parentId Int?
   parent   PostComment?  @relation("PostCommentReplies", fields: [parentId], references: [id], onDelete: Cascade)
   replies  PostComment[] @relation("PostCommentReplies")
+
+  mentions Mention[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

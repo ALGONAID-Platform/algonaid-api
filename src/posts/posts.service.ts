@@ -9,6 +9,31 @@ export class PostsService {
 
   async create(createPostDto: CreatePostDto, authorId: number) {
     const { pollOptions, ...postData } = createPostDto;
+
+    let mentionedUserIds: number[] = [];
+    if (postData.content) {
+      const mentionRegex = /@\[([^\]]+)\]\(([^)]+)\)/g;
+      let match: RegExpExecArray | null;
+      while ((match = mentionRegex.exec(postData.content)) !== null) {
+        const first = match[1];
+        const second = match[2];
+        let parsedId = parseInt(second, 10);
+        if (isNaN(parsedId)) {
+          parsedId = parseInt(first, 10);
+        }
+        if (!isNaN(parsedId) && parsedId !== authorId && !mentionedUserIds.includes(parsedId)) {
+          mentionedUserIds.push(parsedId);
+        }
+      }
+    }
+
+    if (mentionedUserIds.length > 0) {
+      const validUsers = await this.prisma.user.findMany({
+        where: { id: { in: mentionedUserIds } },
+        select: { id: true },
+      });
+      mentionedUserIds = validUsers.map(u => u.id);
+    }
     
     return this.prisma.post.create({
       data: {
@@ -16,7 +41,14 @@ export class PostsService {
         authorId,
         pollOptions: postData.isPoll && pollOptions ? {
           create: pollOptions.map(text => ({ text }))
-        } : undefined
+        } : undefined,
+        ...(mentionedUserIds.length > 0 && {
+          mentions: {
+            create: mentionedUserIds.map(uid => ({
+              mentionedUserId: uid,
+            })),
+          },
+        }),
       },
     });
   }
