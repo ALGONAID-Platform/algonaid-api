@@ -330,6 +330,30 @@ export class AuthController {
     );
   }
 
+  // ==================== Verification Status ====================
+  @Get('verification-status')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({ summary: 'Get current user email verification status and remaining grace period' })
+  @ApiResponse({
+    status: 200,
+    description: 'Returns email verification status, grace period, and remaining days',
+    schema: {
+      example: {
+        userId: 1,
+        email: 'user@example.com',
+        emailVerified: false,
+        createdAt: '2026-10-10T12:00:00.000Z',
+        gracePeriodDays: 3,
+        remainingDays: 2,
+        isExpired: false,
+      },
+    },
+  })
+  async getVerificationStatus(@CurrentUser() user: JwtPayloadType) {
+    return await this.authService.getVerificationStatus(user.id);
+  }
+
   // ==================== Get Current User ====================
   @Get(':id')
   @UseGuards(JwtAuthGuard)

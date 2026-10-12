@@ -513,6 +513,42 @@ try {
     }
   }
 
+  // ==================== Get Verification Status ====================
+  async getVerificationStatus(userId: number) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        id: true,
+        email: true,
+        emailVerified: true,
+        createdAt: true,
+      },
+    });
+
+    if (!user) {
+      throw new NotFoundException(MESSAGES.AUTH.USER_NOT_EXIST(userId));
+    }
+
+    const GRACE_PERIOD_DAYS = 3;
+    const createdAtTime = new Date(user.createdAt).getTime();
+    const now = Date.now();
+    const diffMs = now - createdAtTime;
+    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+
+    const remainingDays = Math.max(0, GRACE_PERIOD_DAYS - diffDays);
+    const isExpired = !user.emailVerified && diffDays >= GRACE_PERIOD_DAYS;
+
+    return {
+      userId: user.id,
+      email: user.email,
+      emailVerified: user.emailVerified ?? false,
+      createdAt: user.createdAt,
+      gracePeriodDays: GRACE_PERIOD_DAYS,
+      remainingDays,
+      isExpired,
+    };
+  }
+
   async logout(token: string) {
     const decoded = this.jwtService.decode(token) as any;
     const expiresAt = new Date(decoded.exp * 1000);
