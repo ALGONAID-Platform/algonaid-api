@@ -584,11 +584,32 @@ export class ExamsService {
       ENDED: 3,
     };
 
-    return formatted.sort((a, b) => {
+    const sorted = formatted.sort((a, b) => {
       const priorityDiff = statusPriority[a.timeStatus] - statusPriority[b.timeStatus];
       if (priorityDiff !== 0) return priorityDiff;
+
+      if (a.timeStatus === 'UPCOMING') {
+        // الاختبار الأقرب للبدء له الأولوية (الذي يبدأ بعد ساعة يظهر قبل الذي يبدأ بعد ساعتين)
+        const startA = a.startTime ? new Date(a.startTime).getTime() : Infinity;
+        const startB = b.startTime ? new Date(b.startTime).getTime() : Infinity;
+        if (startA !== startB) return startA - startB;
+      } else if (a.timeStatus === 'ONGOING') {
+        // الاختبار الجاري الذي ينتهي قريباً له أولوية
+        const endA = a.endTime ? new Date(a.endTime).getTime() : Infinity;
+        const endB = b.endTime ? new Date(b.endTime).getTime() : Infinity;
+        if (endA !== endB) return endA - endB;
+      } else if (a.timeStatus === 'ENDED') {
+        // الاختبار المنتهي حديثاً يظهر أولاً بين المنتهية
+        const endA = a.endTime ? new Date(a.endTime).getTime() : 0;
+        const endB = b.endTime ? new Date(b.endTime).getTime() : 0;
+        if (endA !== endB) return endB - endA;
+      }
+
       return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
     });
+
+    // إرجاع 5 اختبارات فقط للصفحة الرئيسية
+    return sorted.slice(0, 5);
   }
 
   async startExam(studentUserId: number, examId: number) {

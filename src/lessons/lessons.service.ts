@@ -164,7 +164,7 @@ export class LessonsService {
         }
       },
       orderBy: { createdAt: 'desc' },
-      take: 10,
+      take: 7,
     });
 
     const mappedLessons = lessons.map(lesson => {
