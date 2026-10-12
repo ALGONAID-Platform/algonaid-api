@@ -41,14 +41,28 @@ export class AppController {
 
   @Get('modulesList/:courseId')
   @Header('Content-Type', 'text/html')
-  getCourseRedirect(@Param('courseId') courseId: string): string {
+  getCourseRedirect(@Param('courseId') courseId: string): Promise<string> | string {
     return this.appService.getRedirectPage('course', courseId);
   }
 
   @Get('lessonDetails/:lessonId')
   @Header('Content-Type', 'text/html')
-  getLessonRedirect(@Param('lessonId') lessonId: string): string {
+  getLessonRedirect(@Param('lessonId') lessonId: string): Promise<string> | string {
     return this.appService.getRedirectPage('lesson', lessonId);
+  }
+
+  @Get('examPage/:id')
+  @Header('Content-Type', 'text/html')
+  @ApiOperation({ summary: 'Serve exam redirect page with Open Graph preview' })
+  async getExamRedirect(@Param('id') id: string): Promise<string> {
+    return this.appService.getExamRedirectPage(id);
+  }
+
+  @Get('posts/:id')
+  @Header('Content-Type', 'text/html')
+  @ApiOperation({ summary: 'Serve post redirect page' })
+  async getPostRedirect(@Param('id') id: string): Promise<string> {
+    return this.appService.getRedirectPage('post', id);
   }
 
   @Post('upload/image')

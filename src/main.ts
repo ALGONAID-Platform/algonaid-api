@@ -33,7 +33,15 @@ async function bootstrap() {
 
   // مسارات تطبيق الفلاتر محفوظة تماماً بدون أي تعديل
   app.setGlobalPrefix('api/v1', {
-    exclude: ['modulesList/:courseId', 'lessonDetails/:courseId/:lessonId', 'lessonDetails/:lessonId', '.well-known/assetlinks.json', '.well-known/apple-app-site-association'],
+    exclude: [
+      'modulesList/:courseId',
+      'lessonDetails/:courseId/:lessonId',
+      'lessonDetails/:lessonId',
+      'examPage/:id',
+      'posts/:id',
+      '.well-known/assetlinks.json',
+      '.well-known/apple-app-site-association',
+    ],
   }); 
 
   // تفعيل حماية Helmet مع Content Security Policy مُشدَّد
@@ -44,7 +52,7 @@ async function bootstrap() {
         scriptSrc: ["'self'", "'unsafe-inline'"],   // unsafe-inline مطلوب للصفحات الـ HTML الداخلية
         styleSrc: ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'],
         fontSrc: ["'self'", 'https://fonts.gstatic.com'],
-        imgSrc: ["'self'", 'data:', 'blob:'],
+        imgSrc: ["'self'", 'data:', 'blob:', 'https:', 'http:'],
         connectSrc: ["'self'"],
         frameSrc: ["'none'"],
         objectSrc: ["'none'"],
@@ -82,11 +90,15 @@ async function bootstrap() {
     forbidNonWhitelisted: true,
   }));
 
-  // Add a raw Express route for /posts/:id to return the redirect HTML page.
+  // Add raw Express routes for deep link redirect HTML pages
   const expressApp = app.getHttpAdapter().getInstance();
-  expressApp.get('/posts/:id', (req: any, res: any) => {
+  expressApp.get('/posts/:id', async (req: any, res: any) => {
     const appService = app.get(AppService);
-    res.send(appService.getRedirectPage('post', req.params.id));
+    res.send(await appService.getRedirectPage('post', req.params.id));
+  });
+  expressApp.get('/examPage/:id', async (req: any, res: any) => {
+    const appService = app.get(AppService);
+    res.send(await appService.getExamRedirectPage(req.params.id));
   });
 
   app.useStaticAssets(join(__dirname, '..', 'public'), {
