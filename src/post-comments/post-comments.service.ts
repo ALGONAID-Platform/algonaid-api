@@ -62,7 +62,7 @@ export class PostCommentsService {
       finalMentionedUserIds = validUsers.map(u => u.id);
     }
 
-    return this.prisma.postComment.create({
+    return (this.prisma.postComment.create as any)({
       data: {
         text: dto.text,
         imageUrl: dto.imageUrl,

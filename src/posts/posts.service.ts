@@ -35,7 +35,7 @@ export class PostsService {
       mentionedUserIds = validUsers.map(u => u.id);
     }
     
-    return this.prisma.post.create({
+    return (this.prisma.post.create as any)({
       data: {
         ...postData,
         authorId,

@@ -342,7 +342,7 @@ export class CommentsService {
     }
 
     const [data, total] = await Promise.all([
-      this.prisma.mention.findMany({
+      (this.prisma.mention.findMany as any)({
         where: whereClause,
         orderBy: { createdAt: 'desc' },
         skip,
