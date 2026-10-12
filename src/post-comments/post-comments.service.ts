@@ -32,7 +32,24 @@ export class PostCommentsService {
     });
   }
 
-  async findAllByPost(postId: number) {
+  async findAllByPost(postId: number, userRole: Role = Role.STUDENT) {
+    const isTeacherOrAdmin = userRole === Role.ADMIN || userRole === Role.OWNER;
+
+    if (!isTeacherOrAdmin) {
+      const comments = await this.prisma.postComment.findMany({
+        where: { postId, parentId: null },
+        orderBy: { createdAt: 'asc' },
+        include: {
+          user: { select: { id: true, name: true, avatar: true } },
+        },
+      });
+
+      return comments.map((comment) => ({
+        ...comment,
+        replies: [],
+      }));
+    }
+
     return this.prisma.postComment.findMany({
       where: { postId, parentId: null },
       orderBy: { createdAt: 'asc' },
@@ -42,8 +59,8 @@ export class PostCommentsService {
           include: {
             user: { select: { id: true, name: true, avatar: true } },
           },
-          orderBy: { createdAt: 'asc' }
-        }
+          orderBy: { createdAt: 'asc' },
+        },
       },
     });
   }

@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException, ForbiddenException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateCommentDto } from './dto/create-comment.dto';
+import { Role, Prisma } from '@prisma/client';
 
 @Injectable()
 export class CommentsService {
@@ -42,6 +43,29 @@ export class CommentsService {
       }
     }
 
+    // Automatically notify the course/exam teacher if someone comments or replies
+    let teacherUserId: number | null = null;
+    if (lessonId) {
+      const lessonWithTeacher = await this.prisma.lesson.findUnique({
+        where: { id: lessonId },
+        select: { module: { select: { course: { select: { teacher: { select: { userId: true } } } } } } }
+      });
+      teacherUserId = lessonWithTeacher?.module?.course?.teacher?.userId ?? null;
+    } else if (examId) {
+      const examWithTeacher = await this.prisma.exam.findUnique({
+        where: { id: examId },
+        select: {
+          course: { select: { teacher: { select: { userId: true } } } },
+          lesson: { select: { module: { select: { course: { select: { teacher: { select: { userId: true } } } } } } } }
+        }
+      });
+      teacherUserId = examWithTeacher?.course?.teacher?.userId ?? examWithTeacher?.lesson?.module?.course?.teacher?.userId ?? null;
+    }
+
+    if (teacherUserId && teacherUserId !== userId && !finalMentionedUserIds.includes(teacherUserId)) {
+      finalMentionedUserIds.push(teacherUserId);
+    }
+
     const commentData: any = {
       text,
       userId,
@@ -77,13 +101,42 @@ export class CommentsService {
     });
   }
 
-  async getCommentsByLesson(lessonId: number) {
+  async getCommentsByLesson(lessonId: number, userRole: Role = Role.STUDENT) {
     // Check if lesson exists
     const lesson = await this.prisma.lesson.findUnique({
       where: { id: lessonId },
     });
     if (!lesson || lesson.status !== 'PUBLISHED') {
       throw new NotFoundException('Lesson not found');
+    }
+
+    const isTeacherOrAdmin = userRole === Role.ADMIN || userRole === Role.OWNER;
+
+    if (!isTeacherOrAdmin) {
+      const comments = await this.prisma.comment.findMany({
+        where: {
+          lessonId,
+          parentId: null,
+        },
+        include: {
+          user: {
+            select: {
+              id: true,
+              name: true,
+              avatar: true,
+              createdAt: true,
+            }
+          },
+        },
+        orderBy: {
+          createdAt: 'desc',
+        },
+      });
+
+      return comments.map(comment => ({
+        ...comment,
+        replies: [],
+      }));
     }
 
     // Fetch top-level comments with their nested replies
@@ -123,12 +176,41 @@ export class CommentsService {
     });
   }
 
-  async getCommentsByExam(examId: number) {
+  async getCommentsByExam(examId: number, userRole: Role = Role.STUDENT) {
     const exam = await this.prisma.exam.findUnique({
       where: { id: examId },
     });
     if (!exam) {
       throw new NotFoundException('Exam not found');
+    }
+
+    const isTeacherOrAdmin = userRole === Role.ADMIN || userRole === Role.OWNER;
+
+    if (!isTeacherOrAdmin) {
+      const comments = await this.prisma.comment.findMany({
+        where: {
+          examId,
+          parentId: null,
+        },
+        include: {
+          user: {
+            select: {
+              id: true,
+              name: true,
+              avatar: true,
+              createdAt: true,
+            }
+          },
+        },
+        orderBy: {
+          createdAt: 'desc',
+        },
+      });
+
+      return comments.map(comment => ({
+        ...comment,
+        replies: [],
+      }));
     }
 
     return this.prisma.comment.findMany({
@@ -265,12 +347,143 @@ export class CommentsService {
     });
   }
 
-  async getMyMentions(userId: number, page: number = 1, limit: number = 20) {
+  async getMyMentions(userId: number, userRole: Role = Role.STUDENT, page: number = 1, limit: number = 20) {
     const skip = (page - 1) * limit;
+
+    let whereClause: Prisma.MentionWhereInput;
+
+    if (userRole === Role.STUDENT) {
+      const student = await this.prisma.student.findUnique({
+        where: { userId },
+        select: {
+          id: true,
+          enrollments: {
+            where: { status: 'ACTIVE' },
+            select: { courseId: true }
+          }
+        }
+      });
+
+      const enrolledCourseIds = student ? student.enrollments.map(e => e.courseId) : [];
+
+      const [commentedLessons, commentedExams] = await Promise.all([
+        this.prisma.comment.findMany({
+          where: { userId, lessonId: { not: null } },
+          select: { lessonId: true },
+          distinct: ['lessonId']
+        }),
+        this.prisma.comment.findMany({
+          where: { userId, examId: { not: null } },
+          select: { examId: true },
+          distinct: ['examId']
+        })
+      ]);
+
+      const commentedLessonIds = commentedLessons.map(c => c.lessonId!).filter(Boolean);
+      const commentedExamIds = commentedExams.map(c => c.examId!).filter(Boolean);
+
+      const orConditions: Prisma.MentionWhereInput[] = [];
+
+      if (enrolledCourseIds.length > 0) {
+        orConditions.push(
+          {
+            comment: {
+              lesson: {
+                module: {
+                  courseId: { in: enrolledCourseIds }
+                }
+              }
+            }
+          },
+          {
+            comment: {
+              exam: {
+                OR: [
+                  { courseId: { in: enrolledCourseIds } },
+                  { lesson: { module: { courseId: { in: enrolledCourseIds } } } }
+                ]
+              }
+            }
+          }
+        );
+      }
+
+      if (commentedLessonIds.length > 0) {
+        orConditions.push({
+          comment: {
+            lessonId: { in: commentedLessonIds }
+          }
+        });
+      }
+
+      if (commentedExamIds.length > 0) {
+        orConditions.push({
+          comment: {
+            examId: { in: commentedExamIds }
+          }
+        });
+      }
+
+      if (orConditions.length === 0) {
+        return {
+          data: [],
+          meta: {
+            total: 0,
+            page,
+            limit,
+            totalPages: 0
+          }
+        };
+      }
+
+      whereClause = {
+        mentionedUserId: userId,
+        OR: orConditions
+      };
+    } else {
+      // Teacher (ADMIN) or OWNER
+      const teacher = await this.prisma.teacher.findUnique({
+        where: { userId },
+        include: { courses: { select: { id: true } } }
+      });
+      const teacherCourseIds = teacher ? teacher.courses.map(c => c.id) : [];
+
+      const orConditions: Prisma.MentionWhereInput[] = [
+        { mentionedUserId: userId }
+      ];
+
+      if (teacherCourseIds.length > 0) {
+        orConditions.push(
+          {
+            comment: {
+              lesson: {
+                module: {
+                  courseId: { in: teacherCourseIds }
+                }
+              }
+            }
+          },
+          {
+            comment: {
+              exam: {
+                OR: [
+                  { courseId: { in: teacherCourseIds } },
+                  { lesson: { module: { courseId: { in: teacherCourseIds } } } }
+                ]
+              }
+            }
+          }
+        );
+      }
+
+      whereClause = {
+        OR: orConditions
+      };
+    }
 
     const [data, total] = await Promise.all([
       this.prisma.mention.findMany({
-        where: { mentionedUserId: userId },
+        where: whereClause,
         orderBy: { createdAt: 'desc' },
         skip,
         take: limit,
@@ -294,13 +507,12 @@ export class CommentsService {
         }
       }),
       this.prisma.mention.count({
-        where: { mentionedUserId: userId }
+        where: whereClause
       })
     ]);
 
     const mappedData = data.map(mention => {
       const isReply = mention.comment.parent && mention.comment.parent.userId === mention.mentionedUserId;
-      // We can remove parent from the final output if we want, or leave it. We'll leave it for simplicity.
       return {
         ...mention,
         type: isReply ? 'REPLY' : 'MENTION'
@@ -318,24 +530,149 @@ export class CommentsService {
     };
   }
 
-  async getUnreadMentionsCount(userId: number) {
-    const count = await this.prisma.mention.count({
-      where: {
-        mentionedUserId: userId,
-        isRead: false
+  async getUnreadMentionsCount(userId: number, userRole: Role = Role.STUDENT) {
+    let whereClause: Prisma.MentionWhereInput;
+
+    if (userRole === Role.STUDENT) {
+      const student = await this.prisma.student.findUnique({
+        where: { userId },
+        select: {
+          id: true,
+          enrollments: {
+            where: { status: 'ACTIVE' },
+            select: { courseId: true }
+          }
+        }
+      });
+
+      const enrolledCourseIds = student ? student.enrollments.map(e => e.courseId) : [];
+
+      const [commentedLessons, commentedExams] = await Promise.all([
+        this.prisma.comment.findMany({
+          where: { userId, lessonId: { not: null } },
+          select: { lessonId: true },
+          distinct: ['lessonId']
+        }),
+        this.prisma.comment.findMany({
+          where: { userId, examId: { not: null } },
+          select: { examId: true },
+          distinct: ['examId']
+        })
+      ]);
+
+      const commentedLessonIds = commentedLessons.map(c => c.lessonId!).filter(Boolean);
+      const commentedExamIds = commentedExams.map(c => c.examId!).filter(Boolean);
+
+      const orConditions: Prisma.MentionWhereInput[] = [];
+
+      if (enrolledCourseIds.length > 0) {
+        orConditions.push(
+          {
+            comment: {
+              lesson: {
+                module: {
+                  courseId: { in: enrolledCourseIds }
+                }
+              }
+            }
+          },
+          {
+            comment: {
+              exam: {
+                OR: [
+                  { courseId: { in: enrolledCourseIds } },
+                  { lesson: { module: { courseId: { in: enrolledCourseIds } } } }
+                ]
+              }
+            }
+          }
+        );
       }
+
+      if (commentedLessonIds.length > 0) {
+        orConditions.push({
+          comment: {
+            lessonId: { in: commentedLessonIds }
+          }
+        });
+      }
+
+      if (commentedExamIds.length > 0) {
+        orConditions.push({
+          comment: {
+            examId: { in: commentedExamIds }
+          }
+        });
+      }
+
+      if (orConditions.length === 0) {
+        return { count: 0 };
+      }
+
+      whereClause = {
+        mentionedUserId: userId,
+        isRead: false,
+        OR: orConditions
+      };
+    } else {
+      const teacher = await this.prisma.teacher.findUnique({
+        where: { userId },
+        include: { courses: { select: { id: true } } }
+      });
+      const teacherCourseIds = teacher ? teacher.courses.map(c => c.id) : [];
+
+      const orConditions: Prisma.MentionWhereInput[] = [
+        { mentionedUserId: userId }
+      ];
+
+      if (teacherCourseIds.length > 0) {
+        orConditions.push(
+          {
+            comment: {
+              lesson: {
+                module: {
+                  courseId: { in: teacherCourseIds }
+                }
+              }
+            }
+          },
+          {
+            comment: {
+              exam: {
+                OR: [
+                  { courseId: { in: teacherCourseIds } },
+                  { lesson: { module: { courseId: { in: teacherCourseIds } } } }
+                ]
+              }
+            }
+          }
+        );
+      }
+
+      whereClause = {
+        isRead: false,
+        OR: orConditions
+      };
+    }
+
+    const count = await this.prisma.mention.count({
+      where: whereClause
     });
     return { count };
   }
 
-  async markMentionAsRead(userId: number, mentionId: number) {
+  async markMentionAsRead(userId: number, userRole: Role, mentionId: number) {
     const mention = await this.prisma.mention.findUnique({
       where: { id: mentionId }
     });
     if (!mention) {
       throw new NotFoundException('Mention not found');
     }
-    if (mention.mentionedUserId !== userId) {
+
+    const isTeacherOrOwner = userRole === Role.ADMIN || userRole === Role.OWNER;
+    const isAuthorized = mention.mentionedUserId === userId || isTeacherOrOwner;
+
+    if (!isAuthorized) {
       throw new ForbiddenException('You do not have access to this mention');
     }
 

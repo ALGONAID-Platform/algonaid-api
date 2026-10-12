@@ -32,9 +32,12 @@ export class PostCommentsController {
   @ApiBearerAuth('JWT-auth')
   @UseGuards(AuthRollGuard)
   @userRoles(Role.STUDENT, Role.ADMIN, Role.OWNER)
-  @ApiOperation({ summary: 'جلب تعليقات المنشور مع الردود' })
-  findAll(@Param('postId', ParseIntPipe) postId: number) {
-    return this.postCommentsService.findAllByPost(postId);
+  @ApiOperation({ summary: 'جلب تعليقات المنشور (مع الردود للمعلم وبدونها للطالب)' })
+  findAll(
+    @Param('postId', ParseIntPipe) postId: number,
+    @CurrentUser() user: types.JwtPayloadType,
+  ) {
+    return this.postCommentsService.findAllByPost(postId, user.role);
   }
 
   @Patch(':id')

@@ -54,16 +54,22 @@ export class CommentsController {
   @UseGuards(AuthRollGuard)
   @userRoles(Role.STUDENT, Role.ADMIN, Role.OWNER)
   @ApiOperation({ summary: 'Get all comments and replies for a lesson' })
-  getByLesson(@Param('lessonId', ParseIntPipe) lessonId: number) {
-    return this.commentsService.getCommentsByLesson(lessonId);
+  getByLesson(
+    @Param('lessonId', ParseIntPipe) lessonId: number,
+    @CurrentUser() user: types.JwtPayloadType
+  ) {
+    return this.commentsService.getCommentsByLesson(lessonId, user.role);
   }
 
   @Get('exam/:examId')
   @UseGuards(AuthRollGuard)
   @userRoles(Role.STUDENT, Role.ADMIN, Role.OWNER)
   @ApiOperation({ summary: 'Get all comments and replies for an exam/challenge' })
-  getByExam(@Param('examId', ParseIntPipe) examId: number) {
-    return this.commentsService.getCommentsByExam(examId);
+  getByExam(
+    @Param('examId', ParseIntPipe) examId: number,
+    @CurrentUser() user: types.JwtPayloadType
+  ) {
+    return this.commentsService.getCommentsByExam(examId, user.role);
   }
 
   @Get('course/:courseId/latest')
@@ -109,7 +115,7 @@ export class CommentsController {
   ) {
     const pageNumber = Math.max(page ? parseInt(page, 10) : 1, 1);
     const limitNumber = Math.min(limit ? parseInt(limit, 10) : 20, 100); // max 100
-    return this.commentsService.getMyMentions(user.id, pageNumber, limitNumber);
+    return this.commentsService.getMyMentions(user.id, user.role, pageNumber, limitNumber);
   }
 
   @Get('mentions/unread-count')
@@ -117,15 +123,18 @@ export class CommentsController {
   @userRoles(Role.STUDENT, Role.ADMIN, Role.OWNER)
   @ApiOperation({ summary: 'Get unread mentions count for the current user' })
   getUnreadMentionsCount(@CurrentUser() user: types.JwtPayloadType) {
-    return this.commentsService.getUnreadMentionsCount(user.id);
+    return this.commentsService.getUnreadMentionsCount(user.id, user.role);
   }
 
   @Patch('mentions/:id/read')
   @UseGuards(AuthRollGuard)
   @userRoles(Role.STUDENT, Role.ADMIN, Role.OWNER)
   @ApiOperation({ summary: 'Mark a mention as read' })
-  markMentionAsRead(@Param('id', ParseIntPipe) id: number, @CurrentUser() user: types.JwtPayloadType) {
-    return this.commentsService.markMentionAsRead(user.id, id);
+  markMentionAsRead(
+    @Param('id', ParseIntPipe) id: number,
+    @CurrentUser() user: types.JwtPayloadType
+  ) {
+    return this.commentsService.markMentionAsRead(user.id, user.role, id);
   }
 }
  
