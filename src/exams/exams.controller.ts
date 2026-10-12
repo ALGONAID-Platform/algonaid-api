@@ -33,6 +33,7 @@ import { CreateExamDto } from './dto/create-exam.dto';
 import { UpdateExamDto } from './dto/update-exam.dto';
 import { SubmitExamDto } from './dto/exam-submission.dto';
 import { AuthRollGuard } from 'src/auth/guards/auth-roll.guard';
+import { VerifiedOnlyGuard } from 'src/auth/guards/verified-only.guard';
 import { userRoles } from 'src/auth/decorators/user_roll.decorator';
 import { CurrentUser } from 'src/auth/decorators/current-user.decorator';
 import { UploadcareStorageService } from 'src/utils/uploadcare-storage.service';
@@ -177,6 +178,7 @@ export class ExamsController {
   }
 
   @Post(':examId/start')
+  @UseGuards(VerifiedOnlyGuard)
   @userRoles(Role.STUDENT, Role.ADMIN, Role.OWNER)
   @ApiOperation({ summary: 'بدء محاولة جديدة للاختبار' })
   @ApiParam({ name: 'examId', description: 'معرّف الاختبار' })
@@ -188,6 +190,7 @@ export class ExamsController {
   }
 
   @Post('attempts/:attemptId/submit')
+  @UseGuards(VerifiedOnlyGuard)
   @userRoles(Role.STUDENT, Role.ADMIN, Role.OWNER)
   @ApiOperation({ summary: 'تسليم إجابات الاختبار' })
   @ApiParam({ name: 'attemptId', description: 'معرّف المحاولة' })

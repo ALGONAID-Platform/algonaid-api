@@ -1,6 +1,7 @@
 import { CanActivate, ExecutionContext, Injectable, ForbiddenException } from '@nestjs/common';
 import { Observable } from 'rxjs';
 import { MESSAGES } from '../../utils/messages';
+import { CURRENT_USER_KEY } from '../../utils/conistants';
 
 @Injectable()
 export class VerifiedOnlyGuard implements CanActivate {
@@ -8,7 +9,7 @@ export class VerifiedOnlyGuard implements CanActivate {
     context: ExecutionContext,
   ): boolean | Promise<boolean> | Observable<boolean> {
     const request = context.switchToHttp().getRequest();
-    const user = request.user; // Ensure this guard is applied AFTER AuthRollGuard / JwtAuthGuard
+    const user = request.user ?? request[CURRENT_USER_KEY]; // Ensure this guard is applied AFTER AuthRollGuard / JwtAuthGuard
 
     if (!user) {
       return false; // If there's no user, let the AuthGuard handle the 401
@@ -17,7 +18,7 @@ export class VerifiedOnlyGuard implements CanActivate {
     if (!user.emailVerified) {
       throw new ForbiddenException({
         statusCode: 403,
-        message: 'عذراً، يجب تأكيد بريدك الإلكتروني أولاً للقيام بهذا الإجراء.',
+        message: MESSAGES.AUTH.EMAIL_VERIFICATION_REQUIRED,
         action: 'EMAIL_VERIFICATION_REQUIRED',
       });
     }

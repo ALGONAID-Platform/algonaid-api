@@ -4,6 +4,7 @@ import { UploadcareStorageService } from '../utils/uploadcare-storage.service';
 import { CommentsService } from './comments.service';
 import { CreateCommentDto } from './dto/create-comment.dto';
 import { AuthRollGuard } from '../auth/guards/auth-roll.guard';
+import { VerifiedOnlyGuard } from '../auth/guards/verified-only.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { userRoles } from '../auth/decorators/user_roll.decorator';
 import { Role } from '@prisma/client';
@@ -22,7 +23,7 @@ export class CommentsController {
   ) {}
 
   @Post('upload-image')
-  @UseGuards(AuthRollGuard)
+  @UseGuards(AuthRollGuard, VerifiedOnlyGuard)
   @userRoles(Role.STUDENT, Role.ADMIN, Role.OWNER)
   @UseInterceptors(FileInterceptor('image'))
   @ApiOperation({ summary: 'Upload an image for a comment and get its URL' })
@@ -45,7 +46,7 @@ export class CommentsController {
   }
 
   @Post()
-  @UseGuards(AuthRollGuard)
+  @UseGuards(AuthRollGuard, VerifiedOnlyGuard)
   @userRoles(Role.STUDENT, Role.ADMIN, Role.OWNER)
   @ApiOperation({ summary: 'Create a new comment or reply' })
   create(@Body() createCommentDto: CreateCommentDto, @CurrentUser() user: types.JwtPayloadType) {
@@ -81,7 +82,7 @@ export class CommentsController {
   }
 
   @Patch(':id')
-  @UseGuards(AuthRollGuard)
+  @UseGuards(AuthRollGuard, VerifiedOnlyGuard)
   @userRoles(Role.STUDENT, Role.ADMIN, Role.OWNER)
   @ApiOperation({ summary: 'Update a comment' })
   update(

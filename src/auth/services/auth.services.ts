@@ -139,10 +139,19 @@ export class AuthService {
 
     if (existingUser) {
       if (!existingUser.emailVerified && !existingUser.googleId) {
-        await this.resendVerificationEmail({ email });
-        throw new UnauthorizedException(MESSAGES.AUTH.EMAIL_NOT_VERIFIED_SENT_AGAIN);
+        const diffDays = Math.floor((Date.now() - new Date(existingUser.createdAt).getTime()) / (1000 * 60 * 60 * 24));
+        if (diffDays >= 3) {
+          // انتهت مهلة الـ 3 أيام للحساب غير المؤكد، نقوم بحذفه وإتاحة التسجيل من جديد بنفس الإيميل
+          await this.prisma.student.deleteMany({ where: { userId: existingUser.id } });
+          await this.prisma.teacher.deleteMany({ where: { userId: existingUser.id } });
+          await this.prisma.user.delete({ where: { id: existingUser.id } });
+        } else {
+          await this.resendVerificationEmail({ email });
+          throw new UnauthorizedException(MESSAGES.AUTH.EMAIL_NOT_VERIFIED_SENT_AGAIN);
+        }
+      } else {
+        throw new ConflictException(MESSAGES.AUTH.EMAIL_ALREADY_REGISTERED);
       }
-      throw new ConflictException(MESSAGES.AUTH.EMAIL_ALREADY_REGISTERED);
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
@@ -329,6 +338,13 @@ try {
 
     // ===== التحقق من تأكيد البريد الإلكتروني =====
     if (!user.emailVerified) {
+      const diffDays = Math.floor((Date.now() - new Date(user.createdAt).getTime()) / (1000 * 60 * 60 * 24));
+      if (diffDays >= 3) {
+        await this.prisma.student.deleteMany({ where: { userId: user.id } });
+        await this.prisma.teacher.deleteMany({ where: { userId: user.id } });
+        await this.prisma.user.delete({ where: { id: user.id } });
+        throw new UnauthorizedException('انتهت مهلة تأكيد الحساب (3 أيام) وتم حذف الحساب تلقائياً. يرجى إنشاء حساب جديد.');
+      }
       await this.resendVerificationEmail({ email });
       throw new UnauthorizedException(MESSAGES.AUTH.EMAIL_NOT_VERIFIED_SENT_AGAIN);
     }
@@ -537,6 +553,12 @@ try {
 
     const remainingDays = Math.max(0, GRACE_PERIOD_DAYS - diffDays);
     const isExpired = !user.emailVerified && diffDays >= GRACE_PERIOD_DAYS;
+
+    if (isExpired) {
+      await this.prisma.student.deleteMany({ where: { userId: user.id } });
+      await this.prisma.teacher.deleteMany({ where: { userId: user.id } });
+      await this.prisma.user.delete({ where: { id: user.id } });
+    }
 
     return {
       userId: user.id,

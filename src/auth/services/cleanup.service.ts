@@ -1,51 +1,68 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { PrismaService } from 'src/prisma/prisma.service';
 
 @Injectable()
-export class CleanupService {
+export class CleanupService implements OnModuleInit {
   private readonly logger = new Logger(CleanupService.name);
 
   constructor(private prisma: PrismaService) {}
 
-  @Cron(CronExpression.EVERY_DAY_AT_MIDNIGHT)
-  async cleanupUnverifiedAccounts() {
-    this.logger.log('Starting unverified accounts cleanup CRON job...');
+  async onModuleInit() {
+    this.logger.log('CleanupService initialized. Running unverified accounts cleanup on startup...');
+    await this.cleanupUnverifiedAccounts();
+  }
 
-    // 7 days ago
-    const sevenDaysAgo = new Date();
-    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+  @Cron(CronExpression.EVERY_HOUR)
+  async cleanupUnverifiedAccounts() {
+    this.logger.log('Starting unverified accounts cleanup CRON job (3 days threshold)...');
+
+    // 3 days ago (72 hours)
+    const threeDaysAgo = new Date();
+    threeDaysAgo.setDate(threeDaysAgo.getDate() - 3);
 
     try {
-      // Find all users who are not verified and created more than 7 days ago
+      // Find all users who are not verified and created more than 3 days ago
       const usersToDelete = await this.prisma.user.findMany({
         where: {
           emailVerified: false,
           createdAt: {
-            lt: sevenDaysAgo,
+            lt: threeDaysAgo,
           },
-          // Additional safety: Ensure they haven't made any purchases
-          // If a user has active enrollments, we probably shouldn't delete them.
-          studentProfile: {
-            enrollments: {
-              none: {},
-            },
-          },
+        },
+        select: {
+          id: true,
+          email: true,
+          createdAt: true,
         },
       });
 
       if (usersToDelete.length === 0) {
-        this.logger.log('No unverified accounts found for deletion.');
+        this.logger.log('No unverified accounts older than 3 days found for deletion.');
         return;
       }
 
-      this.logger.log(`Found ${usersToDelete.length} unverified accounts older than 7 days. Deleting...`);
+      this.logger.log(`Found ${usersToDelete.length} unverified accounts older than 3 days. Deleting...`);
 
       const userIds = usersToDelete.map(u => u.id);
 
-      // Prisma requires us to delete dependent records or use onDelete: Cascade in schema.
-      // Assuming Prisma schema has cascade deletes for profiles/tokens etc, 
-      // otherwise this will throw a foreign key constraint error.
+      // Clean up dependent profile records first to prevent foreign key violations
+      await this.prisma.student.deleteMany({
+        where: {
+          userId: {
+            in: userIds,
+          },
+        },
+      });
+
+      await this.prisma.teacher.deleteMany({
+        where: {
+          userId: {
+            in: userIds,
+          },
+        },
+      });
+
       const deleted = await this.prisma.user.deleteMany({
         where: {
           id: {
@@ -54,7 +71,7 @@ export class CleanupService {
         },
       });
 
-      this.logger.log(`Successfully deleted ${deleted.count} unverified accounts.`);
+      this.logger.log(`Successfully deleted ${deleted.count} unverified accounts older than 3 days.`);
     } catch (error) {
       this.logger.error('Failed to cleanup unverified accounts', error);
     }
