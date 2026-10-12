@@ -9,9 +9,11 @@ import { userRoles } from '../auth/decorators/user_roll.decorator';
 import { Role } from '@prisma/client';
 import * as types from '../utils/types';
 import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
+import { SkipThrottle } from '@nestjs/throttler';
 
 @ApiTags('comments')
 @ApiBearerAuth('JWT-auth')
+@SkipThrottle()
 @Controller('comments')
 export class CommentsController {
   constructor(

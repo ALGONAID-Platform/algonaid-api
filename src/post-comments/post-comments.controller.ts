@@ -9,8 +9,10 @@ import { Role } from '@prisma/client';
 import { CurrentUser } from 'src/auth/decorators/current-user.decorator';
 import * as types from 'src/utils/types';
 import { VerifiedOnlyGuard } from 'src/auth/guards/verified-only.guard';
+import { SkipThrottle } from '@nestjs/throttler';
 
 @ApiTags('post-comments')
+@SkipThrottle()
 @Controller('posts/:postId/comments')
 export class PostCommentsController {
   constructor(private readonly postCommentsService: PostCommentsService) {}
