@@ -56,22 +56,16 @@ export class CommentsController {
   @UseGuards(AuthRollGuard)
   @userRoles(Role.STUDENT, Role.ADMIN, Role.OWNER)
   @ApiOperation({ summary: 'Get all comments and replies for a lesson' })
-  getByLesson(
-    @Param('lessonId', ParseIntPipe) lessonId: number,
-    @CurrentUser() user: types.JwtPayloadType
-  ) {
-    return this.commentsService.getCommentsByLesson(lessonId, user.role);
+  getByLesson(@Param('lessonId', ParseIntPipe) lessonId: number) {
+    return this.commentsService.getCommentsByLesson(lessonId);
   }
 
   @Get('exam/:examId')
   @UseGuards(AuthRollGuard)
   @userRoles(Role.STUDENT, Role.ADMIN, Role.OWNER)
   @ApiOperation({ summary: 'Get all comments and replies for an exam/challenge' })
-  getByExam(
-    @Param('examId', ParseIntPipe) examId: number,
-    @CurrentUser() user: types.JwtPayloadType
-  ) {
-    return this.commentsService.getCommentsByExam(examId, user.role);
+  getByExam(@Param('examId', ParseIntPipe) examId: number) {
+    return this.commentsService.getCommentsByExam(examId);
   }
 
   @Get('course/:courseId/latest')
