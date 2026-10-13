@@ -1,8 +1,8 @@
-import { Controller, Post, UploadedFile, UseInterceptors, BadRequestException, UseGuards } from '@nestjs/common';
+import { Controller, Post, UploadedFile, UploadedFiles, UseInterceptors, BadRequestException, UseGuards } from '@nestjs/common';
 import { AuthRollGuard } from '../auth/guards/auth-roll.guard';
 import { userRoles } from '../auth/decorators/user_roll.decorator';
 import { Role } from '@prisma/client';
-import { FileInterceptor } from '@nestjs/platform-express';
+import { FileInterceptor, FileFieldsInterceptor } from '@nestjs/platform-express';
 import { memoryStorage } from 'multer';
 import { UploadcareStorageService } from '../utils/uploadcare-storage.service';
 
@@ -10,10 +10,13 @@ import { UploadcareStorageService } from '../utils/uploadcare-storage.service';
 export class MediaController {
   constructor(private readonly uploadcareStorageService: UploadcareStorageService) {}
 
-  @Post('images')
+  @Post(['images', 'upload'])
   @UseGuards(AuthRollGuard)
   @userRoles(Role.STUDENT, Role.ADMIN, Role.OWNER)
-  @UseInterceptors(FileInterceptor('file', {
+  @UseInterceptors(FileFieldsInterceptor([
+    { name: 'file', maxCount: 1 },
+    { name: 'image', maxCount: 1 },
+  ], {
     storage: memoryStorage(),
     fileFilter: (req, file, cb) => {
       if (!file.mimetype.match(/\/(jpg|jpeg|png|gif|webp)$/)) {
@@ -23,7 +26,8 @@ export class MediaController {
     },
     limits: { fileSize: 5 * 1024 * 1024 }, // 5MB max
   }))
-  async uploadImage(@UploadedFile() file: Express.Multer.File) {
+  async uploadImage(@UploadedFiles() files: { file?: Express.Multer.File[]; image?: Express.Multer.File[] }) {
+    const file = files?.file?.[0] || files?.image?.[0];
     if (!file) {
       throw new BadRequestException('No file uploaded');
     }
@@ -32,6 +36,7 @@ export class MediaController {
       const url = await this.uploadcareStorageService.upload(file);
       return {
         url,
+        imageUrl: url,
         message: 'Image uploaded successfully'
       };
     } catch (error) {
