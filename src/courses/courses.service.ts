@@ -186,6 +186,51 @@ export class CoursesService {
     });
   }
 
+  async findPaidCourses(userId?: number) {
+    const student = userId ? await this.prisma.student.findUnique({ where: { userId } }) : null;
+    const studentId = student?.id;
+
+    const courses = await this.prisma.course.findMany({
+      where: {
+        isPaid: true,
+        // استبعد الكورسات التي اشترك فيها الطالب بالفعل
+        ...(studentId && {
+          NOT: {
+            enrollments: {
+              some: {
+                studentId,
+                status: 'ACTIVE',
+              },
+            },
+          },
+        }),
+      },
+      include: {
+        teacher: { include: { user: { select: { name: true, avatar: true } } } },
+        modules: { select: { title: true }, take: 3 },
+        _count: {
+          select: {
+            modules: true,
+            enrollments: { where: { status: 'ACTIVE' } },
+          },
+        },
+        enrollments: studentId ? { where: { studentId }, select: { id: true } } : false,
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    return courses.map((course) => {
+      const { modules, enrollments, _count, ...rest } = course;
+      return {
+        ...rest,
+        moduleTitles: modules.map((m) => m.title),
+        modulesCount: _count.modules,
+        enrollmentsCount: _count.enrollments || 0,
+        isEnrolled: !!(enrollments && enrollments.length > 0),
+      };
+    });
+  }
+
   async search(query: string, userId?: number) {
     if (!query) {
       return { courses: [], modules: [], lessons: [], practiceExams: [] };

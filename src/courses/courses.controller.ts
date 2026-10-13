@@ -63,6 +63,14 @@ export class CoursesController {
     return this.coursesService.search(safeQuery, user?.id);
   }
 
+  @Get('paid')
+  @SkipThrottle()
+  @ApiOperation({ summary: 'Get all paid courses (excludes already-enrolled courses for authenticated users)' })
+  @UseGuards(OptionalAuthGuard)
+  findPaidCourses(@CurrentUser() user?: types.JwtPayloadType) {
+    return this.coursesService.findPaidCourses(user?.id);
+  }
+
   @Get(':id')
   @SkipThrottle()
   @SwaggerGetCourse()
