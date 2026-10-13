@@ -149,16 +149,19 @@ export class CoursesService {
     const isPrivileged = role === 'OWNER' || role === 'ADMIN';
 
     const courses = await this.prisma.course.findMany({
-      where: (studentId && !isPrivileged) ? {
-        NOT: {
-          enrollments: {
-            some: {
-              studentId: studentId,
-              status: 'ACTIVE',
+      where: {
+        isPaid: false,
+        ...((studentId && !isPrivileged) ? {
+          NOT: {
+            enrollments: {
+              some: {
+                studentId: studentId,
+                status: 'ACTIVE',
+              },
             },
           },
-        },
-      } : {},
+        } : {}),
+      },
       include: {
         teacher: { include: { user: { select: { name: true, avatar: true } } } },
         modules: { select: { title: true }, take: 3 },
