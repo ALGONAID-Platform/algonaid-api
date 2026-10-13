@@ -24,6 +24,7 @@ import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { PostsModule } from './posts/posts.module';
 import { PostCommentsModule } from './post-comments/post-comments.module';
 import { PaymentsModule } from './payments/payments.module';
+import { AssignmentsModule } from './assignments/assignments.module';
 
 @Module({
   imports: [
@@ -53,6 +54,7 @@ import { PaymentsModule } from './payments/payments.module';
     LessonsModule,
     ModulesModule,
     ExamsModule,
+    AssignmentsModule,
     ProgressModule,
     UsersModule,
     CommentsModule,

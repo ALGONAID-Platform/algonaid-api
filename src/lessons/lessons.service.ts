@@ -156,6 +156,15 @@ export class LessonsService {
           exam: {
             select: { id: true }
           },
+          assignment: {
+            select: {
+              id: true,
+              title: true,
+              type: true,
+              maxScore: true,
+              dueDate: true,
+            }
+          },
           _count: {
             select: { comments: true }
           }
@@ -173,7 +182,7 @@ export class LessonsService {
     ]);
 
     const mappedLessons = lessons.map(lesson => {
-      const { exam, _count, ...rest } = lesson;
+      const { exam, assignment, _count, ...rest } = lesson;
       const shouldMask = isPaidCourse && !isExempt && !lesson.isFreePreview;
 
       return {
@@ -185,6 +194,8 @@ export class LessonsService {
         isLocked: shouldMask,
         commentsCount: _count.comments,
         hasTest: !!exam,
+        hasAssignment: !!assignment,
+        assignment: assignment || null,
       };
     });
 
@@ -273,6 +284,11 @@ export class LessonsService {
       where: { id },
       include: {
         exam: true,
+        assignment: {
+          include: {
+            exam: true,
+          },
+        },
         module: {
           include: {
             course: {

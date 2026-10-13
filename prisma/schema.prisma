@@ -35,6 +35,18 @@ enum PaymentStatus {
   REJECTED // مرفوض
 }
 
+enum AssignmentType {
+  QUIZ // كويز اختياري
+  TASK // تكليف ومهمة عملية
+}
+
+enum SubmissionStatus {
+  PENDING
+  SUBMITTED
+  GRADED
+  RESUBMISSION_REQUESTED
+}
+
 model User {
   id                   Int       @id @default(autoincrement())
   name                 String
@@ -69,6 +81,9 @@ model User {
 
   // ==================== Payments Relations ====================
   reviewedPayments Payment[] @relation("ReviewedPayments")
+
+  // ==================== Assignments Relations ====================
+  gradedSubmissions AssignmentSubmission[] @relation("GradedSubmissions")
 }
 
 model Student {
@@ -85,6 +100,7 @@ model Student {
   examAttempts   ExamAttempt[]
   lessonProgress LessonProgress[]
   earnedBadges   EarnedBadge[] // الأوسمة المكتسبة بشكل دائم
+  assignmentSubmissions AssignmentSubmission[]
 }
 
 // جدول الأوسمة المكتسبة بشكل دائم
@@ -195,6 +211,7 @@ model Lesson {
   moduleId       Int
   module         Module           @relation(fields: [moduleId], references: [id], onDelete: Cascade)
   exam           Exam?
+  assignment     Assignment?
   lessonProgress LessonProgress[]
   comments       Comment[]
 }
@@ -237,9 +254,10 @@ model Exam {
   courseId Int?
   course   Course? @relation(fields: [courseId], references: [id], onDelete: Cascade)
 
-  questions Question[]
-  attempts  ExamAttempt[]
-  comments  Comment[]
+  assignment Assignment?
+  questions  Question[]
+  attempts   ExamAttempt[]
+  comments   Comment[]
 }
 
 model Question {
@@ -515,3 +533,57 @@ model Payment {
   @@index([courseId])
   @@index([status])
 }
+
+model Assignment {
+  id            Int            @id @default(autoincrement())
+  title         String
+  description   String?        @db.Text
+  type          AssignmentType @default(TASK)
+  maxScore      Int            @default(100)
+  dueDate       DateTime?
+  attachmentUrl String?        // ملف مرفق من المعلم (PDF، صورة، تعليمات)
+
+  lessonId      Int            @unique
+  lesson        Lesson         @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+
+  examId        Int?           @unique
+  exam          Exam?          @relation(fields: [examId], references: [id], onDelete: SetNull)
+
+  submissions   AssignmentSubmission[]
+
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+}
+
+model AssignmentSubmission {
+  id               Int              @id @default(autoincrement())
+
+  assignmentId     Int
+  assignment       Assignment       @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
+
+  studentId        Int
+  student          Student          @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  // تسليم الطالب
+  content          String?          @db.Text
+  fileUrl          String?
+  submittedAt      DateTime         @default(now())
+  status           SubmissionStatus @default(SUBMITTED)
+
+  // تقييم وتصحيح المعلم
+  score            Int?
+  feedback         String?          @db.Text
+  feedbackImageUrl String?
+  gradedAt         DateTime?
+  gradedById       Int?
+  gradedBy         User?            @relation("GradedSubmissions", fields: [gradedById], references: [id], onDelete: SetNull)
+
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+
+  @@unique([assignmentId, studentId])
+  @@index([assignmentId])
+  @@index([studentId])
+  @@index([status])
+}
+
