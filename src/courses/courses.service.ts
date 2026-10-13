@@ -207,10 +207,8 @@ export class CoursesService {
       },
       include: {
         teacher: { include: { user: { select: { name: true, avatar: true } } } },
-        modules: { select: { title: true }, take: 3 },
         _count: {
           select: {
-            modules: true,
             enrollments: { where: { status: 'ACTIVE' } },
           },
         },
@@ -220,11 +218,9 @@ export class CoursesService {
     });
 
     return courses.map((course) => {
-      const { modules, enrollments, _count, ...rest } = course;
+      const { enrollments, _count, ...rest } = course;
       return {
         ...rest,
-        moduleTitles: modules.map((m) => m.title),
-        modulesCount: _count.modules,
         enrollmentsCount: _count.enrollments || 0,
         isEnrolled: !!(enrollments && enrollments.length > 0),
       };
