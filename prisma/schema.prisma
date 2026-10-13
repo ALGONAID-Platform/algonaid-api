@@ -178,6 +178,7 @@ model Lesson {
   content        String?          @db.Text
   videoUrl       String?
   pdfUrl         String?
+  imageUrl       String? // صورة أو غلاف الدرس
   status         LessonStatus     @default(DRAFT)
   isReading      Boolean          @default(false)
   order          Int              @default(0)

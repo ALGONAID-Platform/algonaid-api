@@ -29,6 +29,11 @@ export class CreateLessonDto {
   @IsString()
   pdfUrl?: string;
 
+  @ApiProperty({ example: 'https://api.exchangesmangement.online/uploads/lesson-cover.jpg', required: false, description: 'رابط صورة أو غلاف الدرس' })
+  @IsOptional()
+  @IsString()
+  imageUrl?: string;
+
   @ApiProperty({ enum: LessonStatus, example: LessonStatus.DRAFT, required: false })
   @IsOptional()
   @IsEnum(LessonStatus)
