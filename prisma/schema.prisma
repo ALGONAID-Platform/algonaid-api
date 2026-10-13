@@ -18,6 +18,23 @@ enum Role {
   OWNER // who has all privalges
 }
 
+enum CourseType {
+  RECORDED // كورس مسجل عادي
+  LIVE // دورة تفاعلية مباشرة
+}
+
+enum LiveStatus {
+  SCHEDULED // مجدول لم يبدأ بعد
+  LIVE_NOW // بث مباشر الآن
+  COMPLETED // منتهي وتم رفع التسجيل
+}
+
+enum PaymentStatus {
+  PENDING // قيد المراجعة
+  APPROVED // تم التأكيد وتفعيل الكورس
+  REJECTED // مرفوض
+}
+
 model User {
   id                   Int       @id @default(autoincrement())
   name                 String
@@ -49,6 +66,9 @@ model User {
   postLikes    PostLike[]
   pollVotes    PollVote[]
   postViews    PostView[]
+
+  // ==================== Payments Relations ====================
+  reviewedPayments Payment[] @relation("ReviewedPayments")
 }
 
 model Student {
@@ -61,6 +81,7 @@ model Student {
   userId         Int              @unique
   user           User             @relation(fields: [userId], references: [id])
   enrollments    Enrollment[] // one user can have many courses  
+  payments       Payment[]
   examAttempts   ExamAttempt[]
   lessonProgress LessonProgress[]
   earnedBadges   EarnedBadge[] // الأوسمة المكتسبة بشكل دائم
@@ -120,6 +141,14 @@ model Course {
   enrollments   Enrollment[]
   instructorId  Int
   teacher       Teacher        @relation(fields: [instructorId], references: [id])
+  // Paid & Live Cohorts
+  isPaid            Boolean        @default(false)
+  price             Decimal?       @db.Decimal(10, 2)
+  discountedPrice   Decimal?       @db.Decimal(10, 2)
+  courseType        CourseType     @default(RECORDED)
+  scheduleDaysText  String? // أيام وتوقيت المحاضرات للبث المباشر
+  payments          Payment[]
+
   modules       Module[]
   practiceExams PracticeExam[]
   exams         Exam[] // اختبارات الكورس
@@ -154,6 +183,14 @@ model Lesson {
   order          Int              @default(0)
   createdAt      DateTime         @default(now())
   updatedAt      DateTime         @updatedAt
+  // Paid & Live Features
+  isFreePreview     Boolean          @default(false) // معاينة مجانية للطلاب غير المشتركين
+  liveMeetingUrl    String? // رابط زوم أو جوجل ميت (محجوب عن غير المشتركين)
+  scheduledAt       DateTime? // موعد المحاضرة المباشرة
+  durationMinutes   Int? // مدة المحاضرة بالدقائق
+  liveStatus        LiveStatus? // حالة البث (SCHEDULED, LIVE_NOW, COMPLETED)
+  recordingVideoUrl String? // تسجيل البث بعد انتهائه
+
   moduleId       Int
   module         Module           @relation(fields: [moduleId], references: [id], onDelete: Cascade)
   exam           Exam?
@@ -454,4 +491,26 @@ model PostComment {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+model Payment {
+  id              Int           @id @default(autoincrement())
+  studentId       Int
+  student         Student       @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  courseId        Int
+  course          Course        @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  amount          Decimal       @db.Decimal(10, 2)
+  receiptUrl      String        // صورة سند الدفع أو الوصل
+  status          PaymentStatus @default(PENDING)
+  rejectionReason String?       @db.Text
+  reviewedById    Int?
+  reviewedBy      User?         @relation("ReviewedPayments", fields: [reviewedById], references: [id])
+  reviewedAt      DateTime?
+  notes           String?       @db.Text
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  @@index([studentId])
+  @@index([courseId])
+  @@index([status])
 }

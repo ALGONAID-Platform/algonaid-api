@@ -11,6 +11,7 @@ import * as types from 'src/utils/types';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { SwaggerCreateCourse, SwaggerDeleteCourse, SwaggerGetCourse, SwaggerUpdateCourse, SwaggerGetAllCourses, SwaggerSearchCourses } from './decorators/swagger.decorator';
 import { UpdateCourseDto } from './dto/update-course.dto';
+import { ConvertToRecordedDto } from './dto/convert-to-recorded.dto';
 
 @ApiTags('courses')
 @ApiBearerAuth('JWT-auth')
@@ -62,20 +63,32 @@ export class CoursesController {
     return this.coursesService.search(safeQuery, user?.id);
   }
 
-
   @Get(':id')
   @SkipThrottle()
   @SwaggerGetCourse()
-  findOne(@Param('id') id: string) {
-    return this.coursesService.findOne(+id);
+  @UseGuards(OptionalAuthGuard)
+  findOne(@Param('id', ParseIntPipe) id: number, @CurrentUser() user?: types.JwtPayloadType) {
+    return this.coursesService.findOne(id, user?.id);
+  }
+
+  @Patch(':id/convert-to-recorded')
+  @ApiOperation({ summary: 'Convert live cohort course to recorded course with optional new prices' })
+  @UseGuards(AuthRollGuard)
+  @userRoles(Role.ADMIN, Role.OWNER)
+  convertToRecorded(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: ConvertToRecordedDto,
+    @CurrentUser() user: types.JwtPayloadType,
+  ) {
+    return this.coursesService.convertToRecorded(id, user.id, dto);
   }
 
   @Patch(':id')
   @SwaggerUpdateCourse()
   @UseGuards(AuthRollGuard)
   @userRoles(Role.ADMIN, Role.OWNER)
-  update(@Param('id') id: string, @Body() updateCourseDto: UpdateCourseDto, @CurrentUser() user: types.JwtPayloadType) {
-    return this.coursesService.update(+id, updateCourseDto, user.id);
+  update(@Param('id', ParseIntPipe) id: number, @Body() updateCourseDto: UpdateCourseDto, @CurrentUser() user: types.JwtPayloadType) {
+    return this.coursesService.update(id, updateCourseDto, user.id);
   }
 
   @Delete(':id')

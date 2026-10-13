@@ -3,6 +3,8 @@ import { CreateCourseDto } from './dto/create-course.dto';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { UpdateCourseDto } from './dto/update-course.dto';
 import { MESSAGES } from 'src/utils/messages';
+import { CourseType } from '@prisma/client';
+import { ConvertToRecordedDto } from './dto/convert-to-recorded.dto';
 
 @Injectable()
 export class CoursesService {
@@ -318,7 +320,7 @@ export class CoursesService {
     };
   }
 
-  async findOne(id: number) {
+  async findOne(id: number, userId?: number) {
     const course = await this.prisma.course.findUnique({
       where: { id },
       include: {
@@ -346,6 +348,33 @@ export class CoursesService {
 
     if (!course) {
       throw new NotFoundException(MESSAGES.COURSES.COURSE_NOT_FOUND(id));
+    }
+
+    let isEnrolled = false;
+    let paymentStatus: string | null = null;
+
+    if (userId) {
+      const student = await this.prisma.student.findUnique({ where: { userId } });
+      if (student) {
+        const enrollment = await this.prisma.enrollment.findUnique({
+          where: {
+            studentId_courseId: {
+              studentId: student.id,
+              courseId: id,
+            },
+          },
+        });
+        isEnrolled = !!(enrollment && enrollment.status === 'ACTIVE');
+
+        const latestPayment = await this.prisma.payment.findFirst({
+          where: {
+            studentId: student.id,
+            courseId: id,
+          },
+          orderBy: { createdAt: 'desc' },
+        });
+        paymentStatus = latestPayment ? latestPayment.status : null;
+      }
     }
 
     // Fetch the latest 3 comments for this course
@@ -385,6 +414,8 @@ export class CoursesService {
     return {
       ...courseData,
       enrollmentsCount: _count?.enrollments || 0,
+      isEnrolled,
+      paymentStatus,
       latestComments: latestComments,
     };
   }
@@ -494,5 +525,52 @@ export class CoursesService {
     }
 
     return mentionableUsers;
+  }
+
+  async convertToRecorded(id: number, userId: number, dto: ConvertToRecordedDto) {
+    const course = await this.findOne(id);
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      include: { teacherProfile: true },
+    });
+
+    if (!user) {
+      throw new NotFoundException(MESSAGES.COURSES.USER_NOT_FOUND);
+    }
+
+    const isInstructor = user.teacherProfile && course.instructorId === user.teacherProfile.id;
+    const isOwner = user.role === 'OWNER';
+
+    if (!isInstructor && !isOwner) {
+      throw new ForbiddenException(MESSAGES.COURSES.UNAUTHORIZED_UPDATE);
+    }
+
+    // 1. Convert course to RECORDED and optionally update prices
+    const updatedCourse = await this.prisma.course.update({
+      where: { id },
+      data: {
+        courseType: CourseType.RECORDED,
+        ...(dto.price !== undefined && { price: dto.price }),
+        ...(dto.discountedPrice !== undefined && { discountedPrice: dto.discountedPrice }),
+        scheduleDaysText: null,
+      },
+    });
+
+    // 2. Clear liveMeetingUrl from all lessons in this course
+    await this.prisma.lesson.updateMany({
+      where: {
+        module: {
+          courseId: id,
+        },
+      },
+      data: {
+        liveMeetingUrl: null,
+      },
+    });
+
+    return {
+      message: 'تم تحويل الدورة المباشرة إلى كورس مسجل بنجاح وتفريغ روابط البث المباشر.',
+      course: updatedCourse,
+    };
   }
 }

@@ -1,7 +1,7 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
-import { IsBoolean, IsEnum, IsInt, IsNotEmpty, IsOptional, IsString, IsUrl } from 'class-validator';
-import { LessonStatus } from '@prisma/client';
+import { IsBoolean, IsDate, IsEnum, IsInt, IsNotEmpty, IsOptional, IsString, IsUrl } from 'class-validator';
+import { LessonStatus, LiveStatus } from '@prisma/client';
 
 export class CreateLessonDto {
   @ApiProperty({ example: 'Introduction to NestJS' })
@@ -37,17 +37,58 @@ export class CreateLessonDto {
   @ApiProperty({ example: true, required: false, description: 'إذا كان true يعرض الوصف فقط بدون فيديو أو ملف' })
   @IsOptional()
   @IsBoolean()
+  @Type(() => Boolean)
   isReading?: boolean;
 
-  @ApiProperty({ example: 1 })
+  @ApiProperty({ example: 1, required: false })
   @IsOptional()
   @IsInt()
   @Type(() => Number)
   order?: number;
 
-  @ApiProperty({ example: 1 })
-  @IsNotEmpty()
+  @ApiProperty({ example: 1, required: false, description: 'معرف الموديول (إذا لم يتم إرساله، يجب إرسال courseId ليتم وضعه بموديول افتراضي)' })
+  @IsOptional()
   @IsInt()
   @Type(() => Number)
-  moduleId: number;
+  moduleId?: number;
+
+  @ApiProperty({ example: 1, required: false, description: 'معرف الكورس لإنشاء موديول افتراضي إذا لم يرسل moduleId' })
+  @IsOptional()
+  @IsInt()
+  @Type(() => Number)
+  courseId?: number;
+
+  @ApiProperty({ example: false, required: false, description: 'معاينة مجانية للطلاب غير المشتركين في الكورسات المدفوعة' })
+  @IsOptional()
+  @IsBoolean()
+  @Type(() => Boolean)
+  isFreePreview?: boolean;
+
+  @ApiProperty({ example: 'https://meet.google.com/xyz-abcd-efg', required: false, description: 'رابط البث المباشر (Google Meet أو Zoom)' })
+  @IsOptional()
+  @IsString()
+  liveMeetingUrl?: string;
+
+  @ApiProperty({ example: '2026-10-20T18:00:00.000Z', required: false, description: 'موعد بدء المحاضرة المباشرة' })
+  @IsOptional()
+  @IsDate()
+  @Type(() => Date)
+  scheduledAt?: Date;
+
+  @ApiProperty({ example: 90, required: false, description: 'مدة المحاضرة المباشرة بالدقائق' })
+  @IsOptional()
+  @IsInt()
+  @Type(() => Number)
+  durationMinutes?: number;
+
+  @ApiProperty({ enum: LiveStatus, example: LiveStatus.SCHEDULED, required: false, description: 'حالة البث المباشر' })
+  @IsOptional()
+  @IsEnum(LiveStatus)
+  liveStatus?: LiveStatus;
+
+  @ApiProperty({ example: 'https://example.com/recording.mp4', required: false, description: 'رابط تسجيل المحاضرة بعد انتهائها' })
+  @IsOptional()
+  @IsString()
+  recordingVideoUrl?: string;
 }
+

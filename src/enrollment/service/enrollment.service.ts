@@ -1,4 +1,4 @@
-import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { CreateEnrollmentDto } from '../dto/enrollment.dto';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { MESSAGES } from 'src/utils/messages';
@@ -42,6 +42,11 @@ async isUserEnrolled(userId: number, courseId: number) {
 
         if (!course) {
             throw new NotFoundException(MESSAGES.COURSES.COURSE_NOT_FOUND_DEFAULT);
+        }
+
+        // الكورسات المدفوعة تتطلب دفع سند ومراجعة
+        if (course.isPaid) {
+            throw new BadRequestException('هذا الكورس مدفوع، يرجى إرسال سند التحويل عبر قسم المدفوعات لتأكيد وتفعيل اشتراكك');
         }
 
         // إذا لم يكن لديه ملف طالب (مثل حالة الـ admin أو owner)، نقوم بإنشائه فوراً

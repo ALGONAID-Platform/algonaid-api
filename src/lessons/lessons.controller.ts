@@ -1,13 +1,14 @@
 import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, ParseIntPipe, UseInterceptors, UploadedFile, BadRequestException, ParseFilePipe, MaxFileSizeValidator, FileTypeValidator, Query } from '@nestjs/common';
 import { SkipThrottle } from '@nestjs/throttler';
 import { LessonsService } from './lessons.service';
-import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { AuthRollGuard } from 'src/auth/guards/auth-roll.guard';
 import { userRoles } from 'src/auth/decorators/user_roll.decorator';
 import { Role } from '@prisma/client';
 import { CurrentUser } from 'src/auth/decorators/current-user.decorator';
 import { CreateLessonDto } from './dto/create-lesson.dto';
 import { UpdateLessonDto } from './dto/update-lesson.dto';
+import { UpdateLiveStatusDto } from './dto/update-live-status.dto';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { pdfFileSizeLimit } from 'src/utils/conistants';
 import { SwaggerCreateLesson, SwaggerGetAllLessonsByModule, SwaggerGetLesson, SwaggerUpdateLesson, SwaggerDeleteLesson } from './decorators/swagger.decorator';
@@ -98,6 +99,18 @@ export class LessonsController {
     @CurrentUser() user: types.JwtPayloadType
   ) {
     return this.lessonsService.findOne(id, user.id);
+  }
+
+  @Patch(':id/live-status')
+  @ApiOperation({ summary: 'Update live status and recording URL of a lesson' })
+  @UseGuards(AuthRollGuard)
+  @userRoles(Role.ADMIN, Role.OWNER)
+  updateLiveStatus(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: UpdateLiveStatusDto,
+    @CurrentUser() user: types.JwtPayloadType,
+  ) {
+    return this.lessonsService.updateLiveStatus(id, dto, user.id);
   }
 
   @Patch(':id')

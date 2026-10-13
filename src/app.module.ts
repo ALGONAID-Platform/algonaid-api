@@ -23,6 +23,7 @@ import { ScheduleModule } from '@nestjs/schedule';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { PostsModule } from './posts/posts.module';
 import { PostCommentsModule } from './post-comments/post-comments.module';
+import { PaymentsModule } from './payments/payments.module';
 
 @Module({
   imports: [
@@ -58,6 +59,7 @@ import { PostCommentsModule } from './post-comments/post-comments.module';
     PracticeExamsModule,
     PostsModule,
     PostCommentsModule,
+    PaymentsModule,
     ThrottlerModule.forRoot([{
       ttl: 60000,
       limit: 1000,
