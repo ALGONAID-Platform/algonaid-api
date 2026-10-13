@@ -137,10 +137,10 @@ export class AssignmentsController {
   @ApiQuery({ name: 'status', enum: SubmissionStatus, required: false })
   getSubmissions(
     @Param('id', ParseIntPipe) id: number,
+    @CurrentUser() user: types.JwtPayloadType,
     @Query('page') page: string = '1',
     @Query('limit') limit: string = '20',
     @Query('status') status?: SubmissionStatus,
-    @CurrentUser() user: types.JwtPayloadType,
   ) {
     return this.assignmentsService.findSubmissions(
       user.id,
