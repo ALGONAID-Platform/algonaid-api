@@ -13,11 +13,16 @@ import { SwaggerCreateCourse, SwaggerDeleteCourse, SwaggerGetCourse, SwaggerUpda
 import { UpdateCourseDto } from './dto/update-course.dto';
 import { ConvertToRecordedDto } from './dto/convert-to-recorded.dto';
 
+import { CoursesEvaluationService } from './courses-evaluation.service';
+
 @ApiTags('courses')
 @ApiBearerAuth('JWT-auth')
 @Controller('courses')
 export class CoursesController {
-  constructor(private readonly coursesService: CoursesService) { }
+  constructor(
+    private readonly coursesService: CoursesService,
+    private readonly coursesEvaluationService: CoursesEvaluationService,
+  ) { }
 
   @Post()
   @SwaggerCreateCourse()
@@ -114,5 +119,47 @@ export class CoursesController {
   @ApiOperation({ summary: 'Get a list of users that can be mentioned in this course (instructor and enrolled students)' })
   getMentionableUsers(@Param('id', ParseIntPipe) id: number) {
     return this.coursesService.getMentionableUsers(id);
+  }
+
+  @Get(':id/my-evaluation')
+  @SkipThrottle()
+  @UseGuards(AuthRollGuard)
+  @userRoles(Role.STUDENT, Role.ADMIN, Role.OWNER)
+  @ApiOperation({ summary: 'Get student evaluation report, cumulative GPA, and daily timeline for this course' })
+  getMyEvaluation(
+    @Param('id', ParseIntPipe) id: number,
+    @CurrentUser() user: types.JwtPayloadType,
+  ) {
+    return this.coursesEvaluationService.getMyEvaluation(id, user.id);
+  }
+
+  @Post(':id/certificate/claim')
+  @UseGuards(AuthRollGuard)
+  @userRoles(Role.STUDENT, Role.ADMIN, Role.OWNER)
+  @ApiOperation({ summary: 'Claim / generate verified course completion certificate' })
+  claimCertificate(
+    @Param('id', ParseIntPipe) id: number,
+    @CurrentUser() user: types.JwtPayloadType,
+  ) {
+    return this.coursesEvaluationService.claimCertificate(id, user.id);
+  }
+
+  @Post(':id/reviews')
+  @UseGuards(AuthRollGuard)
+  @userRoles(Role.STUDENT, Role.ADMIN, Role.OWNER)
+  @ApiOperation({ summary: 'Submit rating and review for course' })
+  submitReview(
+    @Param('id', ParseIntPipe) id: number,
+    @CurrentUser() user: types.JwtPayloadType,
+    @Body() dto: { rating: number; comment?: string },
+  ) {
+    return this.coursesEvaluationService.submitReview(id, user.id, dto);
+  }
+
+  @Get(':id/reviews')
+  @SkipThrottle()
+  @ApiOperation({ summary: 'Get reviews for course' })
+  getReviews(@Param('id', ParseIntPipe) id: number) {
+    return this.coursesEvaluationService.getCourseReviews(id);
   }
 }

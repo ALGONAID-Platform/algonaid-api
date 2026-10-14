@@ -1,6 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
-import { IsBoolean, IsDate, IsEnum, IsInt, IsNotEmpty, IsOptional, IsString, IsUrl } from 'class-validator';
+import { IsArray, IsBoolean, IsDate, IsEnum, IsInt, IsNotEmpty, IsOptional, IsString, IsUrl } from 'class-validator';
 import { LessonStatus, LiveStatus } from '@prisma/client';
 
 export class CreateLessonDto {
@@ -95,5 +95,23 @@ export class CreateLessonDto {
   @IsOptional()
   @IsString()
   recordingVideoUrl?: string;
+
+  @ApiProperty({ example: 1, required: false, description: 'رقم اليوم في الدورة' })
+  @IsOptional()
+  @IsInt()
+  @Type(() => Number)
+  dayNumber?: number;
+
+  @ApiProperty({ example: ['فهم بنية فلاتر', 'إنشاء أول ويدجت'], required: false, description: 'أهداف ومخرجات هذا الدرس', type: [String] })
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  objectives?: string[];
+
+  @ApiProperty({ example: true, required: false, description: 'حضور إلزامي لاستحقاق الشهادة', default: true })
+  @IsOptional()
+  @IsBoolean()
+  @Type(() => Boolean)
+  isMandatory?: boolean;
 }
 

@@ -1,4 +1,4 @@
-import { IsBoolean, IsEnum, IsNotEmpty, IsNumber, IsOptional, IsString, Min } from "class-validator";
+import { IsArray, IsBoolean, IsDate, IsEnum, IsInt, IsNotEmpty, IsNumber, IsOptional, IsString, Max, Min } from "class-validator";
 import { ApiProperty } from "@nestjs/swagger";
 import { CourseType } from "@prisma/client";
 import { Type } from "class-transformer";
@@ -48,6 +48,53 @@ export class CreateCourseDto {
     @IsOptional()
     @IsString()
     scheduleDaysText?: string;
+
+    @ApiProperty({ example: '2026-11-01T00:00:00.000Z', description: 'Course start date', required: false })
+    @IsOptional()
+    @IsDate()
+    @Type(() => Date)
+    startDate?: Date;
+
+    @ApiProperty({ example: '2026-12-30T23:59:59.000Z', description: 'Course end date', required: false })
+    @IsOptional()
+    @IsDate()
+    @Type(() => Date)
+    endDate?: Date;
+
+    @ApiProperty({ example: 8, description: 'Duration in weeks', required: false })
+    @IsOptional()
+    @IsInt()
+    @Min(1)
+    @Type(() => Number)
+    durationWeeks?: number;
+
+    @ApiProperty({ example: ['الأحد 8:00م', 'الثلاثاء 8:00م'], description: 'Scheduled days of the week', required: false, type: [String] })
+    @IsOptional()
+    @IsArray()
+    @IsString({ each: true })
+    scheduleDays?: string[];
+
+    @ApiProperty({ example: ['إتقان أساسيات فلاتر', 'بناء متجر إلكتروني متكامل'], description: 'Course learning objectives', required: false, type: [String] })
+    @IsOptional()
+    @IsArray()
+    @IsString({ each: true })
+    objectives?: string[];
+
+    @ApiProperty({ example: 70, description: 'Minimum GPA percentage required for certificate (0-100)', required: false, default: 70 })
+    @IsOptional()
+    @IsInt()
+    @Min(0)
+    @Max(100)
+    @Type(() => Number)
+    certificateMinScore?: number;
+
+    @ApiProperty({ example: 80, description: 'Minimum attendance percentage required for certificate (0-100)', required: false, default: 80 })
+    @IsOptional()
+    @IsInt()
+    @Min(0)
+    @Max(100)
+    @Type(() => Number)
+    certificateMinAttendance?: number;
 }
 
 

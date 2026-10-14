@@ -101,6 +101,8 @@ model Student {
   lessonProgress LessonProgress[]
   earnedBadges   EarnedBadge[] // الأوسمة المكتسبة بشكل دائم
   assignmentSubmissions AssignmentSubmission[]
+  certificates          Certificate[]
+  courseReviews         CourseReview[]
 }
 
 // جدول الأوسمة المكتسبة بشكل دائم
@@ -165,6 +167,18 @@ model Course {
   scheduleDaysText  String? // أيام وتوقيت المحاضرات للبث المباشر
   payments          Payment[]
 
+  // Course Dates, Schedule & Objectives
+  startDate                DateTime?
+  endDate                  DateTime?
+  durationWeeks            Int?
+  scheduleDays             String[]       @default([])
+  objectives               String[]       @default([])
+  certificateMinScore      Int            @default(70)
+  certificateMinAttendance Int            @default(80)
+
+  certificates             Certificate[]
+  reviews                  CourseReview[]
+
   modules       Module[]
   practiceExams PracticeExam[]
   exams         Exam[] // اختبارات الكورس
@@ -207,6 +221,11 @@ model Lesson {
   durationMinutes   Int? // مدة المحاضرة بالدقائق
   liveStatus        LiveStatus? // حالة البث (SCHEDULED, LIVE_NOW, COMPLETED)
   recordingVideoUrl String? // تسجيل البث بعد انتهائه
+
+  // Tracking & Objectives
+  dayNumber         Int?             // رقم اليوم في الدورة
+  objectives        String[]         @default([]) // أهداف ومخرجات هذا الدرس
+  isMandatory       Boolean          @default(true) // حضور إلزامي لاستحقاق الشهادة
 
   moduleId       Int
   module         Module           @relation(fields: [moduleId], references: [id], onDelete: Cascade)
@@ -585,5 +604,41 @@ model AssignmentSubmission {
   @@index([assignmentId])
   @@index([studentId])
   @@index([status])
+}
+
+model Certificate {
+  id           Int      @id @default(autoincrement())
+  serialNumber String   @unique // كود تسلسلي فريد، مثلاً: ALG-2026-C5-S12
+  studentId    Int
+  student      Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  courseId     Int
+  course       Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  finalGrade   Decimal  @db.Decimal(5, 2) // الدرجة التراكمية النهائية (مثلاً: 94.50)
+  issueDate    DateTime @default(now())   // تاريخ إصدار الشهادة
+  pdfUrl       String?                    // رابط تحميل ملف الشهادة
+  qrCodeUrl    String?                    // رابط عام موثق للتحقق من صحة الشهادة
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@unique([studentId, courseId])
+  @@index([serialNumber])
+  @@index([studentId])
+  @@index([courseId])
+}
+
+model CourseReview {
+  id        Int      @id @default(autoincrement())
+  rating    Int      // التقييم من 1 إلى 5 نجوم
+  comment   String?  @db.Text
+  studentId Int
+  student   Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  courseId  Int
+  course    Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([studentId, courseId])
+  @@index([courseId])
+  @@index([studentId])
 }
 
