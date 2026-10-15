@@ -5,7 +5,7 @@ import {
   ForbiddenException,
 } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
-import { ExamStatus, ExamType, LessonStatus, Role } from '@prisma/client';
+import { ExamStatus, ExamType, LessonStatus, Role, AssignmentType, SubmissionStatus } from '@prisma/client';
 import { SubmitExamDto } from './dto/exam-submission.dto';
 import { CreateExamDto, CreateQuestionDto, CreateOptionDto } from './dto/create-exam.dto';
 import { UpdateExamDto } from './dto/update-exam.dto';
@@ -133,6 +133,139 @@ export class ExamsService {
     return { student, shouldBeRanked };
   }
 
+  private async checkExamPrerequisites(
+    studentId: number,
+    exam: any,
+  ): Promise<{ isUnlocked: boolean; lockedReason: string | null }> {
+    // 1. اختبار مرحلي لدرس محدد (Interim Lesson Quiz)
+    if (exam.lessonId) {
+      const currentLesson = await this.prisma.lesson.findUnique({
+        where: { id: exam.lessonId },
+        include: {
+          module: {
+            include: {
+              course: {
+                include: {
+                  modules: {
+                    include: {
+                      lessons: {
+                        where: { status: LessonStatus.PUBLISHED },
+                        orderBy: { order: 'asc' },
+                      },
+                    },
+                    orderBy: { id: 'asc' },
+                  },
+                },
+              },
+            },
+          },
+        },
+      });
+
+      if (currentLesson) {
+        const allCourseModules = currentLesson.module.course.modules;
+        const precedingLessonIds: number[] = [];
+
+        for (const mod of allCourseModules) {
+          for (const l of mod.lessons) {
+            if (mod.id < currentLesson.moduleId) {
+              precedingLessonIds.push(l.id);
+            } else if (mod.id === currentLesson.moduleId) {
+              if (l.order <= currentLesson.order) {
+                precedingLessonIds.push(l.id);
+              }
+            }
+          }
+        }
+
+        if (precedingLessonIds.length > 0) {
+          const completedCount = await this.prisma.lessonProgress.count({
+            where: {
+              studentId,
+              lessonId: { in: precedingLessonIds },
+              isCompleted: true,
+            },
+          });
+
+          if (completedCount < precedingLessonIds.length) {
+            return {
+              isUnlocked: false,
+              lockedReason: `الاختبار مغلق: يجب إكمال جميع الدروس السابقة أولاً (${completedCount}/${precedingLessonIds.length} مكتمل).`,
+            };
+          }
+        }
+      }
+    } else if (exam.examType === ExamType.COURSE_QUIZ || (exam.courseId && !exam.lessonId)) {
+      // 2. اختبار نهائي للدورة (Course Final Exam)
+      const courseId = exam.courseId;
+      if (courseId) {
+        const course = await this.prisma.course.findUnique({
+          where: { id: courseId },
+          include: {
+            modules: {
+              include: {
+                lessons: {
+                  where: { status: LessonStatus.PUBLISHED },
+                  include: { exam: true },
+                },
+              },
+            },
+            exams: true,
+          },
+        });
+
+        if (course) {
+          const allPublishedLessons = course.modules.flatMap((m) => m.lessons);
+          const lessonIds = allPublishedLessons.map((l) => l.id);
+
+          if (lessonIds.length > 0) {
+            const completedLessonsCount = await this.prisma.lessonProgress.count({
+              where: {
+                studentId,
+                lessonId: { in: lessonIds },
+                isCompleted: true,
+              },
+            });
+
+            if (completedLessonsCount < lessonIds.length) {
+              return {
+                isUnlocked: false,
+                lockedReason: `الاختبار النهائي مغلق: يجب إكمال جميع دروس الدورة أولاً (${completedLessonsCount}/${lessonIds.length} مكتمل).`,
+              };
+            }
+          }
+
+          // التحقق من اجتياز جميع الاختبارات المرحلية السابقة
+          const otherExamIds = [
+            ...allPublishedLessons.filter((l) => l.exam && l.exam.id !== exam.id).map((l) => l.exam!.id),
+            ...course.exams.filter((e) => e.id !== exam.id && e.examType !== ExamType.COURSE_QUIZ).map((e) => e.id),
+          ];
+
+          if (otherExamIds.length > 0) {
+            const passedAttempts = await this.prisma.examAttempt.findMany({
+              where: {
+                studentId,
+                examId: { in: otherExamIds },
+                status: ExamStatus.PASSED,
+              },
+              select: { examId: true },
+              distinct: ['examId'],
+            });
+
+            if (passedAttempts.length < otherExamIds.length) {
+              return {
+                isUnlocked: false,
+                lockedReason: `الاختبار النهائي مغلق: يجب اجتياز جميع الاختبارات السابقة للدورة أولاً (${passedAttempts.length}/${otherExamIds.length} مجتاز).`,
+              };
+            }
+          }
+        }
+      }
+    }
+
+    return { isUnlocked: true, lockedReason: null };
+  }
+
   async findAll(userId: number, role: Role) {
     const commentsInclude = {
       orderBy: { createdAt: 'desc' as const },
@@ -197,7 +330,7 @@ export class ExamsService {
   }
 
   async createExam(userId: number, role: Role, dto: CreateExamDto) {
-    const { lessonId, courseId, questions, startTime, endTime, ...examData } = dto;
+    const { lessonId, courseId, questions, startTime, endTime, asAssignment, ...examData } = dto;
 
     if (!lessonId && !courseId) {
       throw new BadRequestException('يجب تحديد lessonId أو courseId');
@@ -238,10 +371,32 @@ export class ExamsService {
       const existing = await this.prisma.exam.findUnique({ where: { lessonId } });
       if (existing) throw new BadRequestException('يوجد اختبار لهذا الدرس بالفعل');
 
-      return this.prisma.exam.create({
+      const createdExam = await this.prisma.exam.create({
         data: { ...extraData, lessonId, questions: { create: questionData } },
         include: { questions: { include: { options: true } } },
       });
+
+      if (asAssignment) {
+        await this.prisma.assignment.upsert({
+          where: { lessonId },
+          update: {
+            title: dto.title,
+            description: dto.description,
+            type: AssignmentType.QUIZ,
+            examId: createdExam.id,
+          },
+          create: {
+            lessonId,
+            title: dto.title,
+            description: dto.description,
+            type: AssignmentType.QUIZ,
+            examId: createdExam.id,
+            maxScore: 100,
+          },
+        });
+      }
+
+      return createdExam;
     }
 
     const course = await this.prisma.course.findUnique({ where: { id: courseId } });
@@ -259,8 +414,8 @@ export class ExamsService {
   }
 
   async updateExam(userId: number, role: Role, examId: number, dto: UpdateExamDto) {
-    await this.checkExamPermission(userId, role, examId);
-    const { questions, ...metadata } = dto;
+    const existingExam = await this.checkExamPermission(userId, role, examId);
+    const { questions, asAssignment, ...metadata } = dto;
 
     return this.prisma.$transaction(async (tx) => {
       if (questions) {
@@ -276,9 +431,39 @@ export class ExamsService {
         await tx.exam.update({ where: { id: examId }, data: metadata });
       }
 
+      const lessonId = existingExam.lessonId;
+      if (lessonId && asAssignment !== undefined) {
+        if (asAssignment) {
+          await tx.assignment.upsert({
+            where: { lessonId },
+            update: {
+              title: dto.title ?? existingExam.title,
+              description: dto.description ?? existingExam.description,
+              type: AssignmentType.QUIZ,
+              examId: examId,
+            },
+            create: {
+              lessonId,
+              title: dto.title ?? existingExam.title,
+              description: dto.description ?? existingExam.description,
+              type: AssignmentType.QUIZ,
+              examId: examId,
+              maxScore: 100,
+            },
+          });
+        } else {
+          await tx.assignment.deleteMany({
+            where: {
+              lessonId,
+              examId,
+            },
+          });
+        }
+      }
+
       return tx.exam.findUnique({
         where: { id: examId },
-        include: { questions: { include: { options: true } }, course: true },
+        include: { questions: { include: { options: true } }, course: true, assignment: true },
       });
     });
   }
@@ -334,6 +519,22 @@ export class ExamsService {
         throw new NotFoundException('Exam not found');
     }
 
+    let isUnlocked = true;
+    let lockReason: string | null = null;
+
+    if (userId) {
+      const user = await this.prisma.user.findUnique({
+        where: { id: userId },
+        include: { studentProfile: true },
+      });
+      const isStaff = user?.role === Role.OWNER || user?.role === Role.ADMIN;
+      if (!isStaff && user?.studentProfile) {
+        const check = await this.checkExamPrerequisites(user.studentProfile.id, exam);
+        isUnlocked = check.isUnlocked;
+        lockReason = check.lockedReason;
+      }
+    }
+
     const totalPoints = exam.questions.reduce(
       (sum: number, q: { points: number }) => sum + q.points,
       0,
@@ -344,6 +545,8 @@ export class ExamsService {
 
     return {
       ...examData,
+      isUnlocked,
+      lockReason,
       totalPoints,
       passingPoints,
       minPassingScore: passingPoints,
@@ -630,8 +833,21 @@ export class ExamsService {
       );
     }
 
+    const user = await this.prisma.user.findUnique({
+      where: { id: studentUserId },
+      include: { teacherProfile: true },
+    });
+    const isStaff = user?.role === Role.OWNER || user?.role === Role.ADMIN;
+
     const { student, shouldBeRanked } =
       await this.resolveStudentAndCheckAttempts(studentUserId, examId);
+
+    if (!isStaff) {
+      const prerequisiteCheck = await this.checkExamPrerequisites(student.id, exam);
+      if (!prerequisiteCheck.isUnlocked) {
+        throw new ForbiddenException(prerequisiteCheck.lockedReason);
+      }
+    }
 
     const attempt = await this.prisma.examAttempt.create({
       data: {
@@ -739,6 +955,44 @@ export class ExamsService {
         update: { isCompleted: true, completedAt: now },
         create: { studentId: student.id, lessonId: attempt.exam.lessonId, isCompleted: true, completedAt: now },
       });
+    }
+
+    // Auto-grade assignment submission if this exam is linked to an assignment
+    if (student) {
+      const assignment = await this.prisma.assignment.findFirst({
+        where: {
+          OR: [
+            { examId: attempt.examId },
+            ...(attempt.exam.lessonId ? [{ lessonId: attempt.exam.lessonId, type: AssignmentType.QUIZ }] : []),
+          ],
+        },
+      });
+
+      if (assignment) {
+        const assignmentScore = Math.round((percentage / 100) * assignment.maxScore);
+        await this.prisma.assignmentSubmission.upsert({
+          where: {
+            assignmentId_studentId: {
+              assignmentId: assignment.id,
+              studentId: student.id,
+            },
+          },
+          update: {
+            score: assignmentScore,
+            status: SubmissionStatus.GRADED,
+            gradedAt: now,
+            content: `تم إتمام الكويز التلقائي بنسبة ${Math.round(percentage)}% (${score}/${totalPoints})`,
+          },
+          create: {
+            assignmentId: assignment.id,
+            studentId: student.id,
+            score: assignmentScore,
+            status: SubmissionStatus.GRADED,
+            gradedAt: now,
+            content: `تم إتمام الكويز التلقائي بنسبة ${Math.round(percentage)}% (${score}/${totalPoints})`,
+          },
+        });
+      }
     }
 
     const updatedAttempt = await this.prisma.examAttempt.update({

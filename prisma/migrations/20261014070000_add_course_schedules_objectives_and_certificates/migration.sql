@@ -78,3 +78,4 @@ DO $$ BEGIN
     ALTER TABLE "CourseReview" ADD CONSTRAINT "CourseReview_courseId_fkey" FOREIGN KEY ("courseId") REFERENCES "Course"("id") ON DELETE CASCADE ON UPDATE CASCADE;
   END IF;
 END $$;
+

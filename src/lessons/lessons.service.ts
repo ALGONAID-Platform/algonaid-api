@@ -11,17 +11,34 @@ export class LessonsService {
   constructor(private readonly prisma: PrismaService) { }
 
   /**
+   * Helper to check if user is staff (Owner/Admin) or the instructor of this course
+   */
+  private async isStaffOrInstructor(instructorId: number, userId?: number): Promise<boolean> {
+    if (!userId) return false;
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      include: { teacherProfile: true },
+    });
+    if (!user) return false;
+    if (user.role === Role.OWNER || user.role === Role.ADMIN) return true;
+    if (user.teacherProfile && user.teacherProfile.id === instructorId) return true;
+    return false;
+  }
+
+  /**
    * Helper to check if user is exempt from content masking (Admin/Owner/Instructor or actively enrolled student)
    */
   private async checkIsExemptFromMasking(courseId: number, instructorId: number, userId?: number): Promise<boolean> {
     if (!userId) return false;
+    const isStaff = await this.isStaffOrInstructor(instructorId, userId);
+    if (isStaff) return true;
+
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
-      include: { teacherProfile: true, studentProfile: true },
+      include: { studentProfile: true },
     });
     if (!user) return false;
-    if (user.role === Role.OWNER) return true;
-    if (user.teacherProfile && user.teacherProfile.id === instructorId) return true;
+
     if (user.studentProfile) {
       const enrollment = await this.prisma.enrollment.findUnique({
         where: {
@@ -134,12 +151,14 @@ export class LessonsService {
       studentId = user?.studentProfile?.id;
     }
 
-    const isExempt = await this.checkIsExemptFromMasking(
+    const isStaff = await this.isStaffOrInstructor(module.course.instructorId, userId);
+    const isEnrolled = await this.checkIsExemptFromMasking(
       module.course.id,
       module.course.instructorId,
       userId,
     );
     const isPaidCourse = module.course.isPaid;
+    const now = new Date();
 
     const skip = (page - 1) * limit;
 
@@ -183,15 +202,27 @@ export class LessonsService {
 
     const mappedLessons = lessons.map(lesson => {
       const { exam, assignment, _count, ...rest } = lesson;
-      const shouldMask = isPaidCourse && !isExempt && !lesson.isFreePreview;
+
+      // الدرس مجدول في المستقبل ولم يقم الأدمن بفتحه يدوياً عبر بدء البث (LIVE_NOW أو COMPLETED)
+      const isScheduledFuture =
+        !isStaff &&
+        lesson.scheduledAt &&
+        new Date(lesson.scheduledAt) > now &&
+        lesson.liveStatus !== 'LIVE_NOW' &&
+        lesson.liveStatus !== 'COMPLETED';
+
+      const isUnenrolledPaid = isPaidCourse && !isEnrolled && !lesson.isFreePreview;
+      const shouldMask = !isStaff && (isUnenrolledPaid || isScheduledFuture);
 
       return {
         ...rest,
+        content: isScheduledFuture ? null : lesson.content,
         liveMeetingUrl: shouldMask ? null : lesson.liveMeetingUrl,
         videoUrl: shouldMask ? null : lesson.videoUrl,
         recordingVideoUrl: shouldMask ? null : lesson.recordingVideoUrl,
         pdfUrl: shouldMask ? null : lesson.pdfUrl,
         isLocked: shouldMask,
+        isScheduledFuture: !!isScheduledFuture,
         commentsCount: _count.comments,
         hasTest: !!exam,
         hasAssignment: !!assignment,
@@ -221,6 +252,7 @@ export class LessonsService {
       throw new ForbiddenException('Only students can access this endpoint');
     }
 
+    const now = new Date();
     const lessons = await this.prisma.lesson.findMany({
       where: {
         status: LessonStatus.PUBLISHED,
@@ -233,7 +265,12 @@ export class LessonsService {
               }
             }
           }
-        }
+        },
+        OR: [
+          { scheduledAt: null },
+          { scheduledAt: { lte: now } },
+          { liveStatus: { in: ['LIVE_NOW', 'COMPLETED'] } },
+        ],
       },
       include: {
         lessonProgress: {
@@ -319,6 +356,21 @@ export class LessonsService {
       }
     }
 
+    const isStaff = await this.isStaffOrInstructor(lesson.module.course.instructorId, userId);
+    const now = new Date();
+    const isScheduledFuture =
+      !isStaff &&
+      lesson.scheduledAt &&
+      new Date(lesson.scheduledAt) > now &&
+      lesson.liveStatus !== 'LIVE_NOW' &&
+      lesson.liveStatus !== 'COMPLETED';
+
+    if (isScheduledFuture) {
+      throw new ForbiddenException(
+        `الدرس مجدول ولم يحن موعده بعد. موعد الدرس: ${new Date(lesson.scheduledAt!).toISOString()}`
+      );
+    }
+
     const latestComments = await this.prisma.comment.findMany({
       where: {
         lessonId: id,
@@ -346,21 +398,23 @@ export class LessonsService {
       }
     });
 
-    const isExempt = await this.checkIsExemptFromMasking(
+    const isEnrolled = await this.checkIsExemptFromMasking(
       lesson.module.course.id,
       lesson.module.course.instructorId,
       userId,
     );
     const isPaidCourse = lesson.module.course.isPaid;
-    const shouldMask = isPaidCourse && !isExempt && !lesson.isFreePreview;
+    const shouldMask = !isStaff && isPaidCourse && !isEnrolled && !lesson.isFreePreview;
 
     return {
       ...lesson,
+      content: isScheduledFuture ? null : lesson.content,
       liveMeetingUrl: shouldMask ? null : lesson.liveMeetingUrl,
       videoUrl: shouldMask ? null : lesson.videoUrl,
       recordingVideoUrl: shouldMask ? null : lesson.recordingVideoUrl,
       pdfUrl: shouldMask ? null : lesson.pdfUrl,
       isLocked: shouldMask,
+      isScheduledFuture: !!isScheduledFuture,
       courseId: lesson.module.course.id,
       commentsCount,
       latestComments: latestComments,

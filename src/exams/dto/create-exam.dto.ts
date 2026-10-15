@@ -109,6 +109,16 @@ export class CreateExamDto {
   @IsOptional()
   courseId?: number;
 
+  @ApiProperty({
+    required: false,
+    description: 'هل يتم جعل الاختبار تكليفاً داخل الدرس (ضمن تبويب التكليف) أم اختباراً مرحلياً خارجياً بعد الدرس؟',
+    default: false,
+  })
+  @IsBoolean()
+  @IsOptional()
+  @Type(() => Boolean)
+  asAssignment?: boolean;
+
   @ApiProperty({ type: [CreateQuestionDto] })
   @IsArray()
   @ValidateNested({ each: true })

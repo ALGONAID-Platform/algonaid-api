@@ -64,7 +64,19 @@ export class ModulesService {
             ...(!isOwner && { status: LessonStatus.PUBLISHED })
           },
           include: {
-            exam: { select: { id: true } },
+            exam: {
+              select: {
+                id: true,
+                assignment: { select: { id: true, type: true } },
+              },
+            },
+            assignment: {
+              select: {
+                id: true,
+                type: true,
+                examId: true,
+              },
+            },
             lessonProgress: studentId ? {
               where: { studentId },
             } : false,
@@ -89,9 +101,19 @@ export class ModulesService {
 
       const mappedLessons = lessons.map(lesson => {
         // @ts-ignore
-        const { _count: lessonCount, ...lessonRest } = lesson;
+        const { _count: lessonCount, assignment, exam, ...lessonRest } = lesson;
+        const isAssignmentQuiz = Boolean(
+          (assignment && assignment.type === 'QUIZ') ||
+          (exam && (exam as any).assignment)
+        );
+        const hasCheckpointExam = Boolean(exam && !isAssignmentQuiz);
+
         return {
           ...lessonRest,
+          assignment,
+          exam,
+          hasExam: hasCheckpointExam,
+          isAssignmentQuiz,
           commentsCount: lessonCount?.comments || 0,
         };
       });
@@ -138,7 +160,19 @@ export class ModulesService {
             ...(!isOwner && { status: LessonStatus.PUBLISHED })
           },
           include: {
-            exam: { select: { id: true } },
+            exam: {
+              select: {
+                id: true,
+                assignment: { select: { id: true, type: true } },
+              },
+            },
+            assignment: {
+              select: {
+                id: true,
+                type: true,
+                examId: true,
+              },
+            },
             lessonProgress: studentId ? {
               where: { studentId },
             } : false,
@@ -163,9 +197,19 @@ export class ModulesService {
 
       const mappedLessons = lessons.map(lesson => {
         // @ts-ignore
-        const { _count: lessonCount, ...lessonRest } = lesson;
+        const { _count: lessonCount, assignment, exam, ...lessonRest } = lesson;
+        const isAssignmentQuiz = Boolean(
+          (assignment && assignment.type === 'QUIZ') ||
+          (exam && (exam as any).assignment)
+        );
+        const hasCheckpointExam = Boolean(exam && !isAssignmentQuiz);
+
         return {
           ...lessonRest,
+          assignment,
+          exam,
+          hasExam: hasCheckpointExam,
+          isAssignmentQuiz,
           commentsCount: lessonCount?.comments || 0,
         };
       });
