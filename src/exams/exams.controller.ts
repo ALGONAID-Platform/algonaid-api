@@ -180,9 +180,21 @@ export class ExamsController {
   @Post(':examId/start')
   @UseGuards(VerifiedOnlyGuard)
   @userRoles(Role.STUDENT, Role.ADMIN, Role.OWNER)
-  @ApiOperation({ summary: 'بدء محاولة جديدة للاختبار' })
+  @ApiOperation({ summary: 'بدء محاولة جديدة للاختبار وجلب الأسئلة' })
   @ApiParam({ name: 'examId', description: 'معرّف الاختبار' })
   startExam(
+    @Param('examId', ParseIntPipe) examId: number,
+    @CurrentUser() user: types.JwtPayloadType,
+  ) {
+    return this.examsService.startExam(user.id, examId);
+  }
+
+  @Get(':examId/questions')
+  @UseGuards(VerifiedOnlyGuard)
+  @userRoles(Role.STUDENT, Role.ADMIN, Role.OWNER)
+  @ApiOperation({ summary: 'جلب أسئلة الاختبار وبدء المحاولة مع التحقق الشامل' })
+  @ApiParam({ name: 'examId', description: 'معرّف الاختبار' })
+  getExamQuestions(
     @Param('examId', ParseIntPipe) examId: number,
     @CurrentUser() user: types.JwtPayloadType,
   ) {

@@ -311,14 +311,16 @@ export class ExamsService {
         (sum: number, q: { points: number }) => sum + q.points,
         0,
       );
+      const totalQuestions = exam.questions.length;
       const passingPoints =
         totalPoints > 0
           ? Math.ceil((exam.passingScore / 100) * totalPoints)
           : 0;
 
-      const { comments, ...examData } = exam;
+      const { comments, questions, ...examData } = exam;
       return {
         ...examData,
+        totalQuestions,
         totalPoints,
         passingPoints,
         minPassingScore: passingPoints,
@@ -482,12 +484,7 @@ export class ExamsService {
         course: true,
         questions: {
           select: {
-            id: true,
-            text: true,
-            type: true,
             points: true,
-            imageUrl: true,
-            options: { select: { id: true, text: true } },
           },
         },
         _count: { select: { attempts: true, comments: true } },
@@ -521,6 +518,7 @@ export class ExamsService {
 
     let isUnlocked = true;
     let lockReason: string | null = null;
+    let remainingAttempts = exam.maxAttempts;
 
     if (userId) {
       const user = await this.prisma.user.findUnique({
@@ -532,6 +530,15 @@ export class ExamsService {
         const check = await this.checkExamPrerequisites(user.studentProfile.id, exam);
         isUnlocked = check.isUnlocked;
         lockReason = check.lockedReason;
+
+        const completedAttemptsCount = await this.prisma.examAttempt.count({
+          where: {
+            examId,
+            studentId: user.studentProfile.id,
+            status: { not: ExamStatus.IN_PROGRESS },
+          },
+        });
+        remainingAttempts = Math.max(0, exam.maxAttempts - completedAttemptsCount);
       }
     }
 
@@ -540,11 +547,14 @@ export class ExamsService {
       0,
     );
     const passingPoints = totalPoints > 0 ? Math.ceil((exam.passingScore / 100) * totalPoints) : 0;
+    const totalQuestions = exam.questions.length;
 
-    const { comments, ...examData } = exam;
+    const { comments, questions, ...examData } = exam;
 
     return {
       ...examData,
+      totalQuestions,
+      remainingAttempts,
       isUnlocked,
       lockReason,
       totalPoints,
@@ -603,12 +613,14 @@ export class ExamsService {
       0,
     );
     const passingPoints = totalPoints > 0 ? Math.ceil((exam.passingScore / 100) * totalPoints) : 0;
+    const totalQuestions = (exam.questions || []).length;
 
     const course = exam.course || exam.lesson?.module?.course || null;
 
-    const { attempts, comments, ...examData } = exam;
+    const { attempts, comments, questions, ...examData } = exam;
     return {
       ...examData,
+      totalQuestions,
       course,
       timeStatus,
       isEnded,
@@ -630,12 +642,7 @@ export class ExamsService {
         course: true,
         questions: {
           select: {
-            id: true,
-            text: true,
-            type: true,
             points: true,
-            imageUrl: true,
-            options: { select: { id: true, text: true } },
           },
         },
         _count: { select: { attempts: true, comments: true } },
@@ -733,12 +740,7 @@ export class ExamsService {
         lesson: { include: { module: { include: { course: true } } } },
         questions: {
           select: {
-            id: true,
-            text: true,
-            type: true,
             points: true,
-            imageUrl: true,
-            options: { select: { id: true, text: true } },
           },
         },
         _count: { select: { attempts: true, comments: true } },
@@ -818,30 +820,98 @@ export class ExamsService {
   async startExam(studentUserId: number, examId: number) {
     const exam = await this.prisma.exam.findUnique({
       where: { id: examId },
-      include: { lesson: true },
+      include: {
+        lesson: { include: { module: { include: { course: true } } } },
+        course: true,
+      },
     });
-    if (!exam) throw new NotFoundException('Exam not found');
+    if (!exam) throw new NotFoundException('الاختبار غير موجود');
 
     if (exam.lesson?.status === LessonStatus.DRAFT) {
-      throw new NotFoundException('Exam not found');
+      throw new NotFoundException('الاختبار غير متاح حالياً');
     }
 
     const now = new Date();
-    if (exam.examType === ExamType.CHALLENGE && exam.startTime && exam.startTime > now) {
+
+    // 1. التحقق من انتهاء الاختبار أولاً (Ended check)
+    if (exam.endTime && new Date(exam.endTime) <= now) {
+      throw new ForbiddenException('عذراً، هذا الاختبار قد انتهى وقته المحدد ولم يعد متاحاً للإجراء.');
+    }
+
+    // 2. التحقق من مواعيد بدء الاختبار (Start time check)
+    if (exam.startTime && new Date(exam.startTime) > now) {
+      const formattedStartTime = new Date(exam.startTime).toLocaleString('ar-SA');
       throw new ForbiddenException(
-        `التحدي لم يبدأ بعد. يبدأ في: ${exam.startTime.toISOString()}`,
+        `الاختبار لم يبدأ بعد. موعد البدء: ${formattedStartTime}`,
       );
     }
 
+    // 3. التحقق من صلاحيات الطالب / الأدمن
     const user = await this.prisma.user.findUnique({
       where: { id: studentUserId },
       include: { teacherProfile: true },
     });
     const isStaff = user?.role === Role.OWNER || user?.role === Role.ADMIN;
 
-    const { student, shouldBeRanked } =
-      await this.resolveStudentAndCheckAttempts(studentUserId, examId);
+    // 4. جلب ملف الطالب
+    let student = await this.prisma.student.findUnique({ where: { userId: studentUserId } });
+    if (!student) {
+      student = await this.prisma.student
+        .create({ data: { userId: studentUserId, academicId: `STU-${Date.now()}-${studentUserId}` } })
+        .catch(() => null);
+      if (!student) throw new NotFoundException('لم يتم العثور على ملف الطالب');
+    }
 
+    // 5. فحص المحاولات السابقة والمدة المحددة (Attempts & Duration check)
+    const allAttempts = await this.prisma.examAttempt.findMany({
+      where: { examId, studentId: student.id },
+      orderBy: { startedAt: 'desc' },
+    });
+
+    let activeAttempt: any = null;
+    const completedAttempts: any[] = [];
+
+    for (const att of allAttempts) {
+      if (att.status === ExamStatus.IN_PROGRESS) {
+        // التحقق مما إذا كانت المحاولة الجارية قد انتهت مدتها
+        if (exam.timeLimit && exam.timeLimit > 0) {
+          const elapsedMs = now.getTime() - att.startedAt.getTime();
+          const limitMs = exam.timeLimit * 60 * 1000;
+          if (elapsedMs > limitMs) {
+            const updated = await this.prisma.examAttempt.update({
+              where: { id: att.id },
+              data: {
+                status: ExamStatus.FAILED,
+                completedAt: new Date(att.startedAt.getTime() + limitMs),
+                timeTaken: limitMs,
+              },
+            });
+            completedAttempts.push(updated);
+            continue;
+          }
+        }
+        if (!activeAttempt) {
+          activeAttempt = att;
+        } else {
+          // أي محاولة جارية قديمة إضافية تغلق كراسبة
+          await this.prisma.examAttempt.update({
+            where: { id: att.id },
+            data: { status: ExamStatus.FAILED, completedAt: now },
+          });
+        }
+      } else {
+        completedAttempts.push(att);
+      }
+    }
+
+    // التحقق من استنفاد عدد المحاولات المسموح بها (Max attempts check)
+    if (!activeAttempt && completedAttempts.length >= exam.maxAttempts) {
+      throw new ForbiddenException(
+        `لقد استنفدت جميع المحاولات المسموح بها لهذا الاختبار (${completedAttempts.length}/${exam.maxAttempts}).`,
+      );
+    }
+
+    // 6. التحقق من المتطلبات السابقة للاختبار (Prerequisites check)
     if (!isStaff) {
       const prerequisiteCheck = await this.checkExamPrerequisites(student.id, exam);
       if (!prerequisiteCheck.isUnlocked) {
@@ -849,15 +919,7 @@ export class ExamsService {
       }
     }
 
-    const attempt = await this.prisma.examAttempt.create({
-      data: {
-        studentId: student.id,
-        examId: exam.id,
-        status: ExamStatus.IN_PROGRESS,
-        isRanked: shouldBeRanked,
-      },
-    });
-
+    // 7. التحقق من وجود أسئلة للاختبار
     const questions = await this.prisma.question.findMany({
       where: { examId },
       select: {
@@ -870,21 +932,46 @@ export class ExamsService {
       },
     });
 
+    if (!questions || questions.length === 0) {
+      throw new BadRequestException('لا توجد أسئلة مضافة لهذا الاختبار حالياً');
+    }
+
+    // 8. تحديد التصنيف في الـ Leaderboard
+    const hasRankedAttempt = allAttempts.some((a) => a.isRanked);
+    const shouldBeRanked = !hasRankedAttempt && (!exam.endTime || new Date(exam.endTime) > now);
+
+    // 9. استخدام المحاولة الجارية إذا كانت فعالة، أو إنشاء محاولة جديدة
+    let attempt = activeAttempt;
+    if (!attempt) {
+      attempt = await this.prisma.examAttempt.create({
+        data: {
+          studentId: student.id,
+          examId: exam.id,
+          status: ExamStatus.IN_PROGRESS,
+          isRanked: shouldBeRanked,
+        },
+      });
+    }
+
     const totalPoints = questions.reduce(
       (sum: number, q: { points: number }) => sum + q.points,
       0,
     );
     const passingPoints = totalPoints > 0 ? Math.ceil((exam.passingScore / 100) * totalPoints) : 0;
+    const remainingAttempts = Math.max(0, exam.maxAttempts - (completedAttempts.length + 1));
 
     return {
       message: 'Exam started successfully',
       attemptId: attempt.id,
-      isRanked: shouldBeRanked,
+      isRanked: attempt.isRanked,
       timeLimitMinutes: exam.timeLimit,
       passingScore: exam.passingScore,
       passingPoints,
       minPassingScore: passingPoints,
       totalPoints,
+      totalQuestions: questions.length,
+      remainingAttempts,
+      maxAttempts: exam.maxAttempts,
       startedAt: attempt.startedAt,
       questions,
     };
