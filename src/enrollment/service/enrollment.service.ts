@@ -36,14 +36,6 @@ async isUserEnrolled(userId: number, courseId: number) {
             throw new NotFoundException('المستخدم غير موجود');
         }
 
-        if (!user.emailVerified && user.role === 'STUDENT') {
-            throw new ForbiddenException({
-                statusCode: 403,
-                message: 'يجب تأكيد حسابك عبر البريد الإلكتروني أولاً قبل التسجيل في الكورسات.',
-                action: 'EMAIL_VERIFICATION_REQUIRED',
-            });
-        }
-
         // 2. جلب بيانات الطالب والكورس
         let student = await this.prisma.student.findUnique({
             where: { userId }
@@ -58,8 +50,15 @@ async isUserEnrolled(userId: number, courseId: number) {
             throw new NotFoundException(MESSAGES.COURSES.COURSE_NOT_FOUND_DEFAULT);
         }
 
-        // الكورسات المدفوعة تتطلب دفع سند ومراجعة
+        // الكورسات المدفوعة تتطلب تأكيد الحساب وإرسال سند عبر قسم المدفوعات
         if (course.isPaid) {
+            if (!user.emailVerified && user.role === 'STUDENT') {
+                throw new ForbiddenException({
+                    statusCode: 403,
+                    message: 'يجب تأكيد حسابك عبر البريد الإلكتروني أولاً قبل التسجيل في الكورسات المدفوعة.',
+                    action: 'EMAIL_VERIFICATION_REQUIRED',
+                });
+            }
             throw new BadRequestException('هذا الكورس مدفوع، يرجى إرسال سند التحويل عبر قسم المدفوعات لتأكيد وتفعيل اشتراكك');
         }
 
