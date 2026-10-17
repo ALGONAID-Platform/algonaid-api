@@ -598,10 +598,27 @@ export class ExamsService {
       timeStatus = 'ENDED';
     }
 
+    // عدد الطلاب الفريدين المشاركين في الاختبار
+    const uniqueStudentIds = new Set<number>();
+    for (const attempt of (exam.attempts || [])) {
+      const studentId = (attempt as any).student?.id;
+      if (studentId) uniqueStudentIds.add(studentId);
+    }
+    const participantsCount = uniqueStudentIds.size;
+
     let topParticipants: any[] = [];
     if (!isEnded) {
-      // أثناء سير الاختبار: عرض أحدث المشاركين بدون درجات وبدون ترتيب
-      topParticipants = (exam.attempts || [])
+      // أثناء سير الاختبار: عرض أحدث المشاركين الفريدين بدون درجات وبدون ترتيب
+      const uniqueAttempts: any[] = [];
+      const seen = new Set<number>();
+      for (const attempt of (exam.attempts || [])) {
+        const studentId = (attempt as any).student?.id;
+        if (studentId && !seen.has(studentId)) {
+          seen.add(studentId);
+          uniqueAttempts.push(attempt);
+        }
+      }
+      topParticipants = uniqueAttempts
         .slice(0, 3)
         .map((attempt: any) => ({
           studentId: attempt.student.id,
@@ -611,12 +628,21 @@ export class ExamsService {
           participatedAt: attempt.completedAt,
         }));
     } else {
-      // بعد انتهاء الاختبار: عرض أفضل 3 متصدرين بالدرجات والمراكز
+      // بعد انتهاء الاختبار: عرض أفضل 3 متصدرين فريدين بالدرجات والمراكز
       let sortedAttempts = sortByRankingCriteria(exam.attempts as any, exam.rankingCriteria);
       if (!sortedAttempts.some((a: any) => a.score > 0)) {
         sortedAttempts = [];
       }
-      topParticipants = sortedAttempts.slice(0, 3).map((attempt: any, index: number) => ({
+      const uniqueSorted: any[] = [];
+      const seenSorted = new Set<number>();
+      for (const attempt of sortedAttempts) {
+        const studentId = attempt.student?.id;
+        if (studentId && !seenSorted.has(studentId)) {
+          seenSorted.add(studentId);
+          uniqueSorted.push(attempt);
+        }
+      }
+      topParticipants = uniqueSorted.slice(0, 3).map((attempt: any, index: number) => ({
         rank: index + 1,
         studentId: attempt.student.id,
         name: attempt.student.user.name,
@@ -649,10 +675,10 @@ export class ExamsService {
       totalPoints,
       passingPoints,
       minPassingScore: passingPoints,
-      participantsCount: exam._count.attempts,
+      participantsCount,
       topParticipants,
-      commentsCount: exam._count.comments,
-      totalComments: exam._count.comments,
+      commentsCount: exam._count?.comments ?? 0,
+      totalComments: exam._count?.comments ?? 0,
       latestComment: this.formatLatestComment(comments),
     };
   }

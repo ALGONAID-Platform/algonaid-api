@@ -45,9 +45,19 @@ export class LeaderboardService {
       },
     });
 
+    // ضمان فرادة الطلاب وعدم تكرار أي طالب في القائمة
+    const uniqueRankedAttempts: typeof rankedAttempts = [];
+    const seenStudentIds = new Set<number>();
+    for (const att of rankedAttempts) {
+      if (!seenStudentIds.has(att.student.id)) {
+        seenStudentIds.add(att.student.id);
+        uniqueRankedAttempts.push(att);
+      }
+    }
+
     if (!isEnded) {
       // أثناء سير الاختبار: عرض أسماء المشاركين وصورهم وتوقيت المشاركة فقط بدون درجات وبدون ترتيب
-      const participants = [...rankedAttempts]
+      const participants = [...uniqueRankedAttempts]
         .sort((a, b) => {
           const timeA = a.completedAt ? new Date(a.completedAt).getTime() : (a.startedAt ? new Date(a.startedAt).getTime() : 0);
           const timeB = b.completedAt ? new Date(b.completedAt).getTime() : (b.startedAt ? new Date(b.startedAt).getTime() : 0);
@@ -68,14 +78,14 @@ export class LeaderboardService {
         isEnded: false,
         status: 'ONGOING',
         endTime: exam.endTime,
-        participantsCount: rankedAttempts.length,
+        participantsCount: uniqueRankedAttempts.length,
         leaderboard: participants,
         participants,
       };
     }
 
     // بعد انتهاء الاختبار: عرض قائمة المتصدرين الكاملة بالدرجات والمراكز والوقت المستغرق
-    let sorted = sortByRankingCriteria(rankedAttempts, exam.rankingCriteria);
+    let sorted = sortByRankingCriteria(uniqueRankedAttempts, exam.rankingCriteria);
 
     if (!sorted.some((a) => a.score > 0)) {
       sorted = [];
@@ -99,7 +109,7 @@ export class LeaderboardService {
       isEnded: true,
       status: 'ENDED',
       endTime: exam.endTime,
-      participantsCount: rankedAttempts.length,
+      participantsCount: uniqueRankedAttempts.length,
       leaderboard,
       participants: leaderboard,
     };
