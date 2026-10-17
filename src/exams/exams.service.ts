@@ -534,24 +534,32 @@ export class ExamsService {
     let remainingAttempts = exam.maxAttempts;
 
     if (userId) {
-      const user = await this.prisma.user.findUnique({
-        where: { id: userId },
-        include: { studentProfile: true },
-      });
-      const isStaff = user?.role === Role.OWNER || user?.role === Role.ADMIN;
-      if (!isStaff && user?.studentProfile) {
-        const check = await this.checkExamPrerequisites(user.studentProfile.id, exam);
-        isUnlocked = check.isUnlocked;
-        lockReason = check.lockedReason;
+      let student = await this.prisma.student.findUnique({ where: { userId } });
+      if (!student) {
+        const user = await this.prisma.user.findUnique({
+          where: { id: userId },
+          include: { studentProfile: true },
+        });
+        student = user?.studentProfile ?? null;
+      }
 
+      if (student) {
         const completedAttemptsCount = await this.prisma.examAttempt.count({
           where: {
             examId,
-            studentId: user.studentProfile.id,
+            studentId: student.id,
             status: { not: ExamStatus.IN_PROGRESS },
           },
         });
         remainingAttempts = Math.max(0, exam.maxAttempts - completedAttemptsCount);
+
+        const user = await this.prisma.user.findUnique({ where: { id: userId } });
+        const isStaff = user?.role === Role.OWNER || user?.role === Role.ADMIN;
+        if (!isStaff) {
+          const check = await this.checkExamPrerequisites(student.id, exam);
+          isUnlocked = check.isUnlocked;
+          lockReason = check.lockedReason;
+        }
       }
     }
 
@@ -638,7 +646,8 @@ export class ExamsService {
         }));
     } else {
       // بعد انتهاء الاختبار: عرض أفضل 3 متصدرين فريدين بالدرجات والمراكز
-      let sortedAttempts = sortByRankingCriteria(exam.attempts as any, exam.rankingCriteria);
+      const rankedOnly = (exam.attempts || []).filter((a: any) => a.isRanked !== false);
+      let sortedAttempts = sortByRankingCriteria(rankedOnly as any, exam.rankingCriteria);
       if (!sortedAttempts.some((a: any) => a.score > 0)) {
         sortedAttempts = [];
       }
@@ -721,10 +730,11 @@ export class ExamsService {
           },
         },
         attempts: {
-          where: { isRanked: true },
+          where: { status: { not: ExamStatus.IN_PROGRESS } },
           select: {
             id: true,
             score: true,
+            isRanked: true,
             timeTaken: true,
             completedAt: true,
             student: {
@@ -825,10 +835,11 @@ export class ExamsService {
           },
         },
         attempts: {
-          where: { isRanked: true },
+          where: { status: { not: ExamStatus.IN_PROGRESS } },
           select: {
             id: true,
             score: true,
+            isRanked: true,
             timeTaken: true,
             completedAt: true,
             student: {
