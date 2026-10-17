@@ -34,7 +34,7 @@ export const MESSAGES = {
         EMAIL_INVALID: 'يرجى تقديم بريد إلكتروني صحيح',
         PASSWORD_REQUIRED: 'كلمة المرور مطلوبة',
         PASSWORD_STRING: 'يجب أن تكون كلمة المرور نصاً',
-        PASSWORD_MIN_LENGTH: 'يجب أن تحتوي كلمة المرور على 8 أحرف على الأقل',
+        PASSWORD_MIN_LENGTH: 'يجب أن تحتوي كلمة المرور على 6 أحرف على الأقل',
         PASSWORD_COMPLEXITY: 'يجب أن تحتوي كلمة المرور على حروف وأرقام كحد أدنى (الرموز اختيارية ولا يهم إن كانت الحروف صغيرة أو كبيرة)',
         ROLE_INVALID: 'يجب أن يكون الدور طالباً (student) أو مشرفاً (admin)',
         ROLE_REQUIRED: 'يرجى تحديد الدور',

@@ -12,6 +12,7 @@ export class AuthenticateV2Dto {
   @IsNotEmpty({ message: MESSAGES.VALIDATION.PASSWORD_REQUIRED })
   @IsString()
   @MinLength(6, { message: MESSAGES.VALIDATION.PASSWORD_MIN_LENGTH })
+  @MaxLength(30)
   @Matches(/^(?=.*[a-zA-Z])(?=.*\d).+$/, {
     message: MESSAGES.VALIDATION.PASSWORD_COMPLEXITY,
   })

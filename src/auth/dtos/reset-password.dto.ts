@@ -6,7 +6,7 @@ export class ResetPasswordDto {
   @ApiProperty({ example: 'Password123!' })
   @IsNotEmpty({ message: MESSAGES.VALIDATION.PASSWORD_REQUIRED })
   @IsString({ message: MESSAGES.VALIDATION.PASSWORD_STRING })
-  @MinLength(8, { message: MESSAGES.VALIDATION.PASSWORD_MIN_LENGTH })
+  @MinLength(6, { message: MESSAGES.VALIDATION.PASSWORD_MIN_LENGTH })
   @MaxLength(30)
   @Matches(/^(?=.*[a-zA-Z])(?=.*\d).+$/, {
     message: MESSAGES.VALIDATION.PASSWORD_COMPLEXITY,
