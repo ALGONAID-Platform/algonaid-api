@@ -118,7 +118,17 @@ export class LeaderboardService {
       orderBy: { score: 'desc' },
       include: {
         exam: {
-          select: { title: true, passingScore: true, rankingCriteria: true },
+          select: {
+            title: true,
+            passingScore: true,
+            rankingCriteria: true,
+            questions: {
+              include: {
+                options: true,
+              },
+              orderBy: { id: 'asc' },
+            },
+          },
         },
         answers: {
           include: {
@@ -135,34 +145,51 @@ export class LeaderboardService {
 
     if (!attempt) throw new NotFoundException('لم تقم بإجراء هذا الاختبار بعد');
 
-    const totalPoints = attempt.answers.reduce(
-      (sum, a) => sum + a.question.points,
+    const totalPoints = attempt.exam.questions.reduce(
+      (sum, q) => sum + q.points,
       0,
     );
 
-    const questions = attempt.answers.map((answer) => {
-      const correctOption = answer.question.options.find((o) => o.isCorrect);
-      const isCorrect = answer.selectedOption.isCorrect;
+    const questions = attempt.exam.questions.map((q) => {
+      const answer = attempt.answers.find((a) => a.questionId === q.id);
+      const correctOption = q.options.find((o) => o.isCorrect);
+      const isCorrect = answer?.selectedOption ? answer.selectedOption.isCorrect : false;
       return {
-        questionId: answer.question.id,
-        questionText: answer.question.text,
-        questionImage: answer.question.imageUrl,
-        selectedOption: {
-          id: answer.selectedOption.id,
-          text: answer.selectedOption.text,
-        },
+        id: q.id,
+        questionId: q.id,
+        text: q.text,
+        questionText: q.text,
+        imageUrl: q.imageUrl,
+        questionImage: q.imageUrl,
+        type: q.type,
+        points: q.points,
+        earnedPoints: isCorrect ? q.points : 0,
+        options: q.options.map((o) => ({
+          id: o.id,
+          text: o.text,
+          isCorrect: o.isCorrect,
+          questionId: q.id,
+        })),
+        selectedOption: answer?.selectedOption
+          ? { id: answer.selectedOption.id, text: answer.selectedOption.text }
+          : null,
+        selectedOptionId: answer?.selectedOptionId ?? null,
         correctOption: correctOption
           ? { id: correctOption.id, text: correctOption.text }
           : null,
+        correctOptionId: correctOption?.id ?? null,
         isCorrect,
-        points: answer.question.points,
-        earnedPoints: isCorrect ? answer.question.points : 0,
+        userAnswerId: answer?.selectedOptionId ?? null,
       };
     });
 
     const passingPoints = totalPoints > 0 ? Math.ceil((attempt.exam.passingScore / 100) * totalPoints) : 0;
 
     return {
+      attemptId: attempt.id,
+      id: attempt.id,
+      examId: attempt.examId,
+      studentId: attempt.studentId,
       examTitle: attempt.exam.title,
       score: attempt.score,
       totalPoints,
