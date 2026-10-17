@@ -35,6 +35,7 @@ async function bootstrap() {
   app.setGlobalPrefix('api/v1', {
     exclude: [
       'modulesList/:courseId',
+      'courses/:courseId',
       'lessonDetails/:courseId/:lessonId',
       'lessonDetails/:lessonId',
       'examPage/:id',
@@ -99,6 +100,22 @@ async function bootstrap() {
   expressApp.get('/examPage/:id', async (req: any, res: any) => {
     const appService = app.get(AppService);
     res.send(await appService.getExamRedirectPage(req.params.id));
+  });
+  expressApp.get('/modulesList/:courseId', async (req: any, res: any) => {
+    const appService = app.get(AppService);
+    res.send(await appService.getRedirectPage('course', req.params.courseId));
+  });
+  expressApp.get('/courses/:courseId', async (req: any, res: any) => {
+    const appService = app.get(AppService);
+    res.send(await appService.getRedirectPage('course', req.params.courseId));
+  });
+  expressApp.get('/lessonDetails/:courseId/:lessonId', async (req: any, res: any) => {
+    const appService = app.get(AppService);
+    res.send(await appService.getRedirectPage('lesson', req.params.lessonId));
+  });
+  expressApp.get('/lessonDetails/:lessonId', async (req: any, res: any) => {
+    const appService = app.get(AppService);
+    res.send(await appService.getRedirectPage('lesson', req.params.lessonId));
   });
 
   app.useStaticAssets(join(__dirname, '..', 'public'), {

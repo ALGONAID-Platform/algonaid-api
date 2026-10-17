@@ -45,9 +45,23 @@ export class AppController {
     return this.appService.getRedirectPage('course', courseId);
   }
 
+  @Get('courses/:courseId')
+  @Header('Content-Type', 'text/html')
+  getCourseRedirectByCourseId(@Param('courseId') courseId: string): Promise<string> | string {
+    return this.appService.getRedirectPage('course', courseId);
+  }
+
   @Get('lessonDetails/:lessonId')
   @Header('Content-Type', 'text/html')
   getLessonRedirect(@Param('lessonId') lessonId: string): Promise<string> | string {
+    return this.appService.getRedirectPage('lesson', lessonId);
+  }
+
+  @Get('lessonDetails/:courseId/:lessonId')
+  @Header('Content-Type', 'text/html')
+  getLessonRedirectWithCourse(
+    @Param('lessonId') lessonId: string,
+  ): Promise<string> | string {
     return this.appService.getRedirectPage('lesson', lessonId);
   }
 
