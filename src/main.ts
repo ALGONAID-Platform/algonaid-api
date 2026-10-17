@@ -91,27 +91,33 @@ async function bootstrap() {
 
   // Add raw Express routes for deep link redirect HTML pages
   const expressApp = app.getHttpAdapter().getInstance();
-  expressApp.get('/posts/:id(\\d+)', async (req: any, res: any) => {
+  expressApp.get('/posts/:id', async (req: any, res: any, next: any) => {
+    if (!/^\d+$/.test(req.params.id)) return next();
     const appService = app.get(AppService);
     res.send(await appService.getRedirectPage('post', req.params.id));
   });
-  expressApp.get('/examPage/:id(\\d+)', async (req: any, res: any) => {
+  expressApp.get('/examPage/:id', async (req: any, res: any, next: any) => {
+    if (!/^\d+$/.test(req.params.id)) return next();
     const appService = app.get(AppService);
     res.send(await appService.getExamRedirectPage(req.params.id));
   });
-  expressApp.get('/modulesList/:courseId(\\d+)', async (req: any, res: any) => {
+  expressApp.get('/modulesList/:courseId', async (req: any, res: any, next: any) => {
+    if (!/^\d+$/.test(req.params.courseId)) return next();
     const appService = app.get(AppService);
     res.send(await appService.getRedirectPage('course', req.params.courseId));
   });
-  expressApp.get('/courses/:courseId(\\d+)', async (req: any, res: any) => {
+  expressApp.get('/courses/:courseId', async (req: any, res: any, next: any) => {
+    if (!/^\d+$/.test(req.params.courseId)) return next();
     const appService = app.get(AppService);
     res.send(await appService.getRedirectPage('course', req.params.courseId));
   });
-  expressApp.get('/lessonDetails/:courseId/:lessonId', async (req: any, res: any) => {
+  expressApp.get('/lessonDetails/:courseId/:lessonId', async (req: any, res: any, next: any) => {
+    if (!/^\d+$/.test(req.params.lessonId)) return next();
     const appService = app.get(AppService);
     res.send(await appService.getRedirectPage('lesson', req.params.lessonId));
   });
-  expressApp.get('/lessonDetails/:lessonId', async (req: any, res: any) => {
+  expressApp.get('/lessonDetails/:lessonId', async (req: any, res: any, next: any) => {
+    if (!/^\d+$/.test(req.params.lessonId)) return next();
     const appService = app.get(AppService);
     res.send(await appService.getRedirectPage('lesson', req.params.lessonId));
   });
