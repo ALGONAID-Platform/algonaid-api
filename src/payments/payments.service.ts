@@ -8,10 +8,14 @@ import { PrismaService } from 'src/prisma/prisma.service';
 import { SubmitPaymentDto } from './dto/submit-payment.dto';
 import { RejectPaymentDto } from './dto/reject-payment.dto';
 import { PaymentStatus } from '@prisma/client';
+import { NotificationsService } from 'src/notifications/notifications.service';
 
 @Injectable()
 export class PaymentsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly notificationsService: NotificationsService,
+  ) {}
 
   /**
    * Helper to ensure user has a student profile
@@ -310,6 +314,22 @@ export class PaymentsService {
       }),
     ]);
 
+    // إرسال إشعار للمستخدم في قسم الردود بنجاح قبول الاشتراك
+    if (updatedPayment.student?.user?.id) {
+      const firstLesson = await this.prisma.lesson.findFirst({
+        where: { module: { courseId: updatedPayment.courseId } },
+        orderBy: { order: 'asc' },
+        select: { id: true },
+      });
+
+      await this.notificationsService.notifyCourseEnrollmentApproved(
+        updatedPayment.student.user.id,
+        updatedPayment.course.title,
+        reviewerUserId,
+        firstLesson?.id,
+      );
+    }
+
     return {
       message: 'تم قبول سند الدفع وتفعيل اشتراك الطالب في الكورس بنجاح.',
       payment: updatedPayment,
@@ -352,6 +372,15 @@ export class PaymentsService {
         },
       },
     });
+
+    if (updated.student?.user?.id) {
+      await this.notificationsService.sendNotification({
+        recipientUserId: updated.student.user.id,
+        senderUserId: reviewerUserId,
+        type: 'COURSE_ENROLLMENT',
+        message: `⚠️ تنبيه بخصوص طلب اشتراكك في كورس **${updated.course.title}**: تعذر قبول السند للسبب التالي: "${dto.reason}". يرجى مراجعة وتعديل السند وإعادة إرساله.`,
+      });
+    }
 
     return {
       message: 'تم رفض طلب الدفع مع حفظ سبب الرفض.',

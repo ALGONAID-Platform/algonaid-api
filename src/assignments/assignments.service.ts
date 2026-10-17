@@ -11,12 +11,14 @@ import { UpdateAssignmentDto } from './dto/update-assignment.dto';
 import { SubmitAssignmentDto } from './dto/submit-assignment.dto';
 import { GradeSubmissionDto } from './dto/grade-submission.dto';
 import { Role, SubmissionStatus, AssignmentType } from '@prisma/client';
+import { NotificationsService } from 'src/notifications/notifications.service';
 
 @Injectable()
 export class AssignmentsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly storageService: UploadcareStorageService,
+    private readonly notificationsService: NotificationsService,
   ) {}
 
   /**
@@ -644,6 +646,21 @@ export class AssignmentsService {
           completedAt: now,
         },
       });
+    }
+
+    // إرسال إشعار للطالب في قسم الردود برد وتصحيح المعلم
+    if (gradedSubmission.student?.user?.id) {
+      const teacherName = gradedSubmission.gradedBy?.name || 'المعلم';
+      await this.notificationsService.notifyAssignmentFeedback(
+        gradedSubmission.student.user.id,
+        userId,
+        teacherName,
+        gradedSubmission.assignment.title,
+        dto.score,
+        gradedSubmission.assignment.maxScore,
+        dto.feedback,
+        submission.assignment.lessonId,
+      );
     }
 
     return gradedSubmission;

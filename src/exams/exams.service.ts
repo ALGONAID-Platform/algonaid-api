@@ -10,10 +10,14 @@ import { SubmitExamDto } from './dto/exam-submission.dto';
 import { CreateExamDto, CreateQuestionDto, CreateOptionDto } from './dto/create-exam.dto';
 import { UpdateExamDto } from './dto/update-exam.dto';
 import { sortByRankingCriteria } from './helpers/ranking.helper';
+import { NotificationsService } from 'src/notifications/notifications.service';
 
 @Injectable()
 export class ExamsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly notificationsService: NotificationsService,
+  ) {}
 
   private formatLatestComment(comments?: Array<{
     id: number;
@@ -1106,6 +1110,46 @@ export class ExamsService {
     });
 
     const passingPoints = totalPoints > 0 ? Math.ceil((attempt.exam.passingScore / 100) * totalPoints) : 0;
+
+    // إرسال إشعار فوري بالترتيب والدرجة في قسم الردود للاختبارات التي انتهت مدتها أو بدون تاريخ إغلاق مستقبلي
+    const isEnded = Boolean(attempt.exam.endTime && new Date(attempt.exam.endTime) <= now);
+    const hasNoFutureEnd = !attempt.exam.endTime || isEnded;
+
+    if (hasNoFutureEnd && student) {
+      try {
+        const allRanked = await this.prisma.examAttempt.findMany({
+          where: {
+            examId: attempt.examId,
+            isRanked: true,
+            status: { not: ExamStatus.IN_PROGRESS },
+          },
+          select: {
+            id: true,
+            score: true,
+            timeTaken: true,
+            completedAt: true,
+            startedAt: true,
+            student: { select: { id: true, userId: true, user: { select: { name: true, avatar: true } } } },
+          },
+        });
+
+        const sorted = sortByRankingCriteria(allRanked as any, attempt.exam.rankingCriteria);
+        const myRankIndex = sorted.findIndex((a) => a.id === attempt.id || a.student.id === student!.id);
+        const rank = myRankIndex >= 0 ? myRankIndex + 1 : 1;
+
+        await this.notificationsService.notifyExamResult(
+          studentUserId,
+          attempt.examId,
+          attempt.exam.title,
+          rank,
+          score,
+          totalPoints,
+          Math.round(percentage),
+        );
+      } catch (err) {
+        // عدم تعطيل تسليم الاختبار في حال حدوث خطأ في الإشعار
+      }
+    }
 
     return {
       ...updatedAttempt,

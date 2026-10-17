@@ -8,6 +8,7 @@ export interface RankedAttempt {
   completedAt: Date | null;
   student: {
     id: number;
+    userId?: number;
     user: { name: string; avatar: string | null };
   };
 }

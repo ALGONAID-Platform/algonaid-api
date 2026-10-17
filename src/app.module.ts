@@ -25,6 +25,7 @@ import { PostsModule } from './posts/posts.module';
 import { PostCommentsModule } from './post-comments/post-comments.module';
 import { PaymentsModule } from './payments/payments.module';
 import { AssignmentsModule } from './assignments/assignments.module';
+import { NotificationsModule } from './notifications/notifications.module';
 
 @Module({
   imports: [
@@ -62,6 +63,7 @@ import { AssignmentsModule } from './assignments/assignments.module';
     PostsModule,
     PostCommentsModule,
     PaymentsModule,
+    NotificationsModule,
     ThrottlerModule.forRoot([{
       ttl: 60000,
       limit: 1000,

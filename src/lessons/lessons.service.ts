@@ -5,10 +5,14 @@ import { UpdateLessonDto } from './dto/update-lesson.dto';
 import { UpdateLiveStatusDto } from './dto/update-live-status.dto';
 import { MESSAGES } from 'src/utils/messages';
 import { LessonStatus, Role } from '@prisma/client';
+import { NotificationsService } from 'src/notifications/notifications.service';
 
 @Injectable()
 export class LessonsService {
-  constructor(private readonly prisma: PrismaService) { }
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly notificationsService: NotificationsService,
+  ) { }
 
   /**
    * Helper to check if user is staff (Owner/Admin) or the instructor of this course
@@ -119,12 +123,59 @@ export class LessonsService {
       finalModuleId = moduleId;
     }
 
-    return this.prisma.lesson.create({
+    const lesson = await this.prisma.lesson.create({
       data: {
         ...lessonData,
         moduleId: finalModuleId,
-      }, 
+      },
+      include: {
+        module: {
+          include: {
+            course: {
+              select: { id: true, title: true },
+            },
+          },
+        },
+      },
     });
+
+    // إرسال إشعار للطلاب المسجلين في هذا الكورس بإضافة درس جديد
+    try {
+      const courseId = lesson.module?.course?.id;
+      const courseTitle = lesson.module?.course?.title || 'الكورس';
+      const teacherName = user?.name || 'المعلم';
+
+      if (courseId) {
+        const enrollments = await this.prisma.enrollment.findMany({
+          where: {
+            courseId,
+            status: 'ACTIVE',
+          },
+          include: {
+            student: {
+              select: { userId: true },
+            },
+          },
+        });
+
+        for (const enrollment of enrollments) {
+          if (enrollment.student?.userId && enrollment.student.userId !== userId) {
+            await this.notificationsService.notifyNewLesson(
+              enrollment.student.userId,
+              userId,
+              teacherName,
+              courseTitle,
+              lesson.title,
+              lesson.id,
+            );
+          }
+        }
+      }
+    } catch (err) {
+      // عدم تعطيل إنشاء الدرس في حال حدوث خطأ أثناء إرسال الإشعار
+    }
+
+    return lesson;
   }
 
   async findAllByModule(moduleId: number, page: number = 1, limit: number = 8, userId?: number) {
@@ -258,6 +309,7 @@ export class LessonsService {
         status: LessonStatus.PUBLISHED,
         module: {
           course: {
+            isPaid: false, // الكورسات المجانية فقط
             enrollments: {
               some: {
                 studentId: studentId,
@@ -438,13 +490,50 @@ export class LessonsService {
 
     const { moduleId, courseId, ...data } = updateLessonDto;
 
-    return this.prisma.lesson.update({
+    const updatedLesson = await this.prisma.lesson.update({
       where: { id },
       data: {
         ...data,
         ...(moduleId && { moduleId }),
       },
+      include: {
+        module: {
+          include: {
+            course: { select: { id: true, title: true } },
+          },
+        },
+      },
     });
+
+    if (lesson.status !== LessonStatus.PUBLISHED && updatedLesson.status === LessonStatus.PUBLISHED) {
+      try {
+        const courseId = updatedLesson.module?.course?.id;
+        const courseTitle = updatedLesson.module?.course?.title || 'الكورس';
+        const teacherName = user?.name || 'المعلم';
+
+        if (courseId) {
+          const enrollments = await this.prisma.enrollment.findMany({
+            where: { courseId, status: 'ACTIVE' },
+            include: { student: { select: { userId: true } } },
+          });
+
+          for (const enrollment of enrollments) {
+            if (enrollment.student?.userId && enrollment.student.userId !== userId) {
+              await this.notificationsService.notifyNewLesson(
+                enrollment.student.userId,
+                userId,
+                teacherName,
+                courseTitle,
+                updatedLesson.title,
+                updatedLesson.id,
+              );
+            }
+          }
+        }
+      } catch (err) {}
+    }
+
+    return updatedLesson;
   }
 
   async remove(id: number, userId: number) {

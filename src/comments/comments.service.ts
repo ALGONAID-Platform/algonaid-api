@@ -394,9 +394,27 @@ export class CommentsService {
     const mappedData = data.map((mention: any) => {
       if (mention.comment) {
         const isReply = mention.comment.parent && mention.comment.parent.userId === mention.mentionedUserId;
+        let type: string = isReply ? 'REPLY' : 'MENTION';
+        const text = mention.comment.text || '';
+
+        if (
+          text.includes('تمت الموافقة على اشتراكك') ||
+          text.includes('تم قبول اشتراكك') ||
+          text.includes('تفعيل دورتك بنجاح') ||
+          text.includes('طلب اشتراكك في كورس')
+        ) {
+          type = 'COURSE_ENROLLMENT';
+        } else if (text.includes('نتيجة الاختبار') || text.includes('انتهى وقت اختبار')) {
+          type = 'EXAM_RESULT';
+        } else if (text.includes('بالرد على تكليفك') || text.includes('قام المعلم بالرد')) {
+          type = 'ASSIGNMENT_FEEDBACK';
+        } else if (text.includes('بإضافة درس جديد') || text.includes('درس جديد بعنوان')) {
+          type = 'NEW_LESSON';
+        }
+
         return {
           ...mention,
-          type: isReply ? 'REPLY' : 'MENTION'
+          type,
         };
       }
 
