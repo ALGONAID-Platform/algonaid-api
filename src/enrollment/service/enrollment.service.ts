@@ -1,4 +1,4 @@
-import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ConflictException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { CreateEnrollmentDto } from '../dto/enrollment.dto';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { MESSAGES } from 'src/utils/messages';
@@ -30,12 +30,26 @@ async isUserEnrolled(userId: number, courseId: number) {
     async craete(userId: number, enrollmentDto: CreateEnrollmentDto) {
         const { courseId } = enrollmentDto;
 
-        // 1. جلب بيانات الطالب والكورس
+        // 1. التحقق من وجود المستخدم وتأكيد بريده الإلكتروني
+        const user = await this.prisma.user.findUnique({ where: { id: userId } });
+        if (!user) {
+            throw new NotFoundException('المستخدم غير موجود');
+        }
+
+        if (!user.emailVerified && user.role === 'STUDENT') {
+            throw new ForbiddenException({
+                statusCode: 403,
+                message: 'يجب تأكيد حسابك عبر البريد الإلكتروني أولاً قبل التسجيل في الكورسات.',
+                action: 'EMAIL_VERIFICATION_REQUIRED',
+            });
+        }
+
+        // 2. جلب بيانات الطالب والكورس
         let student = await this.prisma.student.findUnique({
             where: { userId }
         });
 
-        // 2. التحقق من وجود الكورس
+        // 3. التحقق من وجود الكورس
         const course = await this.prisma.course.findUnique({
             where: { id: courseId }
         });
@@ -51,10 +65,6 @@ async isUserEnrolled(userId: number, courseId: number) {
 
         // إذا لم يكن لديه ملف طالب (مثل حالة الـ admin أو owner)، نقوم بإنشائه فوراً
         if (!student) {
-            const user = await this.prisma.user.findUnique({ where: { id: userId } });
-            if (!user) {
-                throw new NotFoundException('المستخدم غير موجود');
-            }
             student = await this.prisma.student.create({
                 data: {
                     userId,

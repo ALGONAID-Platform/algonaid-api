@@ -54,23 +54,29 @@ export class CommentsController {
   }
 
   @Get('lesson/:lessonId')
-  @UseGuards(AuthRollGuard)
+  @UseGuards(AuthRollGuard, VerifiedOnlyGuard)
   @userRoles(Role.STUDENT, Role.ADMIN, Role.OWNER)
   @ApiOperation({ summary: 'Get all comments and replies for a lesson' })
-  getByLesson(@Param('lessonId', ParseIntPipe) lessonId: number) {
-    return this.commentsService.getCommentsByLesson(lessonId);
+  getByLesson(
+    @Param('lessonId', ParseIntPipe) lessonId: number,
+    @CurrentUser() user: types.JwtPayloadType,
+  ) {
+    return this.commentsService.getCommentsByLesson(lessonId, user.id);
   }
 
   @Get('exam/:examId')
-  @UseGuards(AuthRollGuard)
+  @UseGuards(AuthRollGuard, VerifiedOnlyGuard)
   @userRoles(Role.STUDENT, Role.ADMIN, Role.OWNER)
   @ApiOperation({ summary: 'Get all comments and replies for an exam/challenge' })
-  getByExam(@Param('examId', ParseIntPipe) examId: number) {
-    return this.commentsService.getCommentsByExam(examId);
+  getByExam(
+    @Param('examId', ParseIntPipe) examId: number,
+    @CurrentUser() user: types.JwtPayloadType,
+  ) {
+    return this.commentsService.getCommentsByExam(examId, user.id);
   }
 
   @Get('course/:courseId/latest')
-  @UseGuards(AuthRollGuard)
+  @UseGuards(AuthRollGuard, VerifiedOnlyGuard)
   @userRoles(Role.STUDENT, Role.ADMIN, Role.OWNER)
   @ApiOperation({ summary: 'Get the latest comments across all lessons in a course' })
   getLatestByCourse(

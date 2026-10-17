@@ -1,6 +1,7 @@
 import {
   BadRequestException,
   ConflictException,
+  ForbiddenException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
@@ -45,6 +46,19 @@ export class PaymentsService {
    * Student submits a payment receipt
    */
   async submitPayment(userId: number, dto: SubmitPaymentDto) {
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!user) {
+      throw new NotFoundException('المستخدم غير موجود');
+    }
+
+    if (!user.emailVerified && user.role === 'STUDENT') {
+      throw new ForbiddenException({
+        statusCode: 403,
+        message: 'يجب تأكيد حسابك عبر البريد الإلكتروني أولاً قبل إرسال سند الدفع أو شراء الكورس.',
+        action: 'EMAIL_VERIFICATION_REQUIRED',
+      });
+    }
+
     const student = await this.getOrCreateStudent(userId);
 
     const course = await this.prisma.course.findUnique({

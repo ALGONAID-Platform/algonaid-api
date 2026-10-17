@@ -44,6 +44,8 @@ export class LessonsService {
     if (!user) return false;
 
     if (user.studentProfile) {
+      if (!user.emailVerified) return false;
+
       const enrollment = await this.prisma.enrollment.findUnique({
         where: {
           studentId_courseId: {
@@ -417,38 +419,36 @@ export class LessonsService {
       lesson.liveStatus !== 'LIVE_NOW' &&
       lesson.liveStatus !== 'COMPLETED';
 
-    if (isScheduledFuture) {
-      throw new ForbiddenException(
-        `الدرس مجدول ولم يحن موعده بعد. موعد الدرس: ${new Date(lesson.scheduledAt!).toISOString()}`
-      );
-    }
-
-    const latestComments = await this.prisma.comment.findMany({
-      where: {
-        lessonId: id,
-        parentId: null,
-      },
-      orderBy: {
-        createdAt: 'desc',
-      },
-      take: 3,
-      include: {
-        user: {
-          select: {
-            id: true,
-            name: true,
-            avatar: true,
-            createdAt: true,
+    const latestComments = isScheduledFuture
+      ? []
+      : await this.prisma.comment.findMany({
+          where: {
+            lessonId: id,
+            parentId: null,
+          },
+          orderBy: {
+            createdAt: 'desc',
+          },
+          take: 3,
+          include: {
+            user: {
+              select: {
+                id: true,
+                name: true,
+                avatar: true,
+                createdAt: true,
+              }
+            },
           }
-        },
-      }
-    });
+        });
 
-    const commentsCount = await this.prisma.comment.count({
-      where: {
-        lessonId: id,
-      }
-    });
+    const commentsCount = isScheduledFuture
+      ? 0
+      : await this.prisma.comment.count({
+          where: {
+            lessonId: id,
+          }
+        });
 
     const isEnrolled = await this.checkIsExemptFromMasking(
       lesson.module.course.id,
@@ -456,15 +456,18 @@ export class LessonsService {
       userId,
     );
     const isPaidCourse = lesson.module.course.isPaid;
-    const shouldMask = !isStaff && isPaidCourse && !isEnrolled && !lesson.isFreePreview;
+    const isUnenrolledPaid = isPaidCourse && !isEnrolled && !lesson.isFreePreview;
+    const shouldMask = !isStaff && (isUnenrolledPaid || isScheduledFuture);
 
     return {
       ...lesson,
-      content: isScheduledFuture ? null : lesson.content,
+      content: isScheduledFuture ? null : (shouldMask ? null : lesson.content),
       liveMeetingUrl: shouldMask ? null : lesson.liveMeetingUrl,
       videoUrl: shouldMask ? null : lesson.videoUrl,
       recordingVideoUrl: shouldMask ? null : lesson.recordingVideoUrl,
       pdfUrl: shouldMask ? null : lesson.pdfUrl,
+      assignment: shouldMask ? null : lesson.assignment,
+      exam: shouldMask ? null : lesson.exam,
       isLocked: shouldMask,
       isScheduledFuture: !!isScheduledFuture,
       courseId: lesson.module.course.id,

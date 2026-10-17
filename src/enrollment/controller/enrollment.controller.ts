@@ -4,6 +4,7 @@ import { EnrollmentService } from '../service/enrollment.service';
 import { CurrentUser } from 'src/auth/decorators/current-user.decorator';
 import * as types from 'src/utils/types';
 import { AuthRollGuard } from 'src/auth/guards/auth-roll.guard';
+import { VerifiedOnlyGuard } from 'src/auth/guards/verified-only.guard';
 import { UserRole } from 'src/auth/enums/userRole';
 import { Role } from '@prisma/client';
 import { userRoles } from 'src/auth/decorators/user_roll.decorator';
@@ -21,7 +22,7 @@ export class EnrollmentController {
   }
 
   @Post()
-  @UseGuards(AuthRollGuard)
+  @UseGuards(AuthRollGuard, VerifiedOnlyGuard)
   @userRoles(Role.STUDENT, Role.ADMIN, Role.OWNER)
   @SwaggerEnrollInCourse()
   enroll(@Body() createDto: CreateEnrollmentDto, @CurrentUser() user: types.JwtPayloadType) {

@@ -7,17 +7,61 @@ import { Role, Prisma } from '@prisma/client';
 export class CommentsService {
   constructor(private prisma: PrismaService) {}
 
+  /**
+   * Helper to check if user is staff (Owner/Admin) or the instructor of this course
+   */
+  private async isStaffOrInstructor(instructorId: number, userId?: number): Promise<boolean> {
+    if (!userId) return false;
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      include: { teacherProfile: true },
+    });
+    if (!user) return false;
+    if (user.role === Role.OWNER || user.role === Role.ADMIN) return true;
+    if (user.teacherProfile && user.teacherProfile.id === instructorId) return true;
+    return false;
+  }
+
   async create(userId: number, createCommentDto: CreateCommentDto) {
     const { text, lessonId, examId, parentId, mentionedUserIds, imageUrl } = createCommentDto;
+
+    // Check email verification in DB
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!user) {
+      throw new NotFoundException('المستخدم غير موجود');
+    }
+    if (!user.emailVerified && user.role === Role.STUDENT) {
+      throw new ForbiddenException({
+        statusCode: 403,
+        message: 'يجب تأكيد حسابك عبر البريد الإلكتروني أولاً للمشاركة في التعليقات.',
+        action: 'EMAIL_VERIFICATION_REQUIRED',
+      });
+    }
 
     if (!lessonId && !examId) {
       throw new BadRequestException('Must provide either lessonId or examId');
     }
 
     if (lessonId) {
-      const lesson = await this.prisma.lesson.findUnique({ where: { id: lessonId } });
+      const lesson = await this.prisma.lesson.findUnique({
+        where: { id: lessonId },
+        include: { module: { include: { course: true } } },
+      });
       if (!lesson) throw new NotFoundException('Lesson not found');
       if (lesson.status !== 'PUBLISHED') throw new ForbiddenException('Comments are unavailable for unpublished lessons');
+
+      const isStaff = await this.isStaffOrInstructor(lesson.module.course.instructorId, userId);
+      const now = new Date();
+      const isScheduledFuture =
+        !isStaff &&
+        lesson.scheduledAt &&
+        new Date(lesson.scheduledAt) > now &&
+        lesson.liveStatus !== 'LIVE_NOW' &&
+        lesson.liveStatus !== 'COMPLETED';
+
+      if (isScheduledFuture) {
+        throw new ForbiddenException('التعليقات مغلقة حالياً لهذا الدرس حتى يحين موعده المحدد.');
+      }
     }
 
     if (examId) {
@@ -101,13 +145,29 @@ export class CommentsService {
     });
   }
 
-  async getCommentsByLesson(lessonId: number) {
+  async getCommentsByLesson(lessonId: number, userId?: number) {
     // Check if lesson exists
     const lesson = await this.prisma.lesson.findUnique({
       where: { id: lessonId },
+      include: { module: { include: { course: true } } },
     });
     if (!lesson || lesson.status !== 'PUBLISHED') {
       throw new NotFoundException('Lesson not found');
+    }
+
+    if (userId) {
+      const isStaff = await this.isStaffOrInstructor(lesson.module.course.instructorId, userId);
+      const now = new Date();
+      const isScheduledFuture =
+        !isStaff &&
+        lesson.scheduledAt &&
+        new Date(lesson.scheduledAt) > now &&
+        lesson.liveStatus !== 'LIVE_NOW' &&
+        lesson.liveStatus !== 'COMPLETED';
+
+      if (isScheduledFuture) {
+        throw new ForbiddenException('التعليقات والدردشة مغلقة حالياً لهذا الدرس حتى يحين موعده المحدد.');
+      }
     }
 
     // Fetch top-level comments with their nested replies
@@ -147,7 +207,7 @@ export class CommentsService {
     });
   }
 
-  async getCommentsByExam(examId: number) {
+  async getCommentsByExam(examId: number, userId?: number) {
     const exam = await this.prisma.exam.findUnique({
       where: { id: examId },
     });

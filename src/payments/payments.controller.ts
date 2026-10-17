@@ -15,6 +15,7 @@ import { PaymentsService } from './payments.service';
 import { SubmitPaymentDto } from './dto/submit-payment.dto';
 import { RejectPaymentDto } from './dto/reject-payment.dto';
 import { AuthRollGuard } from 'src/auth/guards/auth-roll.guard';
+import { VerifiedOnlyGuard } from 'src/auth/guards/verified-only.guard';
 import { userRoles } from 'src/auth/decorators/user_roll.decorator';
 import { PaymentStatus, Role } from '@prisma/client';
 import { CurrentUser } from 'src/auth/decorators/current-user.decorator';
@@ -29,7 +30,7 @@ export class PaymentsController {
   @ApiOperation({ summary: 'Submit a payment receipt for a paid course' })
   @ApiResponse({ status: 201, description: 'Payment receipt submitted successfully.' })
   @Post('submit')
-  @UseGuards(AuthRollGuard)
+  @UseGuards(AuthRollGuard, VerifiedOnlyGuard)
   @userRoles(Role.STUDENT, Role.ADMIN, Role.OWNER)
   submitPayment(
     @CurrentUser() user: types.JwtPayloadType,
