@@ -115,7 +115,7 @@ export class LeaderboardService {
         studentId: student.id,
         status: { in: [ExamStatus.PASSED, ExamStatus.FAILED, ExamStatus.IMPROVEMENT_NEEDED] },
       },
-      orderBy: { score: 'desc' },
+      orderBy: { id: 'desc' },
       include: {
         exam: {
           select: {

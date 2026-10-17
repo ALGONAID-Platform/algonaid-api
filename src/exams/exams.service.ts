@@ -484,7 +484,7 @@ export class ExamsService {
     const exam = await this.prisma.exam.findUnique({
       where: { id: examId },
       include: {
-        lesson: true,
+        lesson: { include: { module: { include: { course: true } } } },
         course: true,
         questions: {
           select: {
@@ -564,8 +564,13 @@ export class ExamsService {
       timeStatus = 'ENDED';
     }
 
+    const resolvedCourse = exam.course || exam.lesson?.module?.course || null;
+    const isPaidCourse = Boolean(resolvedCourse?.isPaid);
+
     return {
       ...examData,
+      course: resolvedCourse,
+      isPaidCourse,
       totalQuestions,
       remainingAttempts,
       isUnlocked,
@@ -631,12 +636,14 @@ export class ExamsService {
     const totalQuestions = (exam.questions || []).length;
 
     const course = exam.course || exam.lesson?.module?.course || null;
+    const isPaidCourse = Boolean(course?.isPaid);
 
     const { attempts, comments, questions, ...examData } = exam;
     return {
       ...examData,
       totalQuestions,
       course,
+      isPaidCourse,
       timeStatus,
       isEnded,
       totalPoints,
@@ -733,11 +740,17 @@ export class ExamsService {
     const exams = await this.prisma.exam.findMany({
       where: {
         OR: [
-          { courseId: { in: enrolledCourseIds } },
+          {
+            courseId: { in: enrolledCourseIds },
+            course: { isPaid: false },
+          },
           {
             lesson: {
               status: LessonStatus.PUBLISHED,
-              module: { courseId: { in: enrolledCourseIds } },
+              module: {
+                courseId: { in: enrolledCourseIds },
+                course: { isPaid: false },
+              },
             },
           },
         ],
@@ -795,7 +808,12 @@ export class ExamsService {
       orderBy: { createdAt: 'desc' },
     });
 
-    const formatted = exams.map((exam) => this.formatExamCard(exam));
+    const nonPaidExams = exams.filter((exam) => {
+      const course = exam.course || exam.lesson?.module?.course;
+      return !course?.isPaid;
+    });
+
+    const formatted = nonPaidExams.map((exam) => this.formatExamCard(exam));
 
     // Sort order: ONGOING (1), UPCOMING (2), ENDED (3)
     const statusPriority: Record<string, number> = {
@@ -828,8 +846,8 @@ export class ExamsService {
       return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
     });
 
-    // إرجاع 5 اختبارات فقط للصفحة الرئيسية
-    return sorted.slice(0, 5);
+    // إرجاع 7 اختبارات كحد أقصى للصفحة الرئيسية
+    return sorted.slice(0, 7);
   }
 
   async startExam(studentUserId: number, examId: number) {
