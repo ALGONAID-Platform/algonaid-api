@@ -22,7 +22,7 @@ export class EnrollmentController {
   }
 
   @Post()
-  @UseGuards(AuthRollGuard, VerifiedOnlyGuard)
+  @UseGuards(AuthRollGuard)
   @userRoles(Role.STUDENT, Role.ADMIN, Role.OWNER)
   @SwaggerEnrollInCourse()
   enroll(@Body() createDto: CreateEnrollmentDto, @CurrentUser() user: types.JwtPayloadType) {

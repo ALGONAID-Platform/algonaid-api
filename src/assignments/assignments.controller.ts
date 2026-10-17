@@ -29,6 +29,7 @@ import { UpdateAssignmentDto } from './dto/update-assignment.dto';
 import { SubmitAssignmentDto } from './dto/submit-assignment.dto';
 import { GradeSubmissionDto } from './dto/grade-submission.dto';
 import { AuthRollGuard } from 'src/auth/guards/auth-roll.guard';
+import { VerifiedOnlyGuard } from 'src/auth/guards/verified-only.guard';
 import { userRoles } from 'src/auth/decorators/user_roll.decorator';
 import { CurrentUser } from 'src/auth/decorators/current-user.decorator';
 import * as types from 'src/utils/types';
@@ -103,6 +104,7 @@ export class AssignmentsController {
   }
 
   @Post(':id/submit')
+  @UseGuards(VerifiedOnlyGuard)
   @userRoles(Role.STUDENT, Role.ADMIN, Role.OWNER)
   @ApiOperation({ summary: 'تسليم التكليف من قبل الطالب (يدعم رفع ملف ونص الإجابة/الرابط)' })
   @ApiParam({ name: 'id', description: 'معرّف التكليف' })

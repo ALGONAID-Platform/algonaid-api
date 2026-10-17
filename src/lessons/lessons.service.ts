@@ -44,8 +44,6 @@ export class LessonsService {
     if (!user) return false;
 
     if (user.studentProfile) {
-      if (!user.emailVerified) return false;
-
       const enrollment = await this.prisma.enrollment.findUnique({
         where: {
           studentId_courseId: {

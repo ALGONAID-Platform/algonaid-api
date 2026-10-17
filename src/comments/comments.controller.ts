@@ -54,7 +54,7 @@ export class CommentsController {
   }
 
   @Get('lesson/:lessonId')
-  @UseGuards(AuthRollGuard, VerifiedOnlyGuard)
+  @UseGuards(AuthRollGuard)
   @userRoles(Role.STUDENT, Role.ADMIN, Role.OWNER)
   @ApiOperation({ summary: 'Get all comments and replies for a lesson' })
   getByLesson(
@@ -65,7 +65,7 @@ export class CommentsController {
   }
 
   @Get('exam/:examId')
-  @UseGuards(AuthRollGuard, VerifiedOnlyGuard)
+  @UseGuards(AuthRollGuard)
   @userRoles(Role.STUDENT, Role.ADMIN, Role.OWNER)
   @ApiOperation({ summary: 'Get all comments and replies for an exam/challenge' })
   getByExam(
@@ -76,7 +76,7 @@ export class CommentsController {
   }
 
   @Get('course/:courseId/latest')
-  @UseGuards(AuthRollGuard, VerifiedOnlyGuard)
+  @UseGuards(AuthRollGuard)
   @userRoles(Role.STUDENT, Role.ADMIN, Role.OWNER)
   @ApiOperation({ summary: 'Get the latest comments across all lessons in a course' })
   getLatestByCourse(
