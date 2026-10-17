@@ -27,22 +27,31 @@ export class PracticeExamsController {
   @Get()
   @ApiOperation({ summary: 'Get all practice exams (optionally filtered by courseId)' })
   @UseGuards(OptionalAuthGuard)
-  findAll(@Query('courseId') courseId?: string) {
-    return this.practiceExamsService.findAll(courseId ? +courseId : undefined);
+  findAll(
+    @Query('courseId') courseId?: string,
+    @CurrentUser() user?: types.JwtPayloadType,
+  ) {
+    return this.practiceExamsService.findAll(courseId ? +courseId : undefined, user?.id);
   }
 
   @Get('course/:courseId')
   @ApiOperation({ summary: 'Get all practice exams for a specific course' })
   @UseGuards(OptionalAuthGuard)
-  findByCourse(@Param('courseId', ParseIntPipe) courseId: number) {
-    return this.practiceExamsService.findAll(courseId);
+  findByCourse(
+    @Param('courseId', ParseIntPipe) courseId: number,
+    @CurrentUser() user?: types.JwtPayloadType,
+  ) {
+    return this.practiceExamsService.findAll(courseId, user?.id);
   }
 
   @Get(':id')
   @ApiOperation({ summary: 'Get a specific practice exam by ID' })
   @UseGuards(OptionalAuthGuard)
-  findOne(@Param('id', ParseIntPipe) id: number) {
-    return this.practiceExamsService.findOne(id);
+  findOne(
+    @Param('id', ParseIntPipe) id: number,
+    @CurrentUser() user?: types.JwtPayloadType,
+  ) {
+    return this.practiceExamsService.findOne(id, user?.id);
   }
 
   @Patch(':id')
