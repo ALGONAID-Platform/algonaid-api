@@ -139,40 +139,26 @@ export class LessonsService {
       },
     });
 
-    // إرسال إشعار للطلاب المسجلين في هذا الكورس بإضافة درس جديد
-    try {
-      const courseId = lesson.module?.course?.id;
-      const courseTitle = lesson.module?.course?.title || 'الكورس';
-      const teacherName = user?.name || 'المعلم';
+    // إرسال إشعار للطلاب المسجلين في هذا الكورس بإضافة درس جديد (إذا كان الدرس منشوراً فقط)
+    if (lesson.status === LessonStatus.PUBLISHED) {
+      try {
+        const courseId = lesson.module?.course?.id;
+        const courseTitle = lesson.module?.course?.title || 'الكورس';
+        const teacherName = user?.name || 'المعلم';
 
-      if (courseId) {
-        const enrollments = await this.prisma.enrollment.findMany({
-          where: {
+        if (courseId) {
+          await this.notificationsService.notifyNewLessonToEnrolledStudents(
+            userId,
+            teacherName,
             courseId,
-            status: 'ACTIVE',
-          },
-          include: {
-            student: {
-              select: { userId: true },
-            },
-          },
-        });
-
-        for (const enrollment of enrollments) {
-          if (enrollment.student?.userId && enrollment.student.userId !== userId) {
-            await this.notificationsService.notifyNewLesson(
-              enrollment.student.userId,
-              userId,
-              teacherName,
-              courseTitle,
-              lesson.title,
-              lesson.id,
-            );
-          }
+            courseTitle,
+            lesson.title,
+            lesson.id,
+          );
         }
+      } catch (err) {
+        // عدم تعطيل إنشاء الدرس في حال حدوث خطأ أثناء إرسال الإشعار
       }
-    } catch (err) {
-      // عدم تعطيل إنشاء الدرس في حال حدوث خطأ أثناء إرسال الإشعار
     }
 
     return lesson;
@@ -513,23 +499,14 @@ export class LessonsService {
         const teacherName = user?.name || 'المعلم';
 
         if (courseId) {
-          const enrollments = await this.prisma.enrollment.findMany({
-            where: { courseId, status: 'ACTIVE' },
-            include: { student: { select: { userId: true } } },
-          });
-
-          for (const enrollment of enrollments) {
-            if (enrollment.student?.userId && enrollment.student.userId !== userId) {
-              await this.notificationsService.notifyNewLesson(
-                enrollment.student.userId,
-                userId,
-                teacherName,
-                courseTitle,
-                updatedLesson.title,
-                updatedLesson.id,
-              );
-            }
-          }
+          await this.notificationsService.notifyNewLessonToEnrolledStudents(
+            userId,
+            teacherName,
+            courseId,
+            courseTitle,
+            updatedLesson.title,
+            updatedLesson.id,
+          );
         }
       } catch (err) {}
     }

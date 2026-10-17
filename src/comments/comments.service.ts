@@ -171,10 +171,17 @@ export class CommentsService {
     }
 
     // Fetch top-level comments with their nested replies
+    // استبعاد إشعارات تسليم التكاليف وتصحيحها من قسم التعليقات العام للدرس حتى لا تتلوث التعليقات ولا يراها بقية الطلاب
     return this.prisma.comment.findMany({
       where: {
         lessonId,
         parentId: null,
+        NOT: {
+          OR: [
+            { text: { contains: 'بتسليم تكليف' } },
+            { text: { contains: 'بالرد على تكليفك' } },
+          ],
+        },
       },
       include: {
         user: {
@@ -464,10 +471,16 @@ export class CommentsService {
           text.includes('طلب اشتراكك في كورس')
         ) {
           type = 'COURSE_ENROLLMENT';
-        } else if (text.includes('نتيجة الاختبار') || text.includes('انتهى وقت اختبار')) {
+        } else if (
+          text.includes('نتيجة الاختبار') ||
+          text.includes('انتهى وقت اختبار') ||
+          text.includes('إعلان نتائج وتكريم الأوائل')
+        ) {
           type = 'EXAM_RESULT';
         } else if (text.includes('بالرد على تكليفك') || text.includes('قام المعلم بالرد')) {
           type = 'ASSIGNMENT_FEEDBACK';
+        } else if (text.includes('بتسليم تكليف') || text.includes('قام الطالب بتسليم')) {
+          type = 'ASSIGNMENT_SUBMISSION';
         } else if (text.includes('بإضافة درس جديد') || text.includes('درس جديد بعنوان')) {
           type = 'NEW_LESSON';
         }

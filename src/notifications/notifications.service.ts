@@ -6,6 +6,7 @@ export type NotificationType =
   | 'COURSE_ENROLLMENT'
   | 'EXAM_RESULT'
   | 'ASSIGNMENT_FEEDBACK'
+  | 'ASSIGNMENT_SUBMISSION'
   | 'NEW_LESSON'
   | 'SYSTEM'
   | 'REPLY'
@@ -99,7 +100,7 @@ export class NotificationsService {
   }
 
   /**
-   * إشعار نتيجة وترتيب اختبار بعد انتهائه
+   * إشعار نتيجة وترتيب اختبار بعد انتهائه (فردي احتياطي)
    */
   async notifyExamResult(
     recipientUserId: number,
@@ -147,7 +148,171 @@ export class NotificationsService {
   }
 
   /**
-   * إشعار إضافة درس جديد للطلاب المسجلين في الكورس
+   * إشعار إضافة درس جديد للطلاب المسجلين في الكورس:
+   * تعليق واحد رسمي فقط في قسم تعليقات الدرس مع إشارة جماعية (All-mention) للطلاب المسجلين فقط.
+   * خالي تماماً من تكرار التعليقات وعالي الأداء عبر batch mention insert.
+   */
+  async notifyNewLessonToEnrolledStudents(
+    teacherUserId: number,
+    teacherName: string,
+    courseId: number,
+    courseTitle: string,
+    lessonTitle: string,
+    lessonId: number,
+  ) {
+    try {
+      // 1. التحقق من عدم التكرار (منع تكرار التعليق إذا تم إرساله مسبقاً لهذا الدرس)
+      const existingComment = await this.prisma.comment.findFirst({
+        where: {
+          lessonId,
+          text: { contains: 'بإضافة درس جديد بعنوان' },
+        },
+        select: { id: true },
+      });
+
+      if (existingComment) {
+        this.logger.log(`New lesson notification already exists for lesson ${lessonId}. Skipping.`);
+        return existingComment;
+      }
+
+      // 2. جلب جميع الطلاب النشطين المسجلين في هذا الكورس فقط
+      const enrollments = await this.prisma.enrollment.findMany({
+        where: {
+          courseId,
+          status: 'ACTIVE',
+        },
+        select: {
+          student: {
+            select: { userId: true },
+          },
+        },
+      });
+
+      // استخراج معرفات الطلاب المستهدفين (باستثناء المعلم نفسه)
+      const recipientUserIds = enrollments
+        .map((e) => e.student?.userId)
+        .filter((uid): uid is number => !!uid && uid !== teacherUserId);
+
+      // 3. إنشاء تعليق رسمي واحد فقط في قسم التعليقات الخاص بالدرس
+      const message = `📚 قام المعلم (${teacherName}) بإضافة درس جديد بعنوان **${lessonTitle}** في كورس **${courseTitle}**. تفضلوا بمشاهدة الدرس ومتابعة المحتوى!`;
+
+      const comment = await this.prisma.comment.create({
+        data: {
+          userId: teacherUserId,
+          text: message,
+          lessonId,
+          parentId: null,
+        },
+      });
+
+      // 4. إنشاء إشارات (Mentions) للطلاب دفعة واحدة (Bulk insert) لضمان أعلى أداء
+      if (recipientUserIds.length > 0) {
+        const uniqueRecipientUserIds = Array.from(new Set(recipientUserIds));
+
+        await this.prisma.mention.createMany({
+          data: uniqueRecipientUserIds.map((userId) => ({
+            commentId: comment.id,
+            mentionedUserId: userId,
+            isRead: false,
+          })),
+        });
+
+        this.logger.log(
+          `Posted 1 announcement comment and created ${uniqueRecipientUserIds.length} mentions for lesson ${lessonId}`,
+        );
+      }
+
+      return comment;
+    } catch (error) {
+      this.logger.error(
+        `Failed to broadcast new lesson notification for lesson ${lessonId}: ${error.message}`,
+        error.stack,
+      );
+      return null;
+    }
+  }
+
+  /**
+   * إشعار المعلم بتسليم الطالب لتكليف معين:
+   * إشعار مباشر يصل إلى حساب المعلم ليظهر في قسم الإشارات والردود
+   * مستبعد برمجياً من قسم التعليقات العامة للدرس لضمان الخصوصية وعدم التشويه.
+   */
+  async notifyAssignmentSubmission(
+    studentUserId: number,
+    teacherUserId: number,
+    studentName: string,
+    assignmentTitle: string,
+    lessonTitle: string,
+    courseTitle: string,
+    lessonId: number,
+  ) {
+    try {
+      const message = `📝 قام الطالب (${studentName}) بتسليم تكليف: **${assignmentTitle}** في درس **${lessonTitle}** (${courseTitle}). تفضل بالاطلاع وتصحيح التكليف.`;
+
+      // إنشاء تعليق إشعاري داخلي مرتبط بالدرس لتمكين المعلم من الانتقال إليه عند النقر
+      const comment = await this.prisma.comment.create({
+        data: {
+          userId: studentUserId,
+          text: message,
+          lessonId,
+          examId: null,
+          mentions: {
+            create: {
+              mentionedUserId: teacherUserId,
+              isRead: false,
+            },
+          },
+        },
+        include: {
+          mentions: true,
+          user: {
+            select: { id: true, name: true, avatar: true },
+          },
+        },
+      });
+
+      this.logger.log(
+        `Assignment submission notification sent to teacher ${teacherUserId} from student ${studentUserId}`,
+      );
+
+      return comment;
+    } catch (error) {
+      this.logger.error(
+        `Failed to send assignment submission notification to teacher ${teacherUserId}: ${error.message}`,
+        error.stack,
+      );
+      return null;
+    }
+  }
+
+  /**
+   * فحص ما إذا تم إرسال إشعار تسليم مؤخراً لنفس التكليف من هذا الطالب للمعلم
+   * لمنع تكرار الإشعارات والإزعاج إذا عدل الطالب الحل أكثر من مرة في وقت قصير (فترة تبريد 15 دقيقة)
+   */
+  async hasRecentAssignmentNotification(
+    studentUserId: number,
+    teacherUserId: number,
+    lessonId: number,
+  ): Promise<boolean> {
+    const fifteenMinutesAgo = new Date(Date.now() - 15 * 60 * 1000);
+    const existing = await this.prisma.comment.findFirst({
+      where: {
+        userId: studentUserId,
+        lessonId,
+        text: { contains: 'بتسليم تكليف' },
+        createdAt: { gte: fifteenMinutesAgo },
+        mentions: {
+          some: {
+            mentionedUserId: teacherUserId,
+          },
+        },
+      },
+    });
+    return !!existing;
+  }
+
+  /**
+   * إشعار إضافة درس جديد (دعم خلفي)
    */
   async notifyNewLesson(
     recipientUserId: number,

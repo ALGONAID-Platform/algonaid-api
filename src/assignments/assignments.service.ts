@@ -2,6 +2,7 @@ import {
   BadRequestException,
   ForbiddenException,
   Injectable,
+  Logger,
   NotFoundException,
 } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
@@ -15,6 +16,8 @@ import { NotificationsService } from 'src/notifications/notifications.service';
 
 @Injectable()
 export class AssignmentsService {
+  private readonly logger = new Logger(AssignmentsService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly storageService: UploadcareStorageService,
@@ -305,7 +308,15 @@ export class AssignmentsService {
       include: {
         lesson: {
           include: {
-            module: { include: { course: true } },
+            module: {
+              include: {
+                course: {
+                  include: {
+                    teacher: { select: { id: true, userId: true } },
+                  },
+                },
+              },
+            },
           },
         },
       },
@@ -366,32 +377,68 @@ export class AssignmentsService {
       },
     });
 
-    if (existing) {
-      if (existing.status === SubmissionStatus.GRADED) {
-        throw new BadRequestException('تم تصحيح هذا التكليف بالفعل، لا يمكن إعادة التسليم إلا إذا طلب المعلم ذلك');
-      }
-
-      return this.prisma.assignmentSubmission.update({
-        where: { id: existing.id },
-        data: {
-          content: dto.content !== undefined ? dto.content : existing.content,
-          fileUrl: fileUrl !== undefined ? fileUrl : existing.fileUrl,
-          submittedAt: new Date(),
-          status: SubmissionStatus.SUBMITTED,
-        },
-      });
+    if (existing && existing.status === SubmissionStatus.GRADED) {
+      throw new BadRequestException('تم تصحيح هذا التكليف بالفعل، لا يمكن إعادة التسليم إلا إذا طلب المعلم ذلك');
     }
 
-    return this.prisma.assignmentSubmission.create({
-      data: {
-        assignmentId,
-        studentId: student.id,
-        content: dto.content,
-        fileUrl,
-        submittedAt: new Date(),
-        status: SubmissionStatus.SUBMITTED,
-      },
-    });
+    const submission = existing
+      ? await this.prisma.assignmentSubmission.update({
+          where: { id: existing.id },
+          data: {
+            content: dto.content !== undefined ? dto.content : existing.content,
+            fileUrl: fileUrl !== undefined ? fileUrl : existing.fileUrl,
+            submittedAt: new Date(),
+            status: SubmissionStatus.SUBMITTED,
+          },
+        })
+      : await this.prisma.assignmentSubmission.create({
+          data: {
+            assignmentId,
+            studentId: student.id,
+            content: dto.content,
+            fileUrl,
+            submittedAt: new Date(),
+            status: SubmissionStatus.SUBMITTED,
+          },
+        });
+
+    // إرسال إشعار مباشر للمعلم بتسليم التكليف (إشعار مباشر لا يظهر كتعليق في الدرس)
+    try {
+      const teacherUserId = course.teacher?.userId;
+      if (teacherUserId && teacherUserId !== userId) {
+        const isResubmissionRequested =
+          existing && existing.status === SubmissionStatus.RESUBMISSION_REQUESTED;
+
+        // فحص عدم التكرار والإزعاج (15 دقيقة تبريد عند تكرار التعديل السريع)
+        const hasRecent = await this.notificationsService.hasRecentAssignmentNotification(
+          userId,
+          teacherUserId,
+          assignment.lessonId,
+        );
+
+        if (!hasRecent || isResubmissionRequested) {
+          const studentUser = await this.prisma.user.findUnique({
+            where: { id: userId },
+            select: { name: true },
+          });
+          const studentName = studentUser?.name || 'طالب';
+
+          await this.notificationsService.notifyAssignmentSubmission(
+            userId,
+            teacherUserId,
+            studentName,
+            assignment.title,
+            assignment.lesson.title,
+            course.title,
+            assignment.lessonId,
+          );
+        }
+      }
+    } catch (notifErr) {
+      this.logger.error(`Failed to send assignment submission notification: ${notifErr.message}`);
+    }
+
+    return submission;
   }
 
   /**
