@@ -550,6 +550,15 @@ export class ExamsService {
     const totalQuestions = exam.questions.length;
 
     const { comments, questions, ...examData } = exam;
+    const now = new Date();
+    const hasEndTime = exam.endTime !== null && exam.endTime !== undefined;
+    const isEnded = Boolean(exam.endTime && new Date(exam.endTime) <= now);
+    let timeStatus: 'UPCOMING' | 'ONGOING' | 'ENDED' = 'ONGOING';
+    if (exam.startTime && new Date(exam.startTime) > now) {
+      timeStatus = 'UPCOMING';
+    } else if (isEnded) {
+      timeStatus = 'ENDED';
+    }
 
     return {
       ...examData,
@@ -560,6 +569,8 @@ export class ExamsService {
       totalPoints,
       passingPoints,
       minPassingScore: passingPoints,
+      isEnded,
+      timeStatus,
       commentsCount: exam._count.comments,
       totalComments: exam._count.comments,
       latestComment: this.formatLatestComment(comments),
@@ -832,13 +843,10 @@ export class ExamsService {
     }
 
     const now = new Date();
+    const hasEndTime = exam.endTime !== null && exam.endTime !== undefined;
+    const isEnded = Boolean(exam.endTime && new Date(exam.endTime) <= now);
 
-    // 1. التحقق من انتهاء الاختبار أولاً (Ended check)
-    if (exam.endTime && new Date(exam.endTime) <= now) {
-      throw new ForbiddenException('عذراً، هذا الاختبار قد انتهى وقته المحدد ولم يعد متاحاً للإجراء.');
-    }
-
-    // 2. التحقق من مواعيد بدء الاختبار (Start time check)
+    // 1. التحقق من مواعيد بدء الاختبار (Start time check)
     if (exam.startTime && new Date(exam.startTime) > now) {
       const formattedStartTime = new Date(exam.startTime).toLocaleString('ar-SA');
       throw new ForbiddenException(
@@ -846,14 +854,14 @@ export class ExamsService {
       );
     }
 
-    // 3. التحقق من صلاحيات الطالب / الأدمن
+    // 2. التحقق من صلاحيات الطالب / الأدمن
     const user = await this.prisma.user.findUnique({
       where: { id: studentUserId },
       include: { teacherProfile: true },
     });
     const isStaff = user?.role === Role.OWNER || user?.role === Role.ADMIN;
 
-    // 4. جلب ملف الطالب
+    // 3. جلب ملف الطالب
     let student = await this.prisma.student.findUnique({ where: { userId: studentUserId } });
     if (!student) {
       student = await this.prisma.student
@@ -862,7 +870,7 @@ export class ExamsService {
       if (!student) throw new NotFoundException('لم يتم العثور على ملف الطالب');
     }
 
-    // 5. فحص المحاولات السابقة والمدة المحددة (Attempts & Duration check)
+    // 4. فحص المحاولات السابقة والمدة المحددة (Attempts & Duration check)
     const allAttempts = await this.prisma.examAttempt.findMany({
       where: { examId, studentId: student.id },
       orderBy: { startedAt: 'desc' },
@@ -904,14 +912,20 @@ export class ExamsService {
       }
     }
 
-    // التحقق من استنفاد عدد المحاولات المسموح بها (Max attempts check)
-    if (!activeAttempt && completedAttempts.length >= exam.maxAttempts) {
-      throw new ForbiddenException(
-        `لقد استنفدت جميع المحاولات المسموح بها لهذا الاختبار (${completedAttempts.length}/${exam.maxAttempts}).`,
-      );
+    // التحقق من استنفاد عدد المحاولات المسموح بها أثناء فترة الاختبار (Max attempts check)
+    if (!activeAttempt && !isEnded && completedAttempts.length >= exam.maxAttempts) {
+      if (hasEndTime) {
+        throw new ForbiddenException(
+          `لقد استنفدت جميع المحاولات المسموح بها لهذا الاختبار (${completedAttempts.length}/${exam.maxAttempts}) خلال الفترة الحالية. يمكنك إعادة خوض الاختبار بعد انتهاء المدة المحددة للاختبار.`,
+        );
+      } else {
+        throw new ForbiddenException(
+          `لقد استنفدت جميع المحاولات المسموح بها لهذا الاختبار (${completedAttempts.length}/${exam.maxAttempts}).`,
+        );
+      }
     }
 
-    // 6. التحقق من المتطلبات السابقة للاختبار (Prerequisites check)
+    // 5. التحقق من المتطلبات السابقة للاختبار (Prerequisites check)
     if (!isStaff) {
       const prerequisiteCheck = await this.checkExamPrerequisites(student.id, exam);
       if (!prerequisiteCheck.isUnlocked) {
@@ -919,7 +933,7 @@ export class ExamsService {
       }
     }
 
-    // 7. التحقق من وجود أسئلة للاختبار
+    // 6. التحقق من وجود أسئلة للاختبار
     const questions = await this.prisma.question.findMany({
       where: { examId },
       select: {
@@ -936,11 +950,11 @@ export class ExamsService {
       throw new BadRequestException('لا توجد أسئلة مضافة لهذا الاختبار حالياً');
     }
 
-    // 8. تحديد التصنيف في الـ Leaderboard
+    // 7. تحديد التصنيف في الـ Leaderboard
     const hasRankedAttempt = allAttempts.some((a) => a.isRanked);
-    const shouldBeRanked = !hasRankedAttempt && (!exam.endTime || new Date(exam.endTime) > now);
+    const shouldBeRanked = !hasRankedAttempt && !isEnded;
 
-    // 9. استخدام المحاولة الجارية إذا كانت فعالة، أو إنشاء محاولة جديدة
+    // 8. استخدام المحاولة الجارية إذا كانت فعالة، أو إنشاء محاولة جديدة
     let attempt = activeAttempt;
     if (!attempt) {
       attempt = await this.prisma.examAttempt.create({
@@ -958,12 +972,15 @@ export class ExamsService {
       0,
     );
     const passingPoints = totalPoints > 0 ? Math.ceil((exam.passingScore / 100) * totalPoints) : 0;
-    const remainingAttempts = Math.max(0, exam.maxAttempts - (completedAttempts.length + 1));
+    const remainingAttempts = isEnded
+      ? 0
+      : Math.max(0, exam.maxAttempts - (completedAttempts.length + 1));
 
     return {
       message: 'Exam started successfully',
       attemptId: attempt.id,
       isRanked: attempt.isRanked,
+      isEnded,
       timeLimitMinutes: exam.timeLimit,
       passingScore: exam.passingScore,
       passingPoints,
