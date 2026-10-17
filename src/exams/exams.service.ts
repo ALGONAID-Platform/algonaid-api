@@ -167,6 +167,11 @@ export class ExamsService {
       });
 
       if (currentLesson) {
+        // شرط المتطلبات السابقة ينطبق فقط على الكورسات المدفوعة؛ الكورسات المجانية مفتوحة بالكامل
+        if (!currentLesson.module.course.isPaid) {
+          return { isUnlocked: true, lockedReason: null };
+        }
+
         const allCourseModules = currentLesson.module.course.modules;
         const precedingLessonIds: number[] = [];
 
@@ -219,6 +224,10 @@ export class ExamsService {
         });
 
         if (course) {
+          // شرط المتطلبات السابقة ينطبق فقط على الكورسات المدفوعة؛ الكورسات المجانية مفتوحة بالكامل
+          if (!course.isPaid) {
+            return { isUnlocked: true, lockedReason: null };
+          }
           const allPublishedLessons = course.modules.flatMap((m) => m.lessons);
           const lessonIds = allPublishedLessons.map((l) => l.id);
 
