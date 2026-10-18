@@ -760,13 +760,21 @@ export class PaymentsService {
       academicId = student.academicId;
     }
 
-    // 2. التحقق من وجود الكورس
+    // 2. التحقق من وجود الكورس وبيانات تسعيره
     const course = await this.prisma.course.findUnique({
       where: { id: dto.courseId },
       select: {
         id: true,
         title: true,
         isPaid: true,
+        price: true,
+        discountedPrice: true,
+        priceYerOld: true,
+        discountedPriceYerOld: true,
+        priceYerNew: true,
+        discountedPriceYerNew: true,
+        priceSar: true,
+        discountedPriceSar: true,
       },
     });
 
@@ -774,7 +782,29 @@ export class PaymentsService {
       throw new NotFoundException('الكورس المحدد غير موجود في المنصة');
     }
 
-    // 3. التحقق هل المستخدم مشترك ومفعل مسبقاً
+    if (!course.isPaid) {
+      throw new BadRequestException('هذا الكورس مجاني ومتاح للتسجيل المباشر ولا يتطلب سداداً مالياً');
+    }
+
+    // 3. التحقق الأمني من مطابقة المبلغ المدفوع لسعر الكورس لمنع التلاعب
+    const generalPrice = Number(course.discountedPrice || course.price || 0);
+    const prices: Record<Currency, number> = {
+      YER_OLD: Number(course.discountedPriceYerOld || course.priceYerOld || generalPrice),
+      YER_NEW: Number(course.discountedPriceYerNew || course.priceYerNew || generalPrice),
+      SAR: Number(course.discountedPriceSar || course.priceSar || 0),
+      USD: generalPrice,
+    };
+
+    const currency = dto.currency || Currency.YER_OLD;
+    const requiredAmount = prices[currency] || prices.YER_OLD;
+
+    if (requiredAmount > 0 && Number(dto.amount) < requiredAmount) {
+      throw new BadRequestException(
+        `المبلغ المدفوع (${dto.amount} ${currency}) أقل من سعر الكورس المطلوب (${requiredAmount} ${currency})`,
+      );
+    }
+
+    // 4. التحقق هل المستخدم مشترك ومفعل مسبقاً
     const existingEnrollment = await this.prisma.enrollment.findUnique({
       where: {
         studentId_courseId: {
@@ -788,16 +818,53 @@ export class PaymentsService {
       throw new ConflictException('الطالب مشترك ومفعل في هذا الكورس مسبقاً');
     }
 
-    const transactionNumber = dto.transactionNumber || `KARTI-${Date.now()}`;
+    const transactionNumber = dto.transactionNumber?.trim() || `KARTI-${Date.now()}`;
 
-    // 4. تنفيذ السداد والاشتراك في قاعدة البيانات عبر Database Transaction
+    // 5. التحقق من تكرار نفس رقم العملية (Idempotency Protection لمنع الخصم المزدوج عند إعادة المحاولة)
+    if (dto.transactionNumber) {
+      const existingPaymentWithTrx = await this.prisma.payment.findFirst({
+        where: {
+          transactionNumber,
+          status: PaymentStatus.APPROVED,
+        },
+      });
+
+      if (existingPaymentWithTrx) {
+        return {
+          success: true,
+          message: 'تم تسجيل واعتماد هذه العملية مسبقاً بنجاح (عملية مكررة آمنة).',
+          data: {
+            enrollmentId: existingEnrollment?.id || null,
+            paymentId: existingPaymentWithTrx.id,
+            status: 'ACTIVE',
+            student: {
+              academicId,
+              name: user.name,
+              email: user.email,
+            },
+            course: {
+              id: course.id,
+              title: course.title,
+            },
+            payment: {
+              amount: Number(existingPaymentWithTrx.amount),
+              currency: existingPaymentWithTrx.currency,
+              transactionNumber: existingPaymentWithTrx.transactionNumber,
+              paidAt: existingPaymentWithTrx.createdAt,
+            },
+          },
+        };
+      }
+    }
+
+    // 6. تنفيذ السداد والاشتراك وتنظيف أي طلب معلق سابق في خطوة ذرية موحدة
     const [payment, enrollment] = await this.prisma.$transaction([
       this.prisma.payment.create({
         data: {
           studentId: studentId!,
           courseId: course.id,
           amount: dto.amount,
-          currency: dto.currency || Currency.YER_OLD,
+          currency,
           transactionNumber,
           receiptUrl: 'EXTERNAL_KARTI_PAYMENT',
           status: PaymentStatus.APPROVED,
@@ -822,6 +889,21 @@ export class PaymentsService {
         },
       }),
     ]);
+
+    // إذا كان هناك طلب معلق سابق لنفس الكورس، نقوم بتحديثه لتفادي بقائه معلقاً في لوحة الأدمن
+    await this.prisma.payment.updateMany({
+      where: {
+        studentId: studentId!,
+        courseId: course.id,
+        status: PaymentStatus.PENDING,
+        id: { not: payment.id },
+      },
+      data: {
+        status: PaymentStatus.APPROVED,
+        notes: `تم استبداله بسداد إلكتروني مباشر عبر كرتي رقم ${transactionNumber}`,
+        reviewedAt: new Date(),
+      },
+    });
 
     // 5. إرسال إشعار فوري للطالب في تطبيق منصة الجنيد
     if (user.id) {
