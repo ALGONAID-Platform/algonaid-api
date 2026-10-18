@@ -181,6 +181,7 @@ model Course {
 
   courseType        CourseType     @default(RECORDED)
   scheduleDaysText  String? // أيام وتوقيت المحاضرات للبث المباشر
+  maxStudents       Int?    // الحد الأقصى للطلاب المسجلين في الكورس (null = غير محدود)
   payments          Payment[]
 
   // Course Dates, Schedule & Objectives

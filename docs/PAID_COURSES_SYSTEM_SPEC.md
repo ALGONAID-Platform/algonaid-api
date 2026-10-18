@@ -247,6 +247,7 @@ const shouldMask = !isStaff && (isUnenrolledPaid || isScheduledFuture);
   "priceSar": 300.00,
   "discountedPriceSar": 200.00,
   "courseType": "LIVE",
+  "maxStudents": 20,
   "startDate": "2026-11-01T00:00:00.000Z",
   "endDate": "2026-12-30T23:59:59.000Z",
   "durationWeeks": 8,

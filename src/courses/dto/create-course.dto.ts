@@ -91,6 +91,13 @@ export class CreateCourseDto {
     @IsString()
     scheduleDaysText?: string;
 
+    @ApiProperty({ example: 20, description: 'الحد الأقصى للطلاب المسجلين في الكورس (null أو غير محدد = غير محدود)', required: false })
+    @IsOptional()
+    @IsInt()
+    @Min(1)
+    @Type(() => Number)
+    maxStudents?: number;
+
     @ApiProperty({ example: '2026-11-01T00:00:00.000Z', description: 'Course start date', required: false })
     @IsOptional()
     @IsDate()

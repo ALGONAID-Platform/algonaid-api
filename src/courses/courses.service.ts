@@ -227,9 +227,15 @@ export class CoursesService {
 
     return courses.map((course) => {
       const { enrollments, _count, ...rest } = course;
+      const enrollmentsCount = _count.enrollments || 0;
+      const isFull = course.maxStudents != null ? enrollmentsCount >= course.maxStudents : false;
+      const remainingSeats = course.maxStudents != null ? Math.max(0, course.maxStudents - enrollmentsCount) : null;
       return {
         ...rest,
-        enrollmentsCount: _count.enrollments || 0,
+        enrollmentsCount,
+        maxStudents: course.maxStudents,
+        isFull,
+        remainingSeats,
         isEnrolled: !!(enrollments && enrollments.length > 0),
       };
     });
@@ -459,10 +465,49 @@ export class CoursesService {
     });
 
     const { _count, ...courseData } = course;
+    const activeEnrollmentsCount = _count?.enrollments || 0;
+    const maxStudents = course.maxStudents;
+    const isFull = maxStudents != null ? activeEnrollmentsCount >= maxStudents : false;
+    const remainingSeats = maxStudents != null ? Math.max(0, maxStudents - activeEnrollmentsCount) : null;
+
+    const generalPrice = Number(course.discountedPrice || course.price || 0);
+    const pricing = {
+      YER_OLD: {
+        originalPrice: course.priceYerOld ? Number(course.priceYerOld) : null,
+        discountedPrice: course.discountedPriceYerOld ? Number(course.discountedPriceYerOld) : null,
+        finalPrice: Number(course.discountedPriceYerOld || course.priceYerOld || generalPrice),
+        currencyLabel: 'ريال يمني (عملة قديمة - صنعاء)',
+      },
+      YER_NEW: {
+        originalPrice: course.priceYerNew ? Number(course.priceYerNew) : null,
+        discountedPrice: course.discountedPriceYerNew ? Number(course.discountedPriceYerNew) : null,
+        finalPrice: Number(course.discountedPriceYerNew || course.priceYerNew || generalPrice),
+        currencyLabel: 'ريال يمني (عملة جديدة - عدن)',
+      },
+      SAR: {
+        originalPrice: course.priceSar ? Number(course.priceSar) : null,
+        discountedPrice: course.discountedPriceSar ? Number(course.discountedPriceSar) : null,
+        finalPrice: Number(course.discountedPriceSar || course.priceSar || 0),
+        currencyLabel: 'ريال سعودي',
+      },
+      USD: {
+        originalPrice: course.price ? Number(course.price) : null,
+        discountedPrice: course.discountedPrice ? Number(course.discountedPrice) : null,
+        finalPrice: generalPrice,
+        currencyLabel: 'دولار أمريكي',
+      },
+    };
 
     return {
       ...courseData,
-      enrollmentsCount: _count?.enrollments || 0,
+      enrollmentsCount: activeEnrollmentsCount,
+      maxStudents,
+      isFull,
+      remainingSeats,
+      capacityText: maxStudents != null
+        ? (isFull ? `اكتمل العدد (الحد الأقصى: ${maxStudents} طالب)` : `متبقي ${remainingSeats} مقاعد من أصل ${maxStudents}`)
+        : 'المقاعد غير محدودة',
+      pricing,
       isEnrolled,
       paymentStatus,
       latestComments: latestComments,

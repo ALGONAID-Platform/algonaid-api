@@ -77,6 +77,18 @@ export class PaymentsService {
       throw new BadRequestException('هذا الكورس مجاني ومتاح للتسجيل الفوري المباشر دون الحاجة لرفع سند دفع');
     }
 
+    // التحقق من الطاقة الاستيعابية للكورس (الحد الأقصى للطلاب)
+    if (course.maxStudents != null) {
+      const activeEnrollmentsCount = await this.prisma.enrollment.count({
+        where: { courseId: course.id, status: 'ACTIVE' },
+      });
+      if (activeEnrollmentsCount >= course.maxStudents) {
+        throw new BadRequestException(
+          `عذراً، لا يوجد مقاعد شاغرة في هذا الكورس؛ اكتمل العدد الأقصى للمسجلين وهو ${course.maxStudents} طالباً.`,
+        );
+      }
+    }
+
     // Check if already actively enrolled
     const existingEnrollment = await this.prisma.enrollment.findUnique({
       where: {
@@ -597,6 +609,7 @@ export class PaymentsService {
         id: true,
         title: true,
         isPaid: true,
+        maxStudents: true,
         price: true,
         discountedPrice: true,
         priceYerOld: true,
@@ -636,7 +649,38 @@ export class PaymentsService {
     });
     const isAlreadyEnrolled = enrollment?.status === 'ACTIVE';
 
-    // 5. التحقق هل توجد عملية دفع معلقة قيد المراجعة
+    // 5. التحقق من الطاقة الاستيعابية للكورس (الحد الأقصى للمسجلين)
+    const activeEnrollmentsCount = await this.prisma.enrollment.count({
+      where: { courseId: course.id, status: 'ACTIVE' },
+    });
+    const isFull = course.maxStudents != null ? activeEnrollmentsCount >= course.maxStudents : false;
+    const remainingSeats = course.maxStudents != null ? Math.max(0, course.maxStudents - activeEnrollmentsCount) : null;
+
+    if (isFull && !isAlreadyEnrolled) {
+      return {
+        canPay: false,
+        status: 'COURSE_FULL',
+        message: `عذراً، لا يوجد مقاعد شاغرة في هذا الكورس؛ اكتمل العدد الأقصى للمسجلين وهو ${course.maxStudents} طالباً.`,
+        user: {
+          academicId,
+          name: user.name,
+          email: user.email,
+          isAccountVerified: true,
+        },
+        course: {
+          id: course.id,
+          title: course.title,
+        },
+        capacity: {
+          maxStudents: course.maxStudents,
+          enrolledCount: activeEnrollmentsCount,
+          remainingSeats: 0,
+          isFull: true,
+        },
+      };
+    }
+
+    // 6. التحقق هل توجد عملية دفع معلقة قيد المراجعة
     const pendingPayment = await this.prisma.payment.findFirst({
       where: {
         studentId: studentId!,
@@ -646,7 +690,7 @@ export class PaymentsService {
     });
     const hasPendingPayment = !!pendingPayment;
 
-    // 6. احتساب الأسعار المباشرة بالعملات (مع الاحتياط للأسعار العامة إن لم تحدد العملات بشكل منفصل)
+    // 7. احتساب الأسعار المباشرة بالعملات (مع الاحتياط للأسعار العامة إن لم تحدد العملات بشكل منفصل)
     const generalPrice = Number(course.discountedPrice || course.price || 0);
 
     const prices: Record<Currency, number> = {
@@ -659,7 +703,7 @@ export class PaymentsService {
     const currency = dto.currency || Currency.YER_OLD;
     const requiredAmount = prices[currency] || prices.YER_OLD;
 
-    // 6. جلب أرقام الحسابات البنكية النشطة
+    // 8. جلب أرقام الحسابات البنكية النشطة
     const accounts = await this.prisma.paymentAccount.findMany({
       where: {
         isActive: true,
@@ -676,7 +720,7 @@ export class PaymentsService {
       orderBy: [{ order: 'asc' }, { id: 'asc' }],
     });
 
-    // 7. تحديد الحالة ورسالة النتيجة
+    // 9. تحديد الحالة ورسالة النتيجة
     const canPay = !isAlreadyEnrolled && !hasPendingPayment;
     let status = 'READY_TO_PAY';
     let message = 'جاهز للدفع';
@@ -702,6 +746,12 @@ export class PaymentsService {
       course: {
         id: course.id,
         title: course.title,
+      },
+      capacity: {
+        maxStudents: course.maxStudents,
+        enrolledCount: activeEnrollmentsCount,
+        remainingSeats,
+        isFull: false,
       },
       currency,
       requiredAmount,
@@ -769,6 +819,7 @@ export class PaymentsService {
         isPaid: true,
         price: true,
         discountedPrice: true,
+        maxStudents: true,
         priceYerOld: true,
         discountedPriceYerOld: true,
         priceYerNew: true,
@@ -784,6 +835,18 @@ export class PaymentsService {
 
     if (!course.isPaid) {
       throw new BadRequestException('هذا الكورس مجاني ومتاح للتسجيل المباشر ولا يتطلب سداداً مالياً');
+    }
+
+    // التحقق من الطاقة الاستيعابية للكورس (الحد الأقصى للمسجلين)
+    if (course.maxStudents != null) {
+      const activeEnrollmentsCount = await this.prisma.enrollment.count({
+        where: { courseId: course.id, status: 'ACTIVE' },
+      });
+      if (activeEnrollmentsCount >= course.maxStudents) {
+        throw new BadRequestException(
+          `عذراً، لا يوجد مقاعد شاغرة في هذا الكورس؛ اكتمل العدد الأقصى للمسجلين وهو ${course.maxStudents} طالباً.`,
+        );
+      }
     }
 
     // 3. التحقق الأمني من مطابقة المبلغ المدفوع لسعر الكورس لمنع التلاعب

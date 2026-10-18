@@ -87,7 +87,19 @@ async isUserEnrolled(userId: number, courseId: number) {
             throw new ConflictException("أنت مسجل بالفعل في هذا الكورس");
         }
 
-        // 4. إذا لم يكن مسجلاً، نقوم بإنشاء التسجيل
+        // 4. التحقق من الطاقة الاستيعابية للكورس (الحد الأقصى للطلاب)
+        if (course.maxStudents != null) {
+            const activeEnrollmentsCount = await this.prisma.enrollment.count({
+                where: { courseId: course.id, status: 'ACTIVE' },
+            });
+            if (activeEnrollmentsCount >= course.maxStudents) {
+                throw new BadRequestException(
+                    `عذراً، لا يوجد مقاعد شاغرة في هذا الكورس؛ اكتمل العدد الأقصى للمسجلين وهو ${course.maxStudents} طالباً.`,
+                );
+            }
+        }
+
+        // 5. إذا لم يكن مسجلاً والكورس فيه مقاعد شاغرة، نقوم بإنشاء التسجيل
         await this.prisma.enrollment.create({
             data: {
                 courseId,
