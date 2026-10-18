@@ -102,14 +102,21 @@ export class CoursesEvaluationService {
 
     // تجميع كافة الدروس في قائمة مسطحة
     const allLessons = course.modules.flatMap((m) => m.lessons);
-    const totalLessons = allLessons.length;
-    const completedLessons = allLessons.filter((l) =>
+
+    // الدروس الإلزامية فقط هي التي تحتسب في الحضور والتقييم والشهادة
+    const mandatoryLessons = allLessons.filter((l) => l.isMandatory !== false);
+    const hasOnlyOptionalLessons = allLessons.length > 0 && mandatoryLessons.length === 0;
+
+    const totalLessons = mandatoryLessons.length;
+    const completedLessons = mandatoryLessons.filter((l) =>
       l.lessonProgress.some((p) => p.isCompleted),
     ).length;
 
-    // نسبة الحضور ومشاهدة الدروس
+    // نسبة الحضور ومشاهدة الدروس (محسوبة على الدروس الإلزامية فقط)
     const attendancePercentage =
-      totalLessons > 0 ? Math.round((completedLessons / totalLessons) * 100) : 0;
+      totalLessons > 0
+        ? Math.round((completedLessons / totalLessons) * 100)
+        : (hasOnlyOptionalLessons ? 100 : 0);
 
     // إحصائيات التكاليف والواجبات
     const assignments = allLessons
@@ -185,9 +192,11 @@ export class CoursesEvaluationService {
     // تقدير الحرف (Grade Letter)
     const gradeLetter = this.calculateGradeLetter(cumulativeGpa);
 
-    // نسبة التقدم الكلية
+    // نسبة التقدم الكلية (مبنية على الدروس الإلزامية)
     const overallProgressPercentage =
-      totalLessons > 0 ? Math.round((completedLessons / totalLessons) * 100) : 0;
+      totalLessons > 0
+        ? Math.round((completedLessons / totalLessons) * 100)
+        : (hasOnlyOptionalLessons ? 100 : 0);
 
     // شروط استحقاق الشهادة
     const minAttendance = course.certificateMinAttendance ?? 80;

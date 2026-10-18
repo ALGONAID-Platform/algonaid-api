@@ -74,6 +74,12 @@ export class CoursesService {
                   where: {
                     ...(!isOwner && { status: 'PUBLISHED' }),
                   },
+                  orderBy: [
+                    { dayNumber: 'asc' },
+                    { order: 'asc' },
+                    { createdAt: 'asc' },
+                    { id: 'asc' },
+                  ],
                   include: {
                     lessonProgress: {
                       where: { studentId: student?.id },
@@ -107,9 +113,10 @@ export class CoursesService {
         lastContentAddedAt = practiceExams[0].createdAt;
       }
 
+      let allLessonsCount = 0;
       modules.forEach((module) => {
-        totalLessons += module.lessons.length;
         module.lessons.forEach((lesson) => {
+          allLessonsCount++;
           if (!lastContentAddedAt || lesson.createdAt > lastContentAddedAt) {
             lastContentAddedAt = lesson.createdAt;
           }
@@ -119,18 +126,24 @@ export class CoursesService {
             }
           }
 
-          const progress = lesson.lessonProgress;
-          const passedExam = lesson.exam?.attempts;
-          if (
-            (progress && progress.length > 0 && progress[0].isCompleted) ||
-            (passedExam && passedExam.length > 0)
-          ) {
-            completedLessons++;
+          if (lesson.isMandatory !== false) {
+            totalLessons++;
+            const progress = lesson.lessonProgress;
+            const passedExam = lesson.exam?.attempts;
+            if (
+              (progress && progress.length > 0 && progress[0].isCompleted) ||
+              (passedExam && passedExam.length > 0)
+            ) {
+              completedLessons++;
+            }
           }
         });
       });
 
-      const progressPercentage = totalLessons > 0 ? Math.round((completedLessons / totalLessons) * 100) : 0;
+      const progressPercentage =
+        totalLessons > 0
+          ? Math.round((completedLessons / totalLessons) * 100)
+          : (allLessonsCount > 0 ? 100 : 0);
 
     return {
       ...rest,

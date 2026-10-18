@@ -177,11 +177,13 @@ export class ExamsService {
 
         for (const mod of allCourseModules) {
           for (const l of mod.lessons) {
-            if (mod.id < currentLesson.moduleId) {
-              precedingLessonIds.push(l.id);
-            } else if (mod.id === currentLesson.moduleId) {
-              if (l.order <= currentLesson.order) {
+            if (l.isMandatory !== false) {
+              if (mod.id < currentLesson.moduleId) {
                 precedingLessonIds.push(l.id);
+              } else if (mod.id === currentLesson.moduleId) {
+                if (l.order <= currentLesson.order) {
+                  precedingLessonIds.push(l.id);
+                }
               }
             }
           }
@@ -199,7 +201,7 @@ export class ExamsService {
           if (completedCount < precedingLessonIds.length) {
             return {
               isUnlocked: false,
-              lockedReason: `الاختبار مغلق: يجب إكمال جميع الدروس السابقة أولاً (${completedCount}/${precedingLessonIds.length} مكتمل).`,
+              lockedReason: `الاختبار مغلق: يجب إكمال جميع الدروس الإلزامية السابقة أولاً (${completedCount}/${precedingLessonIds.length} مكتمل).`,
             };
           }
         }
@@ -229,7 +231,8 @@ export class ExamsService {
             return { isUnlocked: true, lockedReason: null };
           }
           const allPublishedLessons = course.modules.flatMap((m) => m.lessons);
-          const lessonIds = allPublishedLessons.map((l) => l.id);
+          const mandatoryLessons = allPublishedLessons.filter((l) => l.isMandatory !== false);
+          const lessonIds = mandatoryLessons.map((l) => l.id);
 
           if (lessonIds.length > 0) {
             const completedLessonsCount = await this.prisma.lessonProgress.count({
@@ -243,7 +246,7 @@ export class ExamsService {
             if (completedLessonsCount < lessonIds.length) {
               return {
                 isUnlocked: false,
-                lockedReason: `الاختبار النهائي مغلق: يجب إكمال جميع دروس الدورة أولاً (${completedLessonsCount}/${lessonIds.length} مكتمل).`,
+                lockedReason: `الاختبار النهائي مغلق: يجب إكمال جميع دروس الدورة الإلزامية أولاً (${completedLessonsCount}/${lessonIds.length} مكتمل).`,
               };
             }
           }

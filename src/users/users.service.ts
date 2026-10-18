@@ -317,14 +317,16 @@ export class UsersService {
 
     let fullyCompletedCourses = 0;
     for (const enrollment of studentEnrollments) {
-      // ✅ نفس منطق getCourseProgress: نفلتر PUBLISHED فقط لتطابق ما يراه الطالب كـ 100%
+      // ✅ نفس منطق getCourseProgress: نفلتر PUBLISHED والدروس الإلزامية فقط لتطابق ما يراه الطالب كـ 100%
       const lessons = await this.prisma.lesson.findMany({
         where: { status: 'PUBLISHED', module: { courseId: enrollment.courseId } },
-        select: { id: true }
+        select: { id: true, isMandatory: true }
       });
       if (lessons.length === 0) continue;
 
-      const lessonIds = lessons.map((l) => l.id);
+      const mandatoryLessons = lessons.filter((l) => l.isMandatory !== false);
+      const targetLessons = mandatoryLessons.length > 0 ? mandatoryLessons : lessons;
+      const lessonIds = targetLessons.map((l) => l.id);
 
       // ✅ نحسب الدروس المكتملة عبر lessonProgress أو عبر اجتياز الاختبار
       const completedCount = await this.prisma.lesson.count({
@@ -337,7 +339,7 @@ export class UsersService {
         },
       });
 
-      if (completedCount >= lessons.length) {
+      if (completedCount >= targetLessons.length) {
         fullyCompletedCourses++;
       }
     }

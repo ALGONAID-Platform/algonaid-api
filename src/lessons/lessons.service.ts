@@ -57,6 +57,43 @@ export class LessonsService {
     return false;
   }
 
+  /**
+   * Helper to validate that a lesson's scheduledAt falls within the course's startDate and endDate
+   */
+  private validateLessonDateWithCourse(
+    scheduledAt: Date | string | undefined | null,
+    course: { title?: string; startDate?: Date | null; endDate?: Date | null },
+  ) {
+    if (!scheduledAt) return;
+
+    const lessonDate = new Date(scheduledAt);
+    if (isNaN(lessonDate.getTime())) return;
+
+    if (course.startDate) {
+      const courseStart = new Date(course.startDate);
+      courseStart.setUTCHours(0, 0, 0, 0);
+      if (lessonDate < courseStart) {
+        const formattedLesson = lessonDate.toISOString().split('T')[0];
+        const formattedStart = new Date(course.startDate).toISOString().split('T')[0];
+        throw new BadRequestException(
+          `تاريخ الدرس (${formattedLesson}) لا يمكن أن يكون قبل تاريخ بدء الدورة (${formattedStart}).`,
+        );
+      }
+    }
+
+    if (course.endDate) {
+      const courseEnd = new Date(course.endDate);
+      courseEnd.setUTCHours(23, 59, 59, 999);
+      if (lessonDate > courseEnd) {
+        const formattedLesson = lessonDate.toISOString().split('T')[0];
+        const formattedEnd = new Date(course.endDate).toISOString().split('T')[0];
+        throw new BadRequestException(
+          `تاريخ الدرس (${formattedLesson}) لا يمكن أن يكون بعد تاريخ انتهاء الدورة (${formattedEnd}).`,
+        );
+      }
+    }
+  }
+
   async create(createLessonDto: CreateLessonDto, userId: number) {
     const { moduleId, courseId, ...lessonData } = createLessonDto;
 
@@ -90,6 +127,8 @@ export class LessonsService {
         throw new ForbiddenException(MESSAGES.LESSONS.UNAUTHORIZED_ADD);
       }
 
+      this.validateLessonDateWithCourse(lessonData.scheduledAt, course);
+
       if (course.modules && course.modules.length > 0) {
         finalModuleId = course.modules[0].id;
       } else {
@@ -119,6 +158,8 @@ export class LessonsService {
       if (!isInstructor && !isOwner) {
         throw new ForbiddenException(MESSAGES.LESSONS.UNAUTHORIZED_ADD);
       }
+
+      this.validateLessonDateWithCourse(lessonData.scheduledAt, module.course);
 
       finalModuleId = moduleId;
     }
@@ -225,7 +266,12 @@ export class LessonsService {
             select: { comments: true }
           }
         },
-        orderBy: { order: 'asc' },
+        orderBy: [
+          { dayNumber: 'asc' },
+          { order: 'asc' },
+          { createdAt: 'asc' },
+          { id: 'asc' },
+        ],
         skip,
         take: limit,
       }),
@@ -476,6 +522,24 @@ export class LessonsService {
     }
 
     const { moduleId, courseId, ...data } = updateLessonDto;
+
+    let targetCourse = lesson.module.course;
+    if (moduleId && moduleId !== lesson.moduleId) {
+      const targetModule = await this.prisma.module.findUnique({
+        where: { id: moduleId },
+        include: { course: true },
+      });
+      if (!targetModule) {
+        throw new NotFoundException(MESSAGES.MODULES.MODULE_NOT_FOUND(moduleId));
+      }
+      targetCourse = targetModule.course as any;
+    }
+
+    const scheduledAtToCheck =
+      data.scheduledAt !== undefined ? data.scheduledAt : lesson.scheduledAt;
+    if (scheduledAtToCheck) {
+      this.validateLessonDateWithCourse(scheduledAtToCheck, targetCourse);
+    }
 
     const updatedLesson = await this.prisma.lesson.update({
       where: { id },

@@ -117,9 +117,23 @@ export class ProgressService {
       };
     }
 
+    // الدروس الإلزامية فقط هي التي تدخل في احتساب التقدم
+    const mandatoryLessons = lessons.filter((l) => l.isMandatory !== false);
+    const hasOnlyOptionalLessons = lessons.length > 0 && mandatoryLessons.length === 0;
+    const targetLessons = mandatoryLessons.length > 0 ? mandatoryLessons : (hasOnlyOptionalLessons ? [] : lessons);
+
+    if (targetLessons.length === 0) {
+      return { 
+        courseId, 
+        totalLessons: 0, 
+        completedLessons: 0, 
+        progressPercentage: hasOnlyOptionalLessons ? 100 : 0,
+      };
+    }
+
     const completedLessonsData = await this.prisma.lesson.findMany({
       where: {
-        id: { in: lessons.map((l) => l.id) },
+        id: { in: targetLessons.map((l) => l.id) },
         OR: [
           {
             lessonProgress: {
@@ -158,11 +172,11 @@ export class ProgressService {
 
     const completedLessonsCount = completedLessonsData.length;
 
-    const progressPercentage = (completedLessonsCount / lessons.length) * 100;
+    const progressPercentage = (completedLessonsCount / targetLessons.length) * 100;
 
     return {
       courseId,
-      totalLessons: lessons.length,
+      totalLessons: targetLessons.length,
       completedLessons: completedLessonsCount,
       progressPercentage: Math.round(progressPercentage),
     };

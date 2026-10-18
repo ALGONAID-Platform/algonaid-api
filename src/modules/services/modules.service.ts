@@ -63,6 +63,12 @@ export class ModulesService {
           where: {
             ...(!isOwner && { status: LessonStatus.PUBLISHED })
           },
+          orderBy: [
+            { dayNumber: 'asc' },
+            { order: 'asc' },
+            { createdAt: 'asc' },
+            { id: 'asc' },
+          ],
           include: {
             exam: {
               select: {
@@ -96,9 +102,6 @@ export class ModulesService {
     return modules.map((mod) => {
       const { lessons, _count, ...rest } = mod;
 
-      let totalLessons = _count.lessons;
-      let completedLessons = 0;
-
       const mappedLessons = lessons.map(lesson => {
         // @ts-ignore
         const { _count: lessonCount, assignment, exam, ...lessonRest } = lesson;
@@ -118,8 +121,12 @@ export class ModulesService {
         };
       });
 
+      const mandatoryLessons = mappedLessons.filter((l) => (l as any).isMandatory !== false);
+      const totalLessons = mandatoryLessons.length;
+      let completedLessons = 0;
+
       if (studentId) {
-        mappedLessons.forEach(lesson => {
+        mandatoryLessons.forEach(lesson => {
           // @ts-ignore
           const progress = lesson.lessonProgress;
           if (progress && progress.length > 0 && progress[0].isCompleted) {
@@ -128,10 +135,14 @@ export class ModulesService {
         });
       }
 
-      const progressPercentage = totalLessons > 0 ? Math.round((completedLessons / totalLessons) * 100) : 0;
+      const progressPercentage =
+        totalLessons > 0
+          ? Math.round((completedLessons / totalLessons) * 100)
+          : (mappedLessons.length > 0 ? 100 : 0);
 
       return {
         ...rest,
+        lessons: mappedLessons,
         totalLessons,
         completedLessons,
         progressPercentage: studentId ? progressPercentage : undefined,
@@ -159,6 +170,12 @@ export class ModulesService {
           where: {
             ...(!isOwner && { status: LessonStatus.PUBLISHED })
           },
+          orderBy: [
+            { dayNumber: 'asc' },
+            { order: 'asc' },
+            { createdAt: 'asc' },
+            { id: 'asc' },
+          ],
           include: {
             exam: {
               select: {
@@ -192,9 +209,6 @@ export class ModulesService {
     return modules.map((mod) => {
       const { lessons, _count, ...rest } = mod;
 
-      let totalLessons = _count.lessons;
-      let completedLessons = 0;
-
       const mappedLessons = lessons.map(lesson => {
         // @ts-ignore
         const { _count: lessonCount, assignment, exam, ...lessonRest } = lesson;
@@ -214,8 +228,12 @@ export class ModulesService {
         };
       });
 
+      const mandatoryLessons = mappedLessons.filter((l) => (l as any).isMandatory !== false);
+      const totalLessons = mandatoryLessons.length;
+      let completedLessons = 0;
+
       if (studentId) {
-        mappedLessons.forEach(lesson => {
+        mandatoryLessons.forEach(lesson => {
           // @ts-ignore
           const progress = lesson.lessonProgress;
           if (progress && progress.length > 0 && progress[0].isCompleted) {
@@ -224,10 +242,14 @@ export class ModulesService {
         });
       }
 
-      const progressPercentage = totalLessons > 0 ? Math.round((completedLessons / totalLessons) * 100) : 0;
+      const progressPercentage =
+        totalLessons > 0
+          ? Math.round((completedLessons / totalLessons) * 100)
+          : (mappedLessons.length > 0 ? 100 : 0);
 
       return {
         ...rest,
+        lessons: mappedLessons,
         totalLessons,
         completedLessons,
         progressPercentage: studentId ? progressPercentage : undefined,
