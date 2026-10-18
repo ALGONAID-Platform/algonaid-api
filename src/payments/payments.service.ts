@@ -575,13 +575,30 @@ export class PaymentsService {
       academicId = student.academicId;
     }
 
-    // 2. التحقق من وجود الكورس
+    // 2. التحقق من توثيق الحساب عبر البريد الإلكتروني
+    if (!user.emailVerified) {
+      return {
+        canPay: false,
+        status: 'ACCOUNT_NOT_VERIFIED',
+        message: 'حساب المستخدم غير مؤكد عبر البريد الإلكتروني. يرجى تأكيد الحساب أولاً قبل سداد الرسوم.',
+        user: {
+          academicId,
+          name: user.name,
+          email: user.email,
+          isAccountVerified: false,
+        },
+      };
+    }
+
+    // 3. التحقق من وجود الكورس
     const course = await this.prisma.course.findUnique({
       where: { id: dto.courseId },
       select: {
         id: true,
         title: true,
         isPaid: true,
+        price: true,
+        discountedPrice: true,
         priceYerOld: true,
         discountedPriceYerOld: true,
         priceYerNew: true,
@@ -608,7 +625,7 @@ export class PaymentsService {
       };
     }
 
-    // 3. التحقق هل المستخدم مشترك مسبقاً في هذا الكورس
+    // 4. التحقق هل المستخدم مشترك مسبقاً في هذا الكورس
     const enrollment = await this.prisma.enrollment.findUnique({
       where: {
         studentId_courseId: {
@@ -619,7 +636,7 @@ export class PaymentsService {
     });
     const isAlreadyEnrolled = enrollment?.status === 'ACTIVE';
 
-    // 4. التحقق هل توجد عملية دفع معلقة قيد المراجعة
+    // 5. التحقق هل توجد عملية دفع معلقة قيد المراجعة
     const pendingPayment = await this.prisma.payment.findFirst({
       where: {
         studentId: studentId!,
@@ -629,12 +646,14 @@ export class PaymentsService {
     });
     const hasPendingPayment = !!pendingPayment;
 
-    // 5. احتساب الأسعار المباشرة بالعملات (قديم / جديد / سعودي)
+    // 6. احتساب الأسعار المباشرة بالعملات (مع الاحتياط للأسعار العامة إن لم تحدد العملات بشكل منفصل)
+    const generalPrice = Number(course.discountedPrice || course.price || 0);
+
     const prices: Record<Currency, number> = {
-      YER_OLD: Number(course.discountedPriceYerOld || course.priceYerOld || 0),
-      YER_NEW: Number(course.discountedPriceYerNew || course.priceYerNew || 0),
+      YER_OLD: Number(course.discountedPriceYerOld || course.priceYerOld || generalPrice),
+      YER_NEW: Number(course.discountedPriceYerNew || course.priceYerNew || generalPrice),
       SAR: Number(course.discountedPriceSar || course.priceSar || 0),
-      USD: 0,
+      USD: generalPrice,
     };
 
     const currency = dto.currency || Currency.YER_OLD;
@@ -726,6 +745,11 @@ export class PaymentsService {
 
     if (!user) {
       throw new NotFoundException('المستخدم غير مسجل في المنصة');
+    }
+
+    // التحقق من توثيق وتأكيد الحساب عبر البريد الإلكتروني
+    if (!user.emailVerified) {
+      throw new ForbiddenException('حساب المستخدم غير مؤكد عبر البريد الإلكتروني. يرجى تأكيد الحساب أولاً قبل إتمام عملية السداد.');
     }
 
     let studentId = user.studentProfile?.id;
