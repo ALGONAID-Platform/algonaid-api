@@ -11,6 +11,7 @@ import { RejectPaymentDto } from './dto/reject-payment.dto';
 import { CreatePaymentAccountDto } from './dto/create-payment-account.dto';
 import { UpdatePaymentAccountDto } from './dto/update-payment-account.dto';
 import { VerifyCheckoutDto } from './dto/verify-checkout.dto';
+import { ConfirmExternalPaymentDto } from './dto/confirm-external-payment.dto';
 import { Currency, PaymentStatus } from '@prisma/client';
 import { NotificationsService } from 'src/notifications/notifications.service';
 
@@ -694,6 +695,149 @@ export class PaymentsService {
         currency: a.currency,
         instructions: a.instructions,
       })),
+    };
+  }
+
+  /**
+   * تأكيد السداد وتفعيل اشتراك الطالب فورياً من تطبيق خارجي (كرتي / بوابة دفع)
+   */
+  async confirmExternalPayment(dto: ConfirmExternalPaymentDto) {
+    const identifier = dto.userIdentifier.trim();
+    const isNumeric = /^\d+$/.test(identifier);
+
+    // 1. البحث عن المستخدم (بالإيميل، أو الرقم الأكاديمي، أو الـ ID)
+    const user = await this.prisma.user.findFirst({
+      where: {
+        OR: [
+          { email: identifier.toLowerCase() },
+          { studentProfile: { academicId: identifier } },
+          ...(isNumeric ? [{ id: parseInt(identifier, 10) }] : []),
+        ],
+      },
+      include: {
+        studentProfile: {
+          select: {
+            id: true,
+            academicId: true,
+          },
+        },
+      },
+    });
+
+    if (!user) {
+      throw new NotFoundException('المستخدم غير مسجل في المنصة');
+    }
+
+    let studentId = user.studentProfile?.id;
+    let academicId = user.studentProfile?.academicId;
+    if (!studentId) {
+      const student = await this.getOrCreateStudent(user.id);
+      studentId = student.id;
+      academicId = student.academicId;
+    }
+
+    // 2. التحقق من وجود الكورس
+    const course = await this.prisma.course.findUnique({
+      where: { id: dto.courseId },
+      select: {
+        id: true,
+        title: true,
+        isPaid: true,
+      },
+    });
+
+    if (!course) {
+      throw new NotFoundException('الكورس المحدد غير موجود في المنصة');
+    }
+
+    // 3. التحقق هل المستخدم مشترك ومفعل مسبقاً
+    const existingEnrollment = await this.prisma.enrollment.findUnique({
+      where: {
+        studentId_courseId: {
+          studentId: studentId!,
+          courseId: course.id,
+        },
+      },
+    });
+
+    if (existingEnrollment && existingEnrollment.status === 'ACTIVE') {
+      throw new ConflictException('الطالب مشترك ومفعل في هذا الكورس مسبقاً');
+    }
+
+    const transactionNumber = dto.transactionNumber || `KARTI-${Date.now()}`;
+
+    // 4. تنفيذ السداد والاشتراك في قاعدة البيانات عبر Database Transaction
+    const [payment, enrollment] = await this.prisma.$transaction([
+      this.prisma.payment.create({
+        data: {
+          studentId: studentId!,
+          courseId: course.id,
+          amount: dto.amount,
+          currency: dto.currency || Currency.YER_OLD,
+          transactionNumber,
+          receiptUrl: 'EXTERNAL_KARTI_PAYMENT',
+          status: PaymentStatus.APPROVED,
+          notes: dto.notes || `سداد إلكتروني مباشر عبر تطبيق كرتي (رقم العملية: ${transactionNumber})`,
+          reviewedAt: new Date(),
+        },
+      }),
+      this.prisma.enrollment.upsert({
+        where: {
+          studentId_courseId: {
+            studentId: studentId!,
+            courseId: course.id,
+          },
+        },
+        create: {
+          studentId: studentId!,
+          courseId: course.id,
+          status: 'ACTIVE',
+        },
+        update: {
+          status: 'ACTIVE',
+        },
+      }),
+    ]);
+
+    // 5. إرسال إشعار فوري للطالب في تطبيق منصة الجنيد
+    if (user.id) {
+      const firstLesson = await this.prisma.lesson.findFirst({
+        where: { module: { courseId: course.id } },
+        orderBy: { order: 'asc' },
+        select: { id: true },
+      });
+
+      await this.notificationsService.notifyCourseEnrollmentApproved(
+        user.id,
+        course.title,
+        undefined,
+        firstLesson?.id,
+      );
+    }
+
+    return {
+      success: true,
+      message: 'تم سداد الرسوم واعتماد العملية وتفعيل اشتراك الطالب في الكورس بنجاح.',
+      data: {
+        enrollmentId: enrollment.id,
+        paymentId: payment.id,
+        status: enrollment.status,
+        student: {
+          academicId,
+          name: user.name,
+          email: user.email,
+        },
+        course: {
+          id: course.id,
+          title: course.title,
+        },
+        payment: {
+          amount: Number(payment.amount),
+          currency: payment.currency,
+          transactionNumber: payment.transactionNumber,
+          paidAt: payment.createdAt,
+        },
+      },
     };
   }
 }

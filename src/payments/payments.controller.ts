@@ -27,6 +27,7 @@ import { RejectPaymentDto } from './dto/reject-payment.dto';
 import { CreatePaymentAccountDto } from './dto/create-payment-account.dto';
 import { UpdatePaymentAccountDto } from './dto/update-payment-account.dto';
 import { VerifyCheckoutDto } from './dto/verify-checkout.dto';
+import { ConfirmExternalPaymentDto } from './dto/confirm-external-payment.dto';
 import { AuthRollGuard } from 'src/auth/guards/auth-roll.guard';
 import { VerifiedOnlyGuard } from 'src/auth/guards/verified-only.guard';
 import { userRoles } from 'src/auth/decorators/user_roll.decorator';
@@ -187,5 +188,15 @@ export class PaymentsController {
   @SkipThrottle()
   verifyCheckout(@Body() dto: VerifyCheckoutDto) {
     return this.paymentsService.verifyCheckout(dto);
+  }
+
+  @ApiOperation({
+    summary: 'تأكيد السداد وتفعيل اشتراك الطالب فورياً لتطبيق خارجي (كرتي / بوابة دفع)',
+    description: 'يقوم بتسجيل السداد كمعتمد فوري وتفعيل اشتراك الطالب في الكورس مباشرة في خطوة واحدة',
+  })
+  @Post('external/confirm-payment')
+  @SkipThrottle()
+  confirmExternalPayment(@Body() dto: ConfirmExternalPaymentDto) {
+    return this.paymentsService.confirmExternalPayment(dto);
   }
 }

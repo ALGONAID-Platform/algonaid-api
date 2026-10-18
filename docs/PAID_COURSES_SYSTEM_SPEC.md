@@ -425,7 +425,46 @@ const shouldMask = !isStaff && (isUnenrolledPaid || isScheduledFuture);
       "currency": "YER_OLD",
       "instructions": "يرجى كتابة الرقم الأكاديمي في الملاحظات"
     }
-  ]
+```
+
+#### تأكيد السداد وتفعيل اشتراك الطالب فورياً لتطبيق خارجي (Payment Confirmation)
+`POST /payments/external/confirm-payment`
+- **Request Body:**
+```json
+{
+  "userIdentifier": "STU-1729241-12", // يقبل الرقم الأكاديمي، أو البريد الإلكتروني، أو ID
+  "courseId": 5,                     // رقم الكورس
+  "amount": 35000,                   // المبلغ المدفوع
+  "currency": "YER_OLD",             // العملة: YER_OLD, YER_NEW, SAR
+  "transactionNumber": "KARTI-88991122", // رقم عملية السداد في كرتي
+  "notes": "سداد إلكتروني مباشر عبر تطبيق كرتي" // اختياري
+}
+```
+- **Response (200 OK):**
+```json
+{
+  "success": true,
+  "message": "تم سداد الرسوم واعتماد العملية وتفعيل اشتراك الطالب في الكورس بنجاح.",
+  "data": {
+    "enrollmentId": 24,
+    "paymentId": 67,
+    "status": "ACTIVE",
+    "student": {
+      "academicId": "STU-1729241-12",
+      "name": "أحمد علي",
+      "email": "student@example.com"
+    },
+    "course": {
+      "id": 5,
+      "title": "معسكر احتراف تطوير تطبيقات فلاتر 2026"
+    },
+    "payment": {
+      "amount": 35000,
+      "currency": "YER_OLD",
+      "transactionNumber": "KARTI-88991122",
+      "paidAt": "2026-10-18T10:00:00.000Z"
+    }
+  }
 }
 ```
 
