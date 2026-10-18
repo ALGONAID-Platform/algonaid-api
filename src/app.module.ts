@@ -27,6 +27,12 @@ import { PaymentsModule } from './payments/payments.module';
 import { AssignmentsModule } from './assignments/assignments.module';
 import { NotificationsModule } from './notifications/notifications.module';
 
+import * as fs from 'fs';
+
+const uploadsRoot = fs.existsSync('/usr/src/app/uploads')
+  ? '/usr/src/app/uploads'
+  : join(process.cwd(), 'uploads');
+
 @Module({
   imports: [
     ScheduleModule.forRoot(),
@@ -35,7 +41,7 @@ import { NotificationsModule } from './notifications/notifications.module';
       envFilePath: `.env`
     }),
     ServeStaticModule.forRoot({
-      rootPath: join('/usr/src/app', 'uploads'),
+      rootPath: uploadsRoot,
       serveStaticOptions: { setHeaders: (res: any) => res.setHeader('X-Content-Type-Options', 'nosniff') },
       serveRoot: '/uploads',
     }),

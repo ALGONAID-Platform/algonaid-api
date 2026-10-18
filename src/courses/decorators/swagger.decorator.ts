@@ -207,3 +207,57 @@ export function SwaggerSearchCourses() {
         ApiResponse({ status: 401, description: 'غير مصرح للوصول (Unauthorized)' }),
     );
 }
+
+export function SwaggerGetKarttyCourses() {
+    return applyDecorators(
+        ApiOperation({
+            summary: 'عرض الكورسات المدفوعة لتطبيق كارتي (Kartty)',
+            description: 'نقطة وصول عامة وخفيفة الوزن توفر بيانات الكورسات المدفوعة الأساسية (المعرف، العنوان، الصورة، المدرب، والأسعار بالعملة اليمنية القديمة والجديدة والسعودي) للاشتراك عبر كارتي',
+        }),
+        ApiResponse({
+            status: 200,
+            description: 'تم جلب الكورسات المدفوعة بنجاح',
+            schema: {
+                example: [
+                    {
+                        id: 1,
+                        title: 'دورة القدرات العامة',
+                        imageUrl: 'https://example.com/thumbnail.jpg',
+                        instructorName: 'أ. بشار الجُنيد',
+                        courseType: 'RECORDED',
+                        isFull: false,
+                        prices: {
+                            yerOld: 35000,
+                            yerNew: 120000,
+                            sar: 80
+                        },
+                        pricing: {
+                            yerOld: {
+                                currency: 'YER_OLD',
+                                label: 'ريال يمني (عملة قديمة)',
+                                amount: 35000,
+                                originalAmount: 50000,
+                                discountedAmount: 35000
+                            },
+                            yerNew: {
+                                currency: 'YER_NEW',
+                                label: 'ريال يمني (عملة جديدة)',
+                                amount: 120000,
+                                originalAmount: 150000,
+                                discountedAmount: 120000
+                            },
+                            sar: {
+                                currency: 'SAR',
+                                label: 'ريال سعودي',
+                                amount: 80,
+                                originalAmount: 100,
+                                discountedAmount: 80
+                            }
+                        }
+                    }
+                ]
+            }
+        }),
+    );
+}
+

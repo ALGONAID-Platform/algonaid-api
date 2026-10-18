@@ -305,6 +305,52 @@ flowchart TD
 }
 ```
 
+#### جلب الكورسات المدفوعة لتطبيق كارتي (Kartty API)
+`GET /courses/kartty` أو `GET /courses/external/kartty` (Public - مفتوح بدون مصادقة)
+- **الغرض:** واجهة سريعة وخفيفة الوزن موجهة لتطبيق كارتي والمنصات الخارجية لعرض الكورسات المدفوعة فقط مع معلومات الاشتراك الأساسية دون أي تفاصيل زائدة.
+- **الرابط الكامل:** `https://api.exchangesmangement.online/api/v1/courses/kartty`
+- **Response (200 OK):**
+```json
+[
+  {
+    "id": 5,
+    "title": "معسكر احتراف تطوير تطبيقات فلاتر 2026",
+    "imageUrl": "https://ucarecdn.com/course-thumb.jpg",
+    "instructorName": "أ. بشار الجُنيد",
+    "courseType": "LIVE",
+    "isFull": false,
+    "prices": {
+      "yerOld": 35000,
+      "yerNew": 100000,
+      "sar": 200
+    },
+    "pricing": {
+      "yerOld": {
+        "currency": "YER_OLD",
+        "label": "ريال يمني (عملة قديمة)",
+        "amount": 35000,
+        "originalAmount": 50000,
+        "discountedAmount": 35000
+      },
+      "yerNew": {
+        "currency": "YER_NEW",
+        "label": "ريال يمني (عملة جديدة)",
+        "amount": 100000,
+        "originalAmount": 150000,
+        "discountedAmount": 100000
+      },
+      "sar": {
+        "currency": "SAR",
+        "label": "ريال سعودي",
+        "amount": 200,
+        "originalAmount": 300,
+        "discountedAmount": 200
+      }
+    }
+  }
+]
+```
+
 ---
 
 ### 2. المدفوعات والاشتراكات والربط الخارجي (Payments & External Checkout)
@@ -455,7 +501,38 @@ flowchart TD
 
 ---
 
-### 3. الدروس والجدولة (Lessons & Scheduling)
+### 3. رفع ملفات الفيديو للكورسات (Video Uploads Management)
+
+يدعم النظام رفع فيديوهات الدروس والمحاضرات من لوحة التحكم حتى حجم **1 جيجابايت (1GB)** باستخدام معالجة `DiskStorage` المباشرة لتجنب أي استهلاك لذاكرة السيرفر العشوائية، ويتم تنظيم الفيديوهات تلقائياً داخل مجلد مخصص لكل كورس:  
+`uploads/videos/course_<courseId>/<filename>.mp4`
+
+#### أ. رفع فيديو مع تحديد رقم الكورس
+`POST /media/videos` (Admin, Owner)  
+أو `POST /media/courses/:courseId/videos` (Admin, Owner)
+- **Headers:** `Content-Type: multipart/form-data`
+- **Form Data Fields:**
+  - `file` أو `video`: ملف الفيديو (يدعم `mp4`, `mov`, `avi`, `mkv`, `webm` حتى 1GB).
+  - `courseId` (اختياري في `POST /media/videos`): رقم الكورس لإنشاء مجلد مخصص له (مثل `course_5`).
+- **Response (201 Created):**
+```json
+{
+  "success": true,
+  "message": "تم رفع الفيديو بنجاح وحفظه في مجلد الكورس",
+  "url": "https://api.exchangesmangement.online/uploads/videos/course_5/1729250000_a1b2c3d4.mp4",
+  "videoUrl": "https://api.exchangesmangement.online/uploads/videos/course_5/1729250000_a1b2c3d4.mp4",
+  "relativePath": "uploads/videos/course_5/1729250000_a1b2c3d4.mp4",
+  "courseId": 5,
+  "folder": "videos/course_5",
+  "fileName": "1729250000_a1b2c3d4.mp4",
+  "originalName": "flutter-lecture-1.mp4",
+  "size": 524288000,
+  "mimetype": "video/mp4"
+}
+```
+
+---
+
+### 4. الدروس والجدولة (Lessons & Scheduling)
 
 #### إضافة درس جديد
 `POST /lessons` (Admin, Owner)
@@ -487,7 +564,7 @@ flowchart TD
 
 ---
 
-### 4. التقييم الأكاديمي والشهادات (Evaluation & Certificates)
+### 5. التقييم الأكاديمي والشهادات (Evaluation & Certificates)
 
 #### استعلام تقييم الطالب ومساره اليومي
 `GET /courses/:id/my-evaluation` (Student, Admin)
@@ -560,7 +637,7 @@ flowchart TD
 
 ---
 
-### 5. توثيق الحساب وفترة السماح (Verification Status)
+### 6. توثيق الحساب وفترة السماح (Verification Status)
 
 #### فحص حالة التوثيق والمهلة المتبقية
 `GET /auth/verification-status` (Bearer Token)

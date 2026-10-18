@@ -9,7 +9,7 @@ import { Role } from '@prisma/client';
 import { CurrentUser } from 'src/auth/decorators/current-user.decorator';
 import * as types from 'src/utils/types';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
-import { SwaggerCreateCourse, SwaggerDeleteCourse, SwaggerGetCourse, SwaggerUpdateCourse, SwaggerGetAllCourses, SwaggerSearchCourses } from './decorators/swagger.decorator';
+import { SwaggerCreateCourse, SwaggerDeleteCourse, SwaggerGetCourse, SwaggerUpdateCourse, SwaggerGetAllCourses, SwaggerSearchCourses, SwaggerGetKarttyCourses } from './decorators/swagger.decorator';
 import { UpdateCourseDto } from './dto/update-course.dto';
 import { ConvertToRecordedDto } from './dto/convert-to-recorded.dto';
 
@@ -74,6 +74,13 @@ export class CoursesController {
   @UseGuards(OptionalAuthGuard)
   findPaidCourses(@CurrentUser() user?: types.JwtPayloadType) {
     return this.coursesService.findPaidCourses(user?.id);
+  }
+
+  @Get(['kartty', 'external/kartty'])
+  @SkipThrottle()
+  @SwaggerGetKarttyCourses()
+  findPaidCoursesForKartty() {
+    return this.coursesService.findPaidCoursesForKartty();
   }
 
   @Get(':id')
