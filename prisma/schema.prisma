@@ -35,6 +35,13 @@ enum PaymentStatus {
   REJECTED // مرفوض
 }
 
+enum Currency {
+  YER_OLD // ريال يمني - عملة قديمة
+  YER_NEW // ريال يمني - عملة جديدة
+  SAR     // ريال سعودي
+  USD     // دولار أمريكي
+}
+
 enum AssignmentType {
   QUIZ // كويز اختياري
   TASK // تكليف ومهمة عملية
@@ -163,6 +170,15 @@ model Course {
   isPaid            Boolean        @default(false)
   price             Decimal?       @db.Decimal(10, 2)
   discountedPrice   Decimal?       @db.Decimal(10, 2)
+
+  // Multi-Currency Pricing (Yemen & Gulf)
+  priceYerOld           Decimal?   @db.Decimal(12, 2)
+  discountedPriceYerOld Decimal?   @db.Decimal(12, 2)
+  priceYerNew           Decimal?   @db.Decimal(12, 2)
+  discountedPriceYerNew Decimal?   @db.Decimal(12, 2)
+  priceSar              Decimal?   @db.Decimal(10, 2)
+  discountedPriceSar    Decimal?   @db.Decimal(10, 2)
+
   courseType        CourseType     @default(RECORDED)
   scheduleDaysText  String? // أيام وتوقيت المحاضرات للبث المباشر
   payments          Payment[]
@@ -531,26 +547,51 @@ model PostComment {
   updatedAt DateTime @updatedAt
 }
 
+model PaymentAccount {
+  id            Int       @id @default(autoincrement())
+  providerTitle String    // اسم الخدمة: مثلاً "بنك الكريمي", "محفظة ون كاش", "جايبي", "القطيبي", "النجم"
+  accountHolder String    // اسم صاحب الحساب: مثلاً "بشار أحمد الجنيد"
+  accountNumber String    // رقم الحساب أو المحفظة
+  currency      Currency? // العملة المدعومة بهذا الحساب (أو null لجميع العملات)
+  instructions  String?   @db.Text // تعليمات التحويل
+  qrCodeUrl     String?   // صورة باركود الحساب إن وجدت
+  isActive      Boolean   @default(true) // تفعيل أو تعطيل الحساب من الظهور للطلاب
+  order         Int       @default(0) // ترتيب الظهور في التطبيق
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  payments      Payment[]
+
+  @@index([isActive])
+  @@index([order])
+}
+
 model Payment {
-  id              Int           @id @default(autoincrement())
-  studentId       Int
-  student         Student       @relation(fields: [studentId], references: [id], onDelete: Cascade)
-  courseId        Int
-  course          Course        @relation(fields: [courseId], references: [id], onDelete: Cascade)
-  amount          Decimal       @db.Decimal(10, 2)
-  receiptUrl      String        // صورة سند الدفع أو الوصل
-  status          PaymentStatus @default(PENDING)
-  rejectionReason String?       @db.Text
-  reviewedById    Int?
-  reviewedBy      User?         @relation("ReviewedPayments", fields: [reviewedById], references: [id])
-  reviewedAt      DateTime?
-  notes           String?       @db.Text
-  createdAt       DateTime      @default(now())
-  updatedAt       DateTime      @updatedAt
+  id                Int             @id @default(autoincrement())
+  studentId         Int
+  student           Student         @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  courseId          Int
+  course            Course          @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  amount            Decimal         @db.Decimal(12, 2)
+  currency          Currency        @default(YER_OLD)
+  transactionNumber String?         // رقم عملية الحوالة / السند
+  paymentAccountId  Int?
+  paymentAccount    PaymentAccount? @relation(fields: [paymentAccountId], references: [id], onDelete: SetNull)
+  receiptUrl        String          // صورة سند الدفع أو الوصل
+  status            PaymentStatus   @default(PENDING)
+  rejectionReason   String?         @db.Text
+  reviewedById      Int?
+  reviewedBy        User?           @relation("ReviewedPayments", fields: [reviewedById], references: [id])
+  reviewedAt        DateTime?
+  notes             String?         @db.Text
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
 
   @@index([studentId])
   @@index([courseId])
   @@index([status])
+  @@index([paymentAccountId])
+  @@index([currency])
 }
 
 model Assignment {

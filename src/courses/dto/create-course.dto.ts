@@ -25,19 +25,61 @@ export class CreateCourseDto {
     @Type(() => Boolean)
     isPaid?: boolean;
 
-    @ApiProperty({ example: 49.99, description: 'Original price of the course', required: false })
+    @ApiProperty({ example: 49.99, description: 'Original price of the course (General fallback)', required: false })
     @IsOptional()
     @IsNumber()
     @Min(0)
     @Type(() => Number)
     price?: number;
 
-    @ApiProperty({ example: 29.99, description: 'Discounted price if on offer', required: false })
+    @ApiProperty({ example: 29.99, description: 'Discounted price if on offer (General fallback)', required: false })
     @IsOptional()
     @IsNumber()
     @Min(0)
     @Type(() => Number)
     discountedPrice?: number;
+
+    @ApiProperty({ example: 50000, description: 'السعر بالريال اليمني (العملة القديمة - صنعاء)', required: false })
+    @IsOptional()
+    @IsNumber()
+    @Min(0)
+    @Type(() => Number)
+    priceYerOld?: number;
+
+    @ApiProperty({ example: 35000, description: 'سعر الخصم بالريال اليمني (العملة القديمة - صنعاء)', required: false })
+    @IsOptional()
+    @IsNumber()
+    @Min(0)
+    @Type(() => Number)
+    discountedPriceYerOld?: number;
+
+    @ApiProperty({ example: 150000, description: 'السعر بالريال اليمني (العملة الجديدة - عدن)', required: false })
+    @IsOptional()
+    @IsNumber()
+    @Min(0)
+    @Type(() => Number)
+    priceYerNew?: number;
+
+    @ApiProperty({ example: 100000, description: 'سعر الخصم بالريال اليمني (العملة الجديدة - عدن)', required: false })
+    @IsOptional()
+    @IsNumber()
+    @Min(0)
+    @Type(() => Number)
+    discountedPriceYerNew?: number;
+
+    @ApiProperty({ example: 300, description: 'السعر بالريال السعودي', required: false })
+    @IsOptional()
+    @IsNumber()
+    @Min(0)
+    @Type(() => Number)
+    priceSar?: number;
+
+    @ApiProperty({ example: 200, description: 'سعر الخصم بالريال السعودي', required: false })
+    @IsOptional()
+    @IsNumber()
+    @Min(0)
+    @Type(() => Number)
+    discountedPriceSar?: number;
 
     @ApiProperty({ example: 'RECORDED', enum: CourseType, description: 'Course delivery type (RECORDED or LIVE)', required: false, default: CourseType.RECORDED })
     @IsOptional()

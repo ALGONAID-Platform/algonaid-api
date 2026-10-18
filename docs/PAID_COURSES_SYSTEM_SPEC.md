@@ -240,6 +240,12 @@ const shouldMask = !isStaff && (isUnenrolledPaid || isScheduledFuture);
   "isPaid": true,
   "price": 120.00,
   "discountedPrice": 80.00,
+  "priceYerOld": 50000.00,
+  "discountedPriceYerOld": 35000.00,
+  "priceYerNew": 150000.00,
+  "discountedPriceYerNew": 100000.00,
+  "priceSar": 300.00,
+  "discountedPriceSar": 200.00,
   "courseType": "LIVE",
   "startDate": "2026-11-01T00:00:00.000Z",
   "endDate": "2026-12-30T23:59:59.000Z",
@@ -281,17 +287,71 @@ const shouldMask = !isStaff && (isUnenrolledPaid || isScheduledFuture);
 
 ---
 
-### 2. المدفوعات والاشتراكات (Payments & Enrollment)
+### 2. المدفوعات والاشتراكات وحسابات الاستقبال (Payments, Accounts & External Verification)
+
+#### جلب حسابات ومحافظ الاستقبال النشطة (للطلاب والتطبيقات)
+`GET /payments/accounts?currency=YER_OLD` (الجميع)
+**Response (200 OK):**
+```json
+[
+  {
+    "id": 1,
+    "providerTitle": "بنك الكريمي للتمويل الأصغر الإسلامي",
+    "accountHolder": "بشار أحمد الجنيد",
+    "accountNumber": "12345678",
+    "currency": "YER_OLD",
+    "instructions": "يرجى كتابة اسم الطالب ورقم الهاتف في خانة الغرض من الحوالة.",
+    "qrCodeUrl": "https://ucarecdn.com/kuraimi-qr.png",
+    "isActive": true,
+    "order": 1
+  },
+  {
+    "id": 2,
+    "providerTitle": "محفظة ون كاش الإلكترونية (OneCash)",
+    "accountHolder": "بشار أحمد الجنيد",
+    "accountNumber": "777123456",
+    "currency": "YER_OLD",
+    "instructions": "إيداع مباشر عبر رقم المحفظة",
+    "qrCodeUrl": null,
+    "isActive": true,
+    "order": 2
+  }
+]
+```
+
+#### إضافة حساب بنكي أو محفظة جديدة (لوحة التحكم)
+`POST /payments/accounts` (Admin, Owner)
+```json
+{
+  "providerTitle": "بنك القطيبي الإسلامي",
+  "accountHolder": "بشار أحمد الجنيد",
+  "accountNumber": "88812345",
+  "currency": "YER_NEW",
+  "instructions": "تحويل لحساب القطيبي بالعملة الجديدة (عدن)",
+  "isActive": true,
+  "order": 3
+}
+```
+
+#### تعديل بيانات حساب أو تفعيله/تعطيله
+`PATCH /payments/accounts/:id` (Admin, Owner)
+```json
+{
+  "isActive": false
+}
+```
 
 #### تقديم إشعار دفع جديد من الطالب
 `POST /payments/submit` (Student)
 ```json
 {
   "courseId": 5,
-  "amount": 80.00,
+  "amount": 35000.00,
+  "currency": "YER_OLD",
+  "paymentAccountId": 1,
   "transactionNumber": "TRX-9823145",
-  "transferMethod": "بنك الكريمي - حساب رقم 1234567",
-  "receiptUrl": "https://ucarecdn.com/receipt-image.jpg"
+  "receiptUrl": "https://ucarecdn.com/receipt-image.jpg",
+  "notes": "تم التحويل عبر تطبيق الكريمي جوال"
 }
 ```
 
@@ -308,7 +368,9 @@ const shouldMask = !isStaff && (isUnenrolledPaid || isScheduledFuture);
     "id": 42,
     "status": "APPROVED",
     "courseId": 5,
-    "studentId": 12
+    "studentId": 12,
+    "currency": "YER_OLD",
+    "amount": 35000.00
   }
 }
 ```
@@ -318,6 +380,74 @@ const shouldMask = !isStaff && (isUnenrolledPaid || isScheduledFuture);
 ```json
 {
   "rejectionReason": "صورة السند غير واضحة ورقم الحوالة غير مطابق"
+}
+```
+
+#### فحص والتحقق من صلاحية المستخدم للدفع من تطبيق خارجي (Server-to-Server Checkout Verification)
+`POST /payments/external/verify-checkout`
+- **Headers:**
+  - `X-API-KEY: algonaid_payment_sec_key_2026`
+  - `Content-Type: application/json`
+- **Request Body:**
+```json
+{
+  "userIdentifier": "student@example.com",
+  "courseId": 5,
+  "currency": "YER_OLD"
+}
+```
+- **Response (200 OK):**
+```json
+{
+  "canProceedPayment": true,
+  "status": "ELIGIBLE",
+  "message": "المستخدم مؤهل لسداد رسوم هذا الكورس بنجاح.",
+  "user": {
+    "userId": 12,
+    "studentId": 4,
+    "uniqueIdentifier": "STU-1729241-12",
+    "academicId": "STU-1729241-12",
+    "name": "أحمد علي",
+    "email": "student@example.com",
+    "isAccountVerified": true
+  },
+  "course": {
+    "id": 5,
+    "title": "معسكر احتراف تطوير تطبيقات فلاتر 2026",
+    "courseType": "LIVE"
+  },
+  "pricing": {
+    "YER_OLD": {
+      "originalPrice": 50000,
+      "discountedPrice": 35000,
+      "finalPrice": 35000,
+      "currencyLabel": "ريال يمني (عملة قديمة)"
+    },
+    "YER_NEW": {
+      "originalPrice": 150000,
+      "discountedPrice": 100000,
+      "finalPrice": 100000,
+      "currencyLabel": "ريال يمني (عملة جديدة)"
+    },
+    "SAR": {
+      "originalPrice": 300,
+      "discountedPrice": 200,
+      "finalPrice": 200,
+      "currencyLabel": "ريال سعودي"
+    }
+  },
+  "selectedCurrency": "YER_OLD",
+  "payableAmount": 35000,
+  "paymentAccounts": [
+    {
+      "id": 1,
+      "providerTitle": "بنك الكريمي للتمويل الأصغر الإسلامي",
+      "accountHolder": "بشار أحمد الجنيد",
+      "accountNumber": "12345678",
+      "currency": "YER_OLD"
+    }
+  ],
+  "paymentReferenceToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
 }
 ```
 

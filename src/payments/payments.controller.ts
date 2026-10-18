@@ -2,6 +2,7 @@ import {
   Body,
   Controller,
   DefaultValuePipe,
+  Delete,
   Get,
   Param,
   ParseIntPipe,
@@ -10,14 +11,27 @@ import {
   Query,
   UseGuards,
 } from '@nestjs/common';
-import { ApiBearerAuth, ApiOperation, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger';
+import {
+  ApiBearerAuth,
+  ApiHeader,
+  ApiOperation,
+  ApiParam,
+  ApiQuery,
+  ApiResponse,
+  ApiTags,
+} from '@nestjs/swagger';
+import { SkipThrottle } from '@nestjs/throttler';
 import { PaymentsService } from './payments.service';
 import { SubmitPaymentDto } from './dto/submit-payment.dto';
 import { RejectPaymentDto } from './dto/reject-payment.dto';
+import { CreatePaymentAccountDto } from './dto/create-payment-account.dto';
+import { UpdatePaymentAccountDto } from './dto/update-payment-account.dto';
+import { VerifyCheckoutDto } from './dto/verify-checkout.dto';
+import { PaymentApiKeyGuard } from './guards/payment-api-key.guard';
 import { AuthRollGuard } from 'src/auth/guards/auth-roll.guard';
 import { VerifiedOnlyGuard } from 'src/auth/guards/verified-only.guard';
 import { userRoles } from 'src/auth/decorators/user_roll.decorator';
-import { PaymentStatus, Role } from '@prisma/client';
+import { Currency, PaymentStatus, Role } from '@prisma/client';
 import { CurrentUser } from 'src/auth/decorators/current-user.decorator';
 import * as types from 'src/utils/types';
 
@@ -107,5 +121,78 @@ export class PaymentsController {
     @Body() dto: RejectPaymentDto,
   ) {
     return this.paymentsService.rejectPayment(id, user.id, dto);
+  }
+
+  // ==========================================
+  // PAYMENT ACCOUNTS (BANKS / WALLETS)
+  // ==========================================
+
+  @ApiOperation({ summary: 'جلب حسابات ومحافظ الاستقبال النشطة (للطلاب وللتطبيق عند الاشتراك)' })
+  @ApiQuery({ name: 'currency', enum: Currency, required: false, description: 'فلترة الحسابات حسب نوع العملة' })
+  @Get('accounts')
+  @SkipThrottle()
+  getActiveAccounts(@Query('currency') currency?: Currency) {
+    return this.paymentsService.getActivePaymentAccounts(currency);
+  }
+
+  @ApiOperation({ summary: 'Admin/Owner: جلب كافة حسابات ومحافظ الاستقبال (بما فيها المعطلة) للإدارة' })
+  @Get('accounts/all')
+  @UseGuards(AuthRollGuard)
+  @userRoles(Role.ADMIN, Role.OWNER)
+  getAllAccounts() {
+    return this.paymentsService.getAllPaymentAccounts();
+  }
+
+  @ApiOperation({ summary: 'Admin/Owner: إضافة حساب استقبال بنكي أو محفظة جديدة' })
+  @Post('accounts')
+  @UseGuards(AuthRollGuard)
+  @userRoles(Role.ADMIN, Role.OWNER)
+  createAccount(
+    @Body() dto: CreatePaymentAccountDto,
+  ) {
+    return this.paymentsService.createPaymentAccount(dto);
+  }
+
+  @ApiOperation({ summary: 'Admin/Owner: تعديل بيانات حساب بنكي أو تفعيله/تعطيله' })
+  @ApiParam({ name: 'id', description: 'معرّف الحساب البنكي' })
+  @Patch('accounts/:id')
+  @UseGuards(AuthRollGuard)
+  @userRoles(Role.ADMIN, Role.OWNER)
+  updateAccount(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: UpdatePaymentAccountDto,
+  ) {
+    return this.paymentsService.updatePaymentAccount(id, dto);
+  }
+
+  @ApiOperation({ summary: 'Admin/Owner: حذف حساب بنكي نهائياً أو تعطيله إذا كان مرتبطاً بحوالات' })
+  @ApiParam({ name: 'id', description: 'معرّف الحساب البنكي' })
+  @Delete('accounts/:id')
+  @UseGuards(AuthRollGuard)
+  @userRoles(Role.ADMIN, Role.OWNER)
+  deleteAccount(
+    @Param('id', ParseIntPipe) id: number,
+  ) {
+    return this.paymentsService.deletePaymentAccount(id);
+  }
+
+  // ==========================================
+  // EXTERNAL PAYMENT SERVICE CHECKOUT VERIFICATION
+  // ==========================================
+
+  @ApiOperation({
+    summary: 'فحص الحساب والتحقق من المستخدم وصلاحيته للدفع من تطبيق خارجي (Server-to-Server)',
+    description: 'يتطلب تمرير X-API-KEY في الـ Headers للأمان والتحقق من هوية التطبيق المستدعي',
+  })
+  @ApiHeader({
+    name: 'X-API-KEY',
+    description: 'مفتاح الـ API السري الخاص ببوابة وتطبيقات الدفع الخارجية المعتمدة',
+    required: true,
+  })
+  @Post('external/verify-checkout')
+  @SkipThrottle()
+  @UseGuards(PaymentApiKeyGuard)
+  verifyCheckout(@Body() dto: VerifyCheckoutDto) {
+    return this.paymentsService.verifyCheckout(dto);
   }
 }
