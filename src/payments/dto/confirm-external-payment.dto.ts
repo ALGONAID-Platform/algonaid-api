@@ -54,3 +54,4 @@ export class ConfirmExternalPaymentDto {
   @IsString()
   notes?: string;
 }
+

@@ -11,12 +11,17 @@ export class CoursesService {
   constructor(private readonly prisma: PrismaService) { }
 
   async create(createCourseDto: CreateCourseDto, userId: number) {
-    const teacher = await this.prisma.teacher.findUnique({
+    let teacher = await this.prisma.teacher.findUnique({
       where: { userId },
     });
 
     if (!teacher) {
-      throw new NotFoundException(MESSAGES.COURSES.TEACHER_PROFILE_NOT_FOUND);
+      teacher = await this.prisma.teacher.create({
+        data: {
+          userId,
+          specialization: 'إدارة المنصة / مدرب',
+        },
+      });
     }
 
     return this.prisma.course.create({
