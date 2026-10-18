@@ -383,29 +383,23 @@ const shouldMask = !isStaff && (isUnenrolledPaid || isScheduledFuture);
 }
 ```
 
-#### فحص والتحقق من صلاحية المستخدم للدفع من تطبيق خارجي (Server-to-Server Checkout Verification)
+#### فحص والتحقق من صلاحية المستخدم للدفع لتطبيق خارجي (Checkout Verification)
 `POST /payments/external/verify-checkout`
-- **Headers:**
-  - `X-API-KEY: algonaid_payment_sec_key_2026`
-  - `Content-Type: application/json`
 - **Request Body:**
 ```json
 {
-  "userIdentifier": "student@example.com",
+  "userIdentifier": "STU-1729241-12", // يقبل الرقم الأكاديمي أو البريد الإلكتروني أو ID
   "courseId": 5,
-  "currency": "YER_OLD"
+  "currency": "YER_OLD" // اختياري: YER_OLD (افتراضي), YER_NEW, SAR
 }
 ```
 - **Response (200 OK):**
 ```json
 {
-  "canProceedPayment": true,
-  "status": "ELIGIBLE",
-  "message": "المستخدم مؤهل لسداد رسوم هذا الكورس بنجاح.",
+  "canPay": true,
+  "status": "READY_TO_PAY",
+  "message": "جاهز للدفع",
   "user": {
-    "userId": 12,
-    "studentId": 4,
-    "uniqueIdentifier": "STU-1729241-12",
     "academicId": "STU-1729241-12",
     "name": "أحمد علي",
     "email": "student@example.com",
@@ -413,41 +407,25 @@ const shouldMask = !isStaff && (isUnenrolledPaid || isScheduledFuture);
   },
   "course": {
     "id": 5,
-    "title": "معسكر احتراف تطوير تطبيقات فلاتر 2026",
-    "courseType": "LIVE"
+    "title": "معسكر احتراف تطوير تطبيقات فلاتر 2026"
   },
-  "pricing": {
-    "YER_OLD": {
-      "originalPrice": 50000,
-      "discountedPrice": 35000,
-      "finalPrice": 35000,
-      "currencyLabel": "ريال يمني (عملة قديمة)"
-    },
-    "YER_NEW": {
-      "originalPrice": 150000,
-      "discountedPrice": 100000,
-      "finalPrice": 100000,
-      "currencyLabel": "ريال يمني (عملة جديدة)"
-    },
-    "SAR": {
-      "originalPrice": 300,
-      "discountedPrice": 200,
-      "finalPrice": 200,
-      "currencyLabel": "ريال سعودي"
-    }
+  "currency": "YER_OLD",
+  "requiredAmount": 35000,
+  "prices": {
+    "YER_OLD": 35000,
+    "YER_NEW": 100000,
+    "SAR": 200
   },
-  "selectedCurrency": "YER_OLD",
-  "payableAmount": 35000,
   "paymentAccounts": [
     {
       "id": 1,
-      "providerTitle": "بنك الكريمي للتمويل الأصغر الإسلامي",
+      "provider": "بنك الكريمي للتمويل الأصغر الإسلامي",
       "accountHolder": "بشار أحمد الجنيد",
       "accountNumber": "12345678",
-      "currency": "YER_OLD"
+      "currency": "YER_OLD",
+      "instructions": "يرجى كتابة الرقم الأكاديمي في الملاحظات"
     }
-  ],
-  "paymentReferenceToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+  ]
 }
 ```
 

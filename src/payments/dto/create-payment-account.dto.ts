@@ -71,3 +71,4 @@ export class CreatePaymentAccountDto {
   @Type(() => Number)
   order?: number = 0;
 }
+

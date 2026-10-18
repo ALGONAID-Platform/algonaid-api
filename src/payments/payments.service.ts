@@ -5,7 +5,6 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import * as crypto from 'crypto';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { SubmitPaymentDto } from './dto/submit-payment.dto';
 import { RejectPaymentDto } from './dto/reject-payment.dto';
@@ -529,17 +528,17 @@ export class PaymentsService {
   }
 
   // ==========================================
-  // EXTERNAL CHECKOUT VERIFICATION (SECURE S2S)
+  // EXTERNAL CHECKOUT VERIFICATION
   // ==========================================
 
   /**
-   * التحقق الشامل والأمني للتطبيقات الخارجية وبوابات الدفع قبل خصم المبلغ
+   * فحص بسيط ومباشر للمستخدم وإمكانية الدفع لتطبيق خارجي
    */
   async verifyCheckout(dto: VerifyCheckoutDto) {
     const identifier = dto.userIdentifier.trim();
     const isNumeric = /^\d+$/.test(identifier);
 
-    // 1. البحث عن المستخدم بالبريد الإلكتروني، أو الرقم الأكاديمي STU-xxx، أو المعرّف الرقمي
+    // 1. البحث عن المستخدم (بالإيميل، أو الرقم الأكاديمي، أو الـ ID)
     const user = await this.prisma.user.findFirst({
       where: {
         OR: [
@@ -560,14 +559,13 @@ export class PaymentsService {
 
     if (!user) {
       return {
-        canProceedPayment: false,
+        canPay: false,
         status: 'USER_NOT_FOUND',
-        message: 'لم يتم العثور على أي حساب مستخدم مسجل بهذا المعرّف (البريد الإلكتروني أو الرقم الأكاديمي).',
-        userIdentifier: identifier,
+        message: 'المستخدم غير مسجل في المنصة',
       };
     }
 
-    // التأكد من وجود ملف طالب ورقم أكاديمي
+    // التأكد من وجود رقم أكاديمي للطالب
     let studentId = user.studentProfile?.id;
     let academicId = user.studentProfile?.academicId;
     if (!studentId) {
@@ -576,33 +574,13 @@ export class PaymentsService {
       academicId = student.academicId;
     }
 
-    // 2. التحقق من توثيق وتأكيد الحساب عبر البريد الإلكتروني
-    if (!user.emailVerified) {
-      return {
-        canProceedPayment: false,
-        status: 'ACCOUNT_NOT_VERIFIED',
-        message: 'حساب المستخدم غير مؤكد عبر البريد الإلكتروني. يجب تأكيد الحساب أولاً قبل سداد رسوم الدورات.',
-        user: {
-          userId: user.id,
-          name: user.name,
-          email: user.email,
-          academicId,
-          uniqueIdentifier: academicId,
-          isAccountVerified: false,
-        },
-      };
-    }
-
-    // 3. التحقق من وجود الكورس وصلاحيته
+    // 2. التحقق من وجود الكورس
     const course = await this.prisma.course.findUnique({
       where: { id: dto.courseId },
       select: {
         id: true,
         title: true,
         isPaid: true,
-        courseType: true,
-        price: true,
-        discountedPrice: true,
         priceYerOld: true,
         discountedPriceYerOld: true,
         priceYerNew: true,
@@ -614,27 +592,22 @@ export class PaymentsService {
 
     if (!course) {
       return {
-        canProceedPayment: false,
+        canPay: false,
         status: 'COURSE_NOT_FOUND',
-        message: 'الكورس المحدد غير موجود في المنصة.',
-        courseId: dto.courseId,
+        message: 'الكورس غير موجود',
       };
     }
 
     if (!course.isPaid) {
       return {
-        canProceedPayment: false,
+        canPay: false,
         status: 'COURSE_IS_FREE',
-        message: 'هذا الكورس مجاني بالكامل ولا يتطلب أي عملية سداد مالي، يمكن للمستخدم التسجيل المباشر فيه.',
-        course: {
-          id: course.id,
-          title: course.title,
-          isPaid: false,
-        },
+        message: 'هذا الكورس مجاني ولا يتطلب دفع',
+        course: { id: course.id, title: course.title },
       };
     }
 
-    // 4. التحقق من وجود اشتراك نشط مسبقاً في هذا الكورس
+    // 3. التحقق هل المستخدم مشترك مسبقاً في هذا الكورس
     const enrollment = await this.prisma.enrollment.findUnique({
       where: {
         studentId_courseId: {
@@ -643,92 +616,31 @@ export class PaymentsService {
         },
       },
     });
+    const isAlreadyEnrolled = enrollment?.status === 'ACTIVE';
 
-    if (enrollment && enrollment.status === 'ACTIVE') {
-      return {
-        canProceedPayment: false,
-        status: 'ALREADY_ENROLLED',
-        message: 'المستخدم مسجل ومفعل في هذا الكورس مسبقاً ولا يحتاج للسداد مرة أخرى.',
-        user: {
-          userId: user.id,
-          name: user.name,
-          email: user.email,
-          academicId,
-          uniqueIdentifier: academicId,
-          isAccountVerified: true,
-        },
-        course: {
-          id: course.id,
-          title: course.title,
-        },
-      };
-    }
-
-    // 5. التحقق من وجود طلب دفع قيد المراجعة لمنع الازدواجية
+    // 4. التحقق هل توجد عملية دفع معلقة قيد المراجعة
     const pendingPayment = await this.prisma.payment.findFirst({
       where: {
         studentId: studentId!,
         courseId: course.id,
         status: PaymentStatus.PENDING,
       },
-      include: {
-        paymentAccount: {
-          select: { providerTitle: true, accountNumber: true },
-        },
-      },
     });
+    const hasPendingPayment = !!pendingPayment;
 
-    if (pendingPayment) {
-      return {
-        canProceedPayment: false,
-        status: 'PENDING_PAYMENT_EXISTS',
-        message: 'يوجد طلب دفع قيد المراجعة والتدقيق حالياً لهذا الكورس. يرجى انتظار قرار الإدارة لمنع السداد المزدوج.',
-        pendingPayment: {
-          paymentId: pendingPayment.id,
-          amount: Number(pendingPayment.amount),
-          currency: pendingPayment.currency,
-          createdAt: pendingPayment.createdAt,
-          provider: pendingPayment.paymentAccount?.providerTitle || null,
-        },
-      };
-    }
-
-    // 6. تجهيز تفاصيل الأسعار بكافة العملات الثلاث (قديم / جديد / سعودي)
-    const pricing = {
-      YER_OLD: {
-        originalPrice: course.priceYerOld ? Number(course.priceYerOld) : null,
-        discountedPrice: course.discountedPriceYerOld ? Number(course.discountedPriceYerOld) : null,
-        finalPrice: Number(course.discountedPriceYerOld || course.priceYerOld || 0),
-        currencyLabel: 'ريال يمني (عملة قديمة)',
-      },
-      YER_NEW: {
-        originalPrice: course.priceYerNew ? Number(course.priceYerNew) : null,
-        discountedPrice: course.discountedPriceYerNew ? Number(course.discountedPriceYerNew) : null,
-        finalPrice: Number(course.discountedPriceYerNew || course.priceYerNew || 0),
-        currencyLabel: 'ريال يمني (عملة جديدة)',
-      },
-      SAR: {
-        originalPrice: course.priceSar ? Number(course.priceSar) : null,
-        discountedPrice: course.discountedPriceSar ? Number(course.discountedPriceSar) : null,
-        finalPrice: Number(course.discountedPriceSar || course.priceSar || 0),
-        currencyLabel: 'ريال سعودي',
-      },
-      USD: {
-        originalPrice: course.price ? Number(course.price) : null,
-        discountedPrice: course.discountedPrice ? Number(course.discountedPrice) : null,
-        finalPrice: Number(course.discountedPrice || course.price || 0),
-        currencyLabel: 'دولار أمريكي',
-      },
-      GENERAL: {
-        originalPrice: course.price ? Number(course.price) : null,
-        discountedPrice: course.discountedPrice ? Number(course.discountedPrice) : null,
-        finalPrice: Number(course.discountedPrice || course.price || 0),
-        currencyLabel: 'السعر الافتراضي',
-      },
+    // 5. احتساب الأسعار المباشرة بالعملات (قديم / جديد / سعودي)
+    const prices: Record<Currency, number> = {
+      YER_OLD: Number(course.discountedPriceYerOld || course.priceYerOld || 0),
+      YER_NEW: Number(course.discountedPriceYerNew || course.priceYerNew || 0),
+      SAR: Number(course.discountedPriceSar || course.priceSar || 0),
+      USD: 0,
     };
 
-    // 7. جلب حسابات ومحافظ الاستقبال النشطة والمعتمدة
-    const paymentAccounts = await this.prisma.paymentAccount.findMany({
+    const currency = dto.currency || Currency.YER_OLD;
+    const requiredAmount = prices[currency] || prices.YER_OLD;
+
+    // 6. جلب أرقام الحسابات البنكية النشطة
+    const accounts = await this.prisma.paymentAccount.findMany({
       where: {
         isActive: true,
         ...(dto.currency ? { OR: [{ currency: dto.currency }, { currency: null }] } : {}),
@@ -740,54 +652,48 @@ export class PaymentsService {
         accountNumber: true,
         currency: true,
         instructions: true,
-        qrCodeUrl: true,
       },
       orderBy: [{ order: 'asc' }, { id: 'asc' }],
     });
 
-    // 8. إنشاء رمز أمان وتوقيع مشفر غير قابل للتلاعب (Cryptographic Reference Token)
-    const secret = process.env.JWT_SECRET || 'algonaid_payment_checkout_signature_secret';
-    const timestamp = Date.now();
-    const tokenPayload = `${user.id}:${studentId}:${academicId}:${course.id}:${timestamp}`;
-    const signature = crypto.createHmac('sha256', secret).update(tokenPayload).digest('hex');
-    const paymentReferenceToken = Buffer.from(
-      JSON.stringify({
-        userId: user.id,
-        studentId,
-        academicId,
-        courseId: course.id,
-        timestamp,
-        signature,
-      }),
-    ).toString('base64url');
+    // 7. تحديد الحالة ورسالة النتيجة
+    const canPay = !isAlreadyEnrolled && !hasPendingPayment;
+    let status = 'READY_TO_PAY';
+    let message = 'جاهز للدفع';
 
-    const selectedFinalPrice = dto.currency
-      ? pricing[dto.currency]?.finalPrice
-      : pricing.GENERAL.finalPrice;
+    if (isAlreadyEnrolled) {
+      status = 'ALREADY_ENROLLED';
+      message = 'المستخدم مشترك ومفعل في هذا الكورس مسبقاً';
+    } else if (hasPendingPayment) {
+      status = 'PENDING_PAYMENT';
+      message = 'توجد عملية دفع سابقة قيد المراجعة والتدقيق لهذا الكورس';
+    }
 
     return {
-      canProceedPayment: true,
-      status: 'ELIGIBLE',
-      message: 'المستخدم مؤهل لسداد رسوم هذا الكورس بنجاح.',
+      canPay,
+      status,
+      message,
       user: {
-        userId: user.id,
-        studentId,
-        uniqueIdentifier: academicId,
         academicId,
         name: user.name,
         email: user.email,
-        isAccountVerified: true,
+        isAccountVerified: !!user.emailVerified,
       },
       course: {
         id: course.id,
         title: course.title,
-        courseType: course.courseType,
       },
-      pricing,
-      selectedCurrency: dto.currency || null,
-      payableAmount: selectedFinalPrice,
-      paymentAccounts,
-      paymentReferenceToken,
+      currency,
+      requiredAmount,
+      prices,
+      paymentAccounts: accounts.map((a) => ({
+        id: a.id,
+        provider: a.providerTitle,
+        accountHolder: a.accountHolder,
+        accountNumber: a.accountNumber,
+        currency: a.currency,
+        instructions: a.instructions,
+      })),
     };
   }
 }

@@ -27,7 +27,6 @@ import { RejectPaymentDto } from './dto/reject-payment.dto';
 import { CreatePaymentAccountDto } from './dto/create-payment-account.dto';
 import { UpdatePaymentAccountDto } from './dto/update-payment-account.dto';
 import { VerifyCheckoutDto } from './dto/verify-checkout.dto';
-import { PaymentApiKeyGuard } from './guards/payment-api-key.guard';
 import { AuthRollGuard } from 'src/auth/guards/auth-roll.guard';
 import { VerifiedOnlyGuard } from 'src/auth/guards/verified-only.guard';
 import { userRoles } from 'src/auth/decorators/user_roll.decorator';
@@ -177,21 +176,15 @@ export class PaymentsController {
   }
 
   // ==========================================
-  // EXTERNAL PAYMENT SERVICE CHECKOUT VERIFICATION
+  // EXTERNAL CHECKOUT VERIFICATION
   // ==========================================
 
   @ApiOperation({
-    summary: 'فحص الحساب والتحقق من المستخدم وصلاحيته للدفع من تطبيق خارجي (Server-to-Server)',
-    description: 'يتطلب تمرير X-API-KEY في الـ Headers للأمان والتحقق من هوية التطبيق المستدعي',
-  })
-  @ApiHeader({
-    name: 'X-API-KEY',
-    description: 'مفتاح الـ API السري الخاص ببوابة وتطبيقات الدفع الخارجية المعتمدة',
-    required: true,
+    summary: 'فحص الحساب والتحقق من المستخدم وصلاحيته للدفع لتطبيق خارجي',
+    description: 'يتحقق من وجود المستخدم، والكورس، وحالة الاشتراك المسبق، ويرجع الأسعار وأرقام الحسابات',
   })
   @Post('external/verify-checkout')
   @SkipThrottle()
-  @UseGuards(PaymentApiKeyGuard)
   verifyCheckout(@Body() dto: VerifyCheckoutDto) {
     return this.paymentsService.verifyCheckout(dto);
   }

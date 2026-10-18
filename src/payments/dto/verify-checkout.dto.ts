@@ -31,3 +31,4 @@ export class VerifyCheckoutDto {
   @IsEnum(Currency, { message: 'نوع العملة غير صالح' })
   currency?: Currency;
 }
+
