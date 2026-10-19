@@ -1,10 +1,11 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
-import { Role } from '@prisma/client';
+import { Role, ExamType } from '@prisma/client';
 
 export type NotificationType =
   | 'COURSE_ENROLLMENT'
   | 'EXAM_RESULT'
+  | 'NEW_EXAM'
   | 'ASSIGNMENT_FEEDBACK'
   | 'ASSIGNMENT_SUBMISSION'
   | 'NEW_LESSON'
@@ -260,6 +261,112 @@ export class NotificationsService {
     } catch (error) {
       this.logger.error(
         `Failed to broadcast new lesson notification for lesson ${lessonId}: ${error.message}`,
+        error.stack,
+      );
+      return null;
+    }
+  }
+
+  /**
+   * إشعار إضافة اختبار جديد للطلاب المسجلين في الكورس (سواء كورس مجاني أو مدفوع):
+   * تعليق واحد رسمي فقط في قسم تعليقات الاختبار مع إشارة جماعية @[الكل](all) لجميع الطلاب المسجلين عدا الأدمن والمالك والمعلم.
+   * خالي تماماً من تكرار التعليقات وعالي الأداء عبر bulk mention insert.
+   */
+  async notifyNewExamToEnrolledStudents(
+    teacherUserId: number,
+    teacherName: string,
+    courseId: number,
+    courseTitle: string,
+    examTitle: string,
+    examId: number,
+    examType?: ExamType,
+  ) {
+    try {
+      // 1. التحقق من عدم التكرار (منع تكرار التعليق إذا تم إرساله مسبقاً لهذا الاختبار)
+      const existingComment = await this.prisma.comment.findFirst({
+        where: {
+          examId,
+          text: { contains: 'بإضافة اختبار جديد' },
+        },
+        select: { id: true },
+      });
+
+      if (existingComment) {
+        this.logger.log(`New exam notification already exists for exam ${examId}. Skipping.`);
+        return existingComment;
+      }
+
+      // 2. جلب جميع الطلاب النشطين المسجلين في هذا الكورس (سواء كورس مجاني أو مدفوع)
+      const enrollments = await this.prisma.enrollment.findMany({
+        where: {
+          courseId,
+          status: 'ACTIVE',
+        },
+        select: {
+          student: {
+            select: { userId: true },
+          },
+        },
+      });
+
+      // استبعاد الأدمن والمالك والمعلم نفسه من قائمة المنشن ("يشير للكل عدا الأدمن")
+      const adminUsers = await this.prisma.user.findMany({
+        where: { role: { in: [Role.OWNER, Role.ADMIN] } },
+        select: { id: true },
+      });
+      const excludedIds = new Set([teacherUserId, ...adminUsers.map((a) => a.id)]);
+
+      // استخراج معرفات الطلاب المستهدفين فقط (استبعاد المعلم والأدمن والمالك)
+      const recipientUserIds = enrollments
+        .map((e) => e.student?.userId)
+        .filter((uid): uid is number => !!uid && !excludedIds.has(uid));
+
+      // 3. تحديد نوع الاختبار ومسماه
+      let examTypeName = 'اختبار جديد';
+      if (examType === ExamType.FINAL_EXAM) {
+        examTypeName = 'الاختبار النهائي';
+      } else if (examType === ExamType.CHALLENGE) {
+        examTypeName = 'تحدي جديد';
+      } else if (examType === ExamType.COURSE_QUIZ) {
+        examTypeName = 'كويز شامل للكورس';
+      } else if (examType === ExamType.LESSON_QUIZ) {
+        examTypeName = 'كويز درس';
+      }
+
+      // 4. إنشاء تعليق رسمي واحد فقط في قسم التعليقات الخاص بالاختبار
+      // يتضمن المنشن الجماعي @[الكل](all) ليظهر في التطبيق كمنشن للكل
+      const message = `@[الكل](all) 📝 قام المعلم (${teacherName}) بإضافة ${examTypeName} بعنوان **${examTitle}** في كورس **${courseTitle}**. تفضلوا ببدء الاختبار وحل الأسئلة! 🚀`;
+
+      const comment = await this.prisma.comment.create({
+        data: {
+          userId: teacherUserId,
+          text: message,
+          examId,
+          parentId: null,
+        },
+      });
+
+      // 5. إنشاء إشارات (Mentions) للطلاب دفعة واحدة (Bulk insert) لضمان أعلى أداء
+      if (recipientUserIds.length > 0) {
+        const uniqueRecipientUserIds = Array.from(new Set(recipientUserIds));
+
+        await this.prisma.mention.createMany({
+          data: uniqueRecipientUserIds.map((userId) => ({
+            commentId: comment.id,
+            mentionedUserId: userId,
+            isRead: false,
+          })),
+        });
+
+        this.logger.log(
+          `Posted 1 announcement comment and created ${uniqueRecipientUserIds.length} mentions for exam ${examId}`,
+        );
+      }
+
+      return comment;
+    } catch (error) {
+      this.logger.error(
+        `Failed to broadcast new exam notification for exam ${examId}: ${error.message}`,
         error.stack,
       );
       return null;

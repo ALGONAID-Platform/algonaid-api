@@ -390,7 +390,25 @@ export class ExamsService {
     if (lessonId) {
       const lesson = await this.prisma.lesson.findUnique({
         where: { id: lessonId },
-        include: { module: { include: { course: true } } },
+        include: {
+          module: {
+            include: {
+              course: {
+                select: {
+                  id: true,
+                  title: true,
+                  instructorId: true,
+                  teacher: {
+                    select: {
+                      userId: true,
+                      user: { select: { id: true, name: true } },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
       });
       if (!lesson) throw new NotFoundException('Lesson not found');
 
@@ -428,10 +446,42 @@ export class ExamsService {
         });
       }
 
+      // إرسال إشعار رسمي لجميع الطلاب المسجلين في هذا الكورس بإضافة كويز/اختبار للدرس
+      try {
+        const targetCourseId = lesson.module?.course?.id;
+        const targetCourseTitle = lesson.module?.course?.title || 'الكورس';
+        const teacherUserId = lesson.module?.course?.teacher?.userId || userId;
+        const teacherName = lesson.module?.course?.teacher?.user?.name || user?.name || 'المعلم';
+
+        if (targetCourseId) {
+          await this.notificationsService.notifyNewExamToEnrolledStudents(
+            teacherUserId,
+            teacherName,
+            targetCourseId,
+            targetCourseTitle,
+            createdExam.title,
+            createdExam.id,
+            createdExam.examType,
+          );
+        }
+      } catch (err) {
+        // عدم تعطيل إنشاء الاختبار في حال حدوث خطأ أثناء إرسال الإشعار
+      }
+
       return createdExam;
     }
 
-    const course = await this.prisma.course.findUnique({ where: { id: courseId } });
+    const course = await this.prisma.course.findUnique({
+      where: { id: courseId },
+      include: {
+        teacher: {
+          select: {
+            userId: true,
+            user: { select: { id: true, name: true } },
+          },
+        },
+      },
+    });
     if (!course) throw new NotFoundException('Course not found');
 
     const isInstructor =
@@ -454,10 +504,30 @@ export class ExamsService {
       }
     }
 
-    return this.prisma.exam.create({
+    const createdExam = await this.prisma.exam.create({
       data: { ...extraData, courseId, questions: { create: questionData } },
       include: { course: true, questions: { include: { options: true } } },
     });
+
+    // إرسال إشعار رسمي لجميع الطلاب المسجلين في هذا الكورس بإضافة الاختبار
+    try {
+      const teacherUserId = course.teacher?.userId || userId;
+      const teacherName = course.teacher?.user?.name || user?.name || 'المعلم';
+
+      await this.notificationsService.notifyNewExamToEnrolledStudents(
+        teacherUserId,
+        teacherName,
+        course.id,
+        course.title,
+        createdExam.title,
+        createdExam.id,
+        createdExam.examType,
+      );
+    } catch (err) {
+      // عدم تعطيل إنشاء الاختبار في حال حدوث خطأ أثناء إرسال الإشعار
+    }
+
+    return createdExam;
   }
 
   async updateExam(userId: number, role: Role, examId: number, dto: UpdateExamDto) {

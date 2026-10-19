@@ -477,6 +477,14 @@ export class CommentsService {
           text.includes('إعلان نتائج وتكريم الأوائل')
         ) {
           type = 'EXAM_RESULT';
+        } else if (
+          text.includes('بإضافة اختبار جديد') ||
+          text.includes('بإضافة كويز') ||
+          text.includes('بإضافة تحدي') ||
+          text.includes('بإضافة الاختبار النهائي') ||
+          text.includes('اختبار جديد بعنوان')
+        ) {
+          type = 'NEW_EXAM';
         } else if (text.includes('بالرد على تكليفك') || text.includes('قام المعلم بالرد')) {
           type = 'ASSIGNMENT_FEEDBACK';
         } else if (text.includes('بتسليم تكليف') || text.includes('قام الطالب بتسليم')) {
