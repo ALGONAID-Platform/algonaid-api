@@ -893,13 +893,41 @@ export class PaymentsService {
       });
 
       if (existingPaymentWithTrx) {
+        // إذا كان رقم العملية مسجلاً لكورس آخر أو لطالب آخر، يتم الرفض منعاً لإعادة استخدام السند
+        if (
+          existingPaymentWithTrx.courseId !== course.id ||
+          existingPaymentWithTrx.studentId !== studentId
+        ) {
+          throw new ConflictException(
+            'رقم العملية هذا تم استخدامه واعتماده مسبقاً لعملية سداد أخرى.',
+          );
+        }
+
+        // إذا كان لنفس الطالب ونفس الكورس، نتأكد قطعاً من تفعيل الاشتراك (Enrollment) وعدم إرجاعه كـ null
+        const activeEnrollment = await this.prisma.enrollment.upsert({
+          where: {
+            studentId_courseId: {
+              studentId: studentId!,
+              courseId: course.id,
+            },
+          },
+          create: {
+            studentId: studentId!,
+            courseId: course.id,
+            status: 'ACTIVE',
+          },
+          update: {
+            status: 'ACTIVE',
+          },
+        });
+
         return {
           success: true,
-          message: 'تم تسجيل واعتماد هذه العملية مسبقاً بنجاح (عملية مكررة آمنة).',
+          message: 'تم تسجيل واعتماد هذه العملية مسبقاً وتأكيد تفعيل الاشتراك بنجاح.',
           data: {
-            enrollmentId: existingEnrollment?.id || null,
+            enrollmentId: activeEnrollment.id,
             paymentId: existingPaymentWithTrx.id,
-            status: 'ACTIVE',
+            status: activeEnrollment.status,
             student: {
               academicId,
               name: user.name,
