@@ -170,17 +170,24 @@ export class CoursesEvaluationService {
       e.attempts.some((att) => att.status === 'PASSED'),
     ).length;
 
-    const examAttempts = exams
-      .map((e) => e.attempts?.[0])
-      .filter((att): att is NonNullable<typeof att> => !!att);
-
-    const quizzesAverageScore =
-      examAttempts.length > 0
-        ? Math.round(
-            examAttempts.reduce((acc, curr) => acc + curr.score, 0) /
-              examAttempts.length,
-          )
-        : 0;
+    const lessonQuizPercentages: number[] = [];
+    for (const exam of exams) {
+      const completedAttempts = (exam.attempts || []).filter(
+        (a) => a.status !== 'IN_PROGRESS',
+      );
+      const bestAttempt = completedAttempts[0] || exam.attempts?.[0] || null;
+      if (bestAttempt && bestAttempt.score !== null && bestAttempt.score !== undefined) {
+        const totalPoints = (exam.questions || []).reduce(
+          (sum, q) => sum + (q.points || 0),
+          0,
+        );
+        const pct =
+          totalPoints > 0
+            ? Math.round((bestAttempt.score / totalPoints) * 100)
+            : bestAttempt.score;
+        lessonQuizPercentages.push(Math.min(100, Math.max(0, pct)));
+      }
+    }
 
     // البحث عن الاختبار النهائي الخاص بالدورة
     const courseLevelExams = course.exams || [];
@@ -196,6 +203,7 @@ export class CoursesEvaluationService {
 
     let finalExamData: any = null;
     let finalExamScore: number | null = null;
+    let finalPercentage: number | null = null;
     let totalExamPoints = 0;
 
     if (finalExam) {
@@ -221,9 +229,9 @@ export class CoursesEvaluationService {
       const isFinalAttemptsExhausted = finalAttemptsCount >= finalMaxAttempts;
       finalExamScore = bestFinalAttempt ? bestFinalAttempt.score : null;
 
-      const percentage =
+      finalPercentage =
         totalExamPoints > 0 && finalExamScore !== null
-          ? Math.round((finalExamScore / totalExamPoints) * 100)
+          ? Math.min(100, Math.max(0, Math.round((finalExamScore / totalExamPoints) * 100)))
           : finalExamScore;
 
       const passingPoints =
@@ -237,7 +245,7 @@ export class CoursesEvaluationService {
         description: finalExam.description,
         score: finalExamScore,
         totalPoints: totalExamPoints,
-        percentage,
+        percentage: finalPercentage,
         passingScore: finalExam.passingScore,
         passingPoints,
         maxAttempts: finalMaxAttempts,
@@ -249,6 +257,20 @@ export class CoursesEvaluationService {
         isAttemptsExhausted: isFinalAttemptsExhausted,
       };
     }
+
+    // احتساب معدل الاختبارات كنسب مئوية بناءً على النقاط المحققة لكل اختبار والاختبار النهائي
+    const allExamPercentages = [
+      ...lessonQuizPercentages,
+      ...(finalPercentage !== null ? [finalPercentage] : []),
+    ];
+
+    const quizzesAverageScore =
+      allExamPercentages.length > 0
+        ? Math.round(
+            allExamPercentages.reduce((acc, curr) => acc + curr, 0) /
+              allExamPercentages.length,
+          )
+        : 0;
 
     // محرك احتساب الدرجة التراكمية (Cumulative GPA) بمعادلة وزنية دقيقة
     let cumulativeGpa = 0;
@@ -271,11 +293,7 @@ export class CoursesEvaluationService {
     }
 
     // إذا تم حل الاختبار النهائي، يتم احتساب وزنه ونسبته من ضمن المعدل التراكمي النهائي
-    if (finalExamScore !== null) {
-      const finalPercentage =
-        totalExamPoints > 0
-          ? (finalExamScore / totalExamPoints) * 100
-          : finalExamScore;
+    if (finalPercentage !== null) {
       cumulativeGpa = Math.round(cumulativeGpa * 0.6 + finalPercentage * 0.4);
     }
 

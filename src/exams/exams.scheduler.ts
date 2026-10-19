@@ -1,7 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { PrismaService } from 'src/prisma/prisma.service';
-import { ExamStatus, ExamType } from '@prisma/client';
+import { ExamStatus, ExamType, Role } from '@prisma/client';
 import { sortByRankingCriteria } from './helpers/ranking.helper';
 import { NotificationsService } from 'src/notifications/notifications.service';
 
@@ -103,8 +103,14 @@ export class ExamsScheduler {
           exam.lesson?.module?.course?.teacher?.userId;
         const authorId = instructorUserId || (await this.getDefaultAuthorId());
 
-        // 4. استخراج الطلاب الذين شاركوا فعلياً في هذا الاختبار (دون تكرار)
-        const participantUserIds = Array.from(
+        // 4. استخراج إجمالي المشاركين واستبعاد المعلم/الأدمن من قائمة المنشن
+        const adminUsers = await this.prisma.user.findMany({
+          where: { role: { in: [Role.OWNER, Role.ADMIN] } },
+          select: { id: true },
+        });
+        const excludedUserIds = new Set([authorId, ...adminUsers.map((a) => a.id)]);
+
+        const allUniqueParticipantIds = Array.from(
           new Set(
             allAttempts
               .map((att) => att.student?.userId)
@@ -112,13 +118,15 @@ export class ExamsScheduler {
           ),
         );
 
+        const participantUserIds = allUniqueParticipantIds.filter((id) => !excludedUserIds.has(id));
+
         // إذا لم تكن هناك أي محاولات، يتم تسجيل إعلان رسمي بعدم وجود مشاركات لمنع إعادة الفحص
         if (allAttempts.length === 0) {
           await this.prisma.comment.create({
             data: {
               userId: authorId,
               examId: exam.id,
-              text: `🏆 **إعلان نتائج وتكريم الأوائل في اختبار: ${exam.title}**\n\nانتهى وقت الاختبار ولم تسجل أي محاولة مكتملة.`,
+              text: `@[الكل](all) 🏆 **إعلان نتائج وتكريم الأوائل في اختبار: ${exam.title}**\n\nانتهى وقت الاختبار ولم تسجل أي محاولة مكتملة.`,
               parentId: null,
             },
           });
@@ -152,11 +160,11 @@ export class ExamsScheduler {
           top3Lines += `\n${medals[idx]}: **${name}** — الدرجة: **${att.score}/${totalPoints}** (${pct}%)`;
         });
 
-        // 6. صياغة الإعلان الرسمي الموحد للاختبار متضمناً الإحصائيات والأوائل
-        const announcementMessage = `🏆 **إعلان نتائج وتكريم الأوائل في اختبار: ${exam.title}**
+        // 6. صياغة الإعلان الرسمي الموحد للاختبار متضمناً منشن للكل والإحصائيات والأوائل
+        const announcementMessage = `@[الكل](all) 🏆 **إعلان نتائج وتكريم الأوائل في اختبار: ${exam.title}**
 
 📊 **إحصائيات الاختبار:**
-• إجمالي المشاركين: ${participantUserIds.length} طالب
+• إجمالي المشاركين: ${allUniqueParticipantIds.length} طالب
 • أعلى درجة محققة: ${highestScore}/${totalPoints} (${highestPct}%)
 • متوسط درجات المشاركين: ${avgScore}/${totalPoints} (${avgPct}%)
 
@@ -164,7 +172,7 @@ export class ExamsScheduler {
 
 تهانينا لجميع الأبطال المشاركين، ونتمنى لكم مزيداً من التفوق والنجاح! 👏🎉`;
 
-        // 7. نشر تعليق واحد فقط في قسم التعليقات الخاص بالاختبار
+        // 7. نشر تعليق واحد فقط في قسم التعليقات الخاص بالاختبار من حساب المعلم/الأدمن
         const comment = await this.prisma.comment.create({
           data: {
             userId: authorId,
@@ -174,17 +182,10 @@ export class ExamsScheduler {
           },
         });
 
-        // 8. عمل منشن (Mentions) حصرياً للذين شاركوا في الاختبار + المشرف/المعلم
-        const usersToMention = Array.from(
-          new Set([
-            ...participantUserIds,
-            ...(instructorUserId ? [instructorUserId] : []),
-          ]),
-        );
-
-        if (usersToMention.length > 0) {
+        // 8. عمل منشن (Mentions) حصرياً للطلاب المشاركين (باستثناء صاحب التعليق والأدمن)
+        if (participantUserIds.length > 0) {
           await this.prisma.mention.createMany({
-            data: usersToMention.map((uid) => ({
+            data: participantUserIds.map((uid) => ({
               commentId: comment.id,
               mentionedUserId: uid,
               isRead: false,
@@ -193,7 +194,7 @@ export class ExamsScheduler {
         }
 
         this.logger.log(
-          `Exam "${exam.title}" (ID: ${exam.id}) result announced: 1 comment with ${usersToMention.length} mentions.`,
+          `Exam "${exam.title}" (ID: ${exam.id}) result announced: 1 comment with ${participantUserIds.length} mentions.`,
         );
       } catch (err) {
         this.logger.error(

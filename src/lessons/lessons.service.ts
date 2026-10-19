@@ -173,7 +173,16 @@ export class LessonsService {
         module: {
           include: {
             course: {
-              select: { id: true, title: true },
+              select: {
+                id: true,
+                title: true,
+                teacher: {
+                  select: {
+                    userId: true,
+                    user: { select: { id: true, name: true } },
+                  },
+                },
+              },
             },
           },
         },
@@ -185,11 +194,12 @@ export class LessonsService {
       try {
         const courseId = lesson.module?.course?.id;
         const courseTitle = lesson.module?.course?.title || 'الكورس';
-        const teacherName = user?.name || 'المعلم';
+        const teacherUserId = lesson.module?.course?.teacher?.userId || userId;
+        const teacherName = lesson.module?.course?.teacher?.user?.name || user?.name || 'المعلم';
 
         if (courseId) {
           await this.notificationsService.notifyNewLessonToEnrolledStudents(
-            userId,
+            teacherUserId,
             teacherName,
             courseId,
             courseTitle,
@@ -404,7 +414,13 @@ export class LessonsService {
     const lesson = await this.prisma.lesson.findUnique({
       where: { id },
       include: {
-        exam: true,
+        exam: {
+          include: {
+            questions: {
+              select: { points: true },
+            },
+          },
+        },
         assignment: {
           include: {
             exam: true,
@@ -489,6 +505,26 @@ export class LessonsService {
     const isUnenrolledPaid = isPaidCourse && !isEnrolled && !lesson.isFreePreview;
     const shouldMask = !isStaff && (isUnenrolledPaid || isScheduledFuture);
 
+    let formattedExam: any = null;
+    if (lesson.exam) {
+      const totalPoints = (lesson.exam.questions || []).reduce(
+        (sum, q) => sum + (q.points || 0),
+        0,
+      );
+      const passingPoints =
+        totalPoints > 0
+          ? Math.ceil((lesson.exam.passingScore / 100) * totalPoints)
+          : lesson.exam.passingScore;
+      const { questions, ...examRest } = lesson.exam;
+      formattedExam = {
+        ...examRest,
+        totalPoints,
+        passingPoints,
+        minPassingScore: passingPoints,
+        totalQuestions: (lesson.exam.questions || []).length,
+      };
+    }
+
     return {
       ...lesson,
       content: isScheduledFuture ? null : (shouldMask ? null : lesson.content),
@@ -497,7 +533,7 @@ export class LessonsService {
       recordingVideoUrl: shouldMask ? null : lesson.recordingVideoUrl,
       pdfUrl: shouldMask ? null : lesson.pdfUrl,
       assignment: shouldMask ? null : lesson.assignment,
-      exam: shouldMask ? null : lesson.exam,
+      exam: shouldMask ? null : formattedExam,
       isLocked: shouldMask,
       isScheduledFuture: !!isScheduledFuture,
       courseId: lesson.module.course.id,
@@ -552,7 +588,18 @@ export class LessonsService {
       include: {
         module: {
           include: {
-            course: { select: { id: true, title: true } },
+            course: {
+              select: {
+                id: true,
+                title: true,
+                teacher: {
+                  select: {
+                    userId: true,
+                    user: { select: { id: true, name: true } },
+                  },
+                },
+              },
+            },
           },
         },
       },
@@ -562,11 +609,12 @@ export class LessonsService {
       try {
         const courseId = updatedLesson.module?.course?.id;
         const courseTitle = updatedLesson.module?.course?.title || 'الكورس';
-        const teacherName = user?.name || 'المعلم';
+        const teacherUserId = updatedLesson.module?.course?.teacher?.userId || userId;
+        const teacherName = updatedLesson.module?.course?.teacher?.user?.name || user?.name || 'المعلم';
 
         if (courseId) {
           await this.notificationsService.notifyNewLessonToEnrolledStudents(
-            userId,
+            teacherUserId,
             teacherName,
             courseId,
             courseTitle,

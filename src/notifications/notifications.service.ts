@@ -29,19 +29,27 @@ export class NotificationsService {
   constructor(private readonly prisma: PrismaService) {}
 
   /**
+   * دالة مساعدة لجلب معرف المسؤول أو المالك لضمان عدم ظهور الطالب كمرسل لإشعارات النظام
+   */
+  async getAdminUserId(): Promise<number> {
+    const admin = await this.prisma.user.findFirst({
+      where: { role: { in: [Role.OWNER, Role.ADMIN] } },
+      orderBy: { id: 'asc' },
+      select: { id: true },
+    });
+    return admin?.id || 1;
+  }
+
+  /**
    * دالة عامة لإرسال إشعار إلى أي مستخدم ليظهر في قسم الإشارات والردود
    */
   async sendNotification(dto: SendNotificationDto) {
     try {
       let senderId = dto.senderUserId;
 
-      // إذا لم يُحدد مرسل، يتم استخدام حساب الأدمن أو المالك
-      if (!senderId) {
-        const admin = await this.prisma.user.findFirst({
-          where: { role: { in: [Role.OWNER, Role.ADMIN] } },
-          select: { id: true },
-        });
-        senderId = admin?.id || dto.recipientUserId;
+      // إذا لم يُحدد مرسل، أو كان المرسل هو نفس المستلم بالخطأ، يتم استخدام حساب الأدمن أو المالك
+      if (!senderId || senderId === dto.recipientUserId) {
+        senderId = await this.getAdminUserId();
       }
 
       // إنشاء التعليق وربطه بإشارة للمستخدم المستهدف
@@ -89,10 +97,15 @@ export class NotificationsService {
     reviewerUserId?: number,
     lessonId?: number,
   ) {
+    let senderId = reviewerUserId;
+    if (!senderId || senderId === recipientUserId) {
+      senderId = await this.getAdminUserId();
+    }
+
     const message = `🎉 تهانينا! تمت الموافقة على اشتراكك وتفعيل دورتك بنجاح في كورس: **${courseTitle}**. يمكنك الآن البدء في متابعة الدروس والوصول إلى كافة الملحقات.`;
     return this.sendNotification({
       recipientUserId,
-      senderUserId: reviewerUserId,
+      senderUserId: senderId,
       message,
       type: 'COURSE_ENROLLMENT',
       lessonId,
@@ -111,9 +124,22 @@ export class NotificationsService {
     totalPoints: number,
     percentage: number,
   ) {
+    const exam = await this.prisma.exam.findUnique({
+      where: { id: examId },
+      include: {
+        course: { include: { teacher: { select: { userId: true } } } },
+        lesson: { include: { module: { include: { course: { include: { teacher: { select: { userId: true } } } } } } } },
+      },
+    });
+
+    const teacherUserId =
+      exam?.course?.teacher?.userId ||
+      exam?.lesson?.module?.course?.teacher?.userId;
+
     const message = `🏆 نتيجة الاختبار: لقد انتهى وقت اختبار **${examTitle}**، وحصلت على **المركز ${rank}** بنسبة **${percentage}%** (الدرجة: ${score}/${totalPoints}).`;
     return this.sendNotification({
       recipientUserId,
+      senderUserId: teacherUserId,
       examId,
       message,
       type: 'EXAM_RESULT',
@@ -149,7 +175,7 @@ export class NotificationsService {
 
   /**
    * إشعار إضافة درس جديد للطلاب المسجلين في الكورس:
-   * تعليق واحد رسمي فقط في قسم تعليقات الدرس مع إشارة جماعية (All-mention) للطلاب المسجلين فقط.
+   * تعليق واحد رسمي فقط في قسم تعليقات الدرس مع إشارة جماعية (All-mention) للطلاب المسجلين فقط عدا الأدمن والمالك.
    * خالي تماماً من تكرار التعليقات وعالي الأداء عبر batch mention insert.
    */
   async notifyNewLessonToEnrolledStudents(
@@ -188,13 +214,21 @@ export class NotificationsService {
         },
       });
 
-      // استخراج معرفات الطلاب المستهدفين (باستثناء المعلم نفسه)
+      // استبعاد الأدمن والمالك والمعلم نفسه من قائمة المنشن ("يشير للكل عدا الأدمن")
+      const adminUsers = await this.prisma.user.findMany({
+        where: { role: { in: [Role.OWNER, Role.ADMIN] } },
+        select: { id: true },
+      });
+      const excludedIds = new Set([teacherUserId, ...adminUsers.map((a) => a.id)]);
+
+      // استخراج معرفات الطلاب المستهدفين فقط (استبعاد المعلم والأدمن والمالك)
       const recipientUserIds = enrollments
         .map((e) => e.student?.userId)
-        .filter((uid): uid is number => !!uid && uid !== teacherUserId);
+        .filter((uid): uid is number => !!uid && !excludedIds.has(uid));
 
       // 3. إنشاء تعليق رسمي واحد فقط في قسم التعليقات الخاص بالدرس
-      const message = `📚 قام المعلم (${teacherName}) بإضافة درس جديد بعنوان **${lessonTitle}** في كورس **${courseTitle}**. تفضلوا بمشاهدة الدرس ومتابعة المحتوى!`;
+      // استخدام صيغة المنشن الجماعي @[الكل](all) ليظهر في التطبيق كمنشن للكل
+      const message = `@[الكل](all) 📚 قام المعلم (${teacherName}) بإضافة درس جديد بعنوان **${lessonTitle}** في كورس **${courseTitle}**. تفضلوا بمشاهدة الدرس ومتابعة المحتوى!`;
 
       const comment = await this.prisma.comment.create({
         data: {
@@ -322,7 +356,7 @@ export class NotificationsService {
     lessonTitle: string,
     lessonId: number,
   ) {
-    const message = `📚 قام المعلم (${teacherName}) بإضافة درس جديد بعنوان **${lessonTitle}** في كورس **${courseTitle}**. اضغط هنا للانتقال إلى الدرس مباشرة وبدء المشاهدة!`;
+    const message = `@[الكل](all) 📚 قام المعلم (${teacherName}) بإضافة درس جديد بعنوان **${lessonTitle}** في كورس **${courseTitle}**. اضغط هنا للانتقال إلى الدرس مباشرة وبدء المشاهدة!`;
 
     return this.sendNotification({
       recipientUserId,
