@@ -256,6 +256,7 @@ enum ExamType {
   LESSON_QUIZ // اختبار درس عادي
   COURSE_QUIZ // اختبار كورس دائم مع Leaderboard
   CHALLENGE // تحدي مؤقت له وقت بداية ونهاية
+  FINAL_EXAM // اختبار نهائي للدورة
 }
 
 enum RankingCriteria {

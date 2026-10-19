@@ -62,8 +62,11 @@ export class ExamsController {
   @userRoles(Role.STUDENT, Role.ADMIN, Role.OWNER)
   @ApiOperation({ summary: 'جلب اختبار كورس معين' })
   @ApiParam({ name: 'courseId', description: 'معرّف الكورس' })
-  getExamByCourse(@Param('courseId', ParseIntPipe) courseId: number) {
-    return this.examsService.getExamByCourse(courseId);
+  getExamByCourse(
+    @Param('courseId', ParseIntPipe) courseId: number,
+    @CurrentUser() user?: types.JwtPayloadType,
+  ) {
+    return this.examsService.getExamByCourse(courseId, user?.id);
   }
 
   @Get('home')

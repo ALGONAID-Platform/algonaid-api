@@ -79,6 +79,9 @@ export class CoursesEvaluationService {
                 },
                 exam: {
                   include: {
+                    questions: {
+                      select: { points: true },
+                    },
                     attempts: {
                       where: { studentId },
                       orderBy: { score: 'desc' },
@@ -94,6 +97,9 @@ export class CoursesEvaluationService {
         },
         exams: {
           include: {
+            questions: {
+              select: { points: true },
+            },
             attempts: {
               where: { studentId },
               orderBy: { score: 'desc' },
@@ -181,16 +187,22 @@ export class CoursesEvaluationService {
     const finalExam =
       courseLevelExams.find(
         (e) =>
-          e.lessonId === null ||
-          e.examType === 'COURSE_QUIZ' ||
-          e.title.toLowerCase().includes('نهائي') ||
-          e.title.toLowerCase().includes('final'),
+          e.examType === 'FINAL_EXAM' ||
+          (e.lessonId === null &&
+            (e.examType === 'COURSE_QUIZ' ||
+              e.title.toLowerCase().includes('نهائي') ||
+              e.title.toLowerCase().includes('final'))),
       ) || null;
 
     let finalExamData: any = null;
     let finalExamScore: number | null = null;
+    let totalExamPoints = 0;
 
     if (finalExam) {
+      totalExamPoints = (finalExam.questions || []).reduce(
+        (sum, q) => sum + (q.points || 0),
+        0,
+      );
       const allFinalAttempts = finalExam.attempts || [];
       const completedFinalAttempts = allFinalAttempts.filter(
         (a) => a.status !== 'IN_PROGRESS',
@@ -209,12 +221,25 @@ export class CoursesEvaluationService {
       const isFinalAttemptsExhausted = finalAttemptsCount >= finalMaxAttempts;
       finalExamScore = bestFinalAttempt ? bestFinalAttempt.score : null;
 
+      const percentage =
+        totalExamPoints > 0 && finalExamScore !== null
+          ? Math.round((finalExamScore / totalExamPoints) * 100)
+          : finalExamScore;
+
+      const passingPoints =
+        totalExamPoints > 0
+          ? Math.ceil((finalExam.passingScore / 100) * totalExamPoints)
+          : finalExam.passingScore;
+
       finalExamData = {
         id: finalExam.id,
         title: finalExam.title,
         description: finalExam.description,
         score: finalExamScore,
+        totalPoints: totalExamPoints,
+        percentage,
         passingScore: finalExam.passingScore,
+        passingPoints,
         maxAttempts: finalMaxAttempts,
         attemptsCount: finalAttemptsCount,
         remainingAttempts: finalRemainingAttempts,
@@ -247,7 +272,11 @@ export class CoursesEvaluationService {
 
     // إذا تم حل الاختبار النهائي، يتم احتساب وزنه ونسبته من ضمن المعدل التراكمي النهائي
     if (finalExamScore !== null) {
-      cumulativeGpa = Math.round(cumulativeGpa * 0.6 + finalExamScore * 0.4);
+      const finalPercentage =
+        totalExamPoints > 0
+          ? (finalExamScore / totalExamPoints) * 100
+          : finalExamScore;
+      cumulativeGpa = Math.round(cumulativeGpa * 0.6 + finalPercentage * 0.4);
     }
 
     // تقدير الحرف (Grade Letter)
@@ -287,6 +316,15 @@ export class CoursesEvaluationService {
       const isExamAttemptsExhausted = examAttemptsCount >= examMaxAttempts;
       const canAttemptExam = !isExamPassed && !isExamAttemptsExhausted;
 
+      const lessonExamPoints = (lesson.exam?.questions || []).reduce(
+        (sum, q) => sum + (q.points || 0),
+        0,
+      );
+      const lessonPassingPoints =
+        lessonExamPoints > 0
+          ? Math.ceil(((lesson.exam?.passingScore ?? 50) / 100) * lessonExamPoints)
+          : (lesson.exam?.passingScore ?? 50);
+
       return {
         dayNumber,
         lessonId: lesson.id,
@@ -319,7 +357,13 @@ export class CoursesEvaluationService {
               title: lesson.exam.title,
               passed: isExamPassed,
               score: bestAttempt?.score ?? null,
+              totalPoints: lessonExamPoints,
+              percentage:
+                lessonExamPoints > 0 && bestAttempt?.score != null
+                  ? Math.round((bestAttempt.score / lessonExamPoints) * 100)
+                  : bestAttempt?.score ?? null,
               passingScore: lesson.exam.passingScore,
+              passingPoints: lessonPassingPoints,
               maxAttempts: examMaxAttempts,
               attemptsCount: examAttemptsCount,
               remainingAttempts: examRemainingAttempts,

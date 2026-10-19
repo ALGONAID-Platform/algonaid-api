@@ -206,7 +206,11 @@ export class ExamsService {
           }
         }
       }
-    } else if (exam.examType === ExamType.COURSE_QUIZ || (exam.courseId && !exam.lessonId)) {
+    } else if (
+      exam.examType === ExamType.FINAL_EXAM ||
+      exam.examType === ExamType.COURSE_QUIZ ||
+      (exam.courseId && !exam.lessonId)
+    ) {
       // 2. اختبار نهائي للدورة (Course Final Exam)
       const courseId = exam.courseId;
       if (courseId) {
@@ -254,7 +258,14 @@ export class ExamsService {
           // التحقق من اجتياز جميع الاختبارات المرحلية السابقة
           const otherExamIds = [
             ...allPublishedLessons.filter((l) => l.exam && l.exam.id !== exam.id).map((l) => l.exam!.id),
-            ...course.exams.filter((e) => e.id !== exam.id && e.examType !== ExamType.COURSE_QUIZ).map((e) => e.id),
+            ...course.exams
+              .filter(
+                (e) =>
+                  e.id !== exam.id &&
+                  e.examType !== ExamType.COURSE_QUIZ &&
+                  e.examType !== ExamType.FINAL_EXAM,
+              )
+              .map((e) => e.id),
           ];
 
           if (otherExamIds.length > 0) {
@@ -356,6 +367,9 @@ export class ExamsService {
     if (lessonId && courseId) {
       throw new BadRequestException('لا يمكن ربط الاختبار بدرس وكورس في نفس الوقت');
     }
+    if (dto.examType === ExamType.FINAL_EXAM && !courseId) {
+      throw new BadRequestException('الاختبار النهائي يجب أن يرتبط بكورس ولا يمكن ربطه بدرس');
+    }
     if (dto.examType === ExamType.CHALLENGE && (!startTime || !endTime)) {
       throw new BadRequestException('التحدي يتطلب تحديد startTime و endTime');
     }
@@ -425,6 +439,21 @@ export class ExamsService {
     if (!isInstructor && !isOwner)
       throw new ForbiddenException('لا تملك صلاحية إضافة اختبار لهذا الكورس');
 
+    if (dto.examType === ExamType.FINAL_EXAM) {
+      if (!course.isPaid) {
+        throw new BadRequestException('الاختبار النهائي مخصص للكورسات والمسارات المدفوعة فقط');
+      }
+      const existingFinalExam = await this.prisma.exam.findFirst({
+        where: {
+          courseId,
+          examType: ExamType.FINAL_EXAM,
+        },
+      });
+      if (existingFinalExam) {
+        throw new BadRequestException('يوجد اختبار نهائي بالفعل لهذا الكورس، لا يُسمح بإضافة أكثر من اختبار نهائي واحد لكل كورس');
+      }
+    }
+
     return this.prisma.exam.create({
       data: { ...extraData, courseId, questions: { create: questionData } },
       include: { course: true, questions: { include: { options: true } } },
@@ -434,6 +463,27 @@ export class ExamsService {
   async updateExam(userId: number, role: Role, examId: number, dto: UpdateExamDto) {
     const existingExam = await this.checkExamPermission(userId, role, examId);
     const { questions, asAssignment, ...metadata } = dto;
+
+    if (dto.examType === ExamType.FINAL_EXAM) {
+      const courseId = existingExam.courseId;
+      if (!courseId) {
+        throw new BadRequestException('الاختبار النهائي يجب أن يرتبط بكورس ولا يمكن ربطه بدرس');
+      }
+      const course = existingExam.course || (await this.prisma.course.findUnique({ where: { id: courseId } }));
+      if (!course?.isPaid) {
+        throw new BadRequestException('الاختبار النهائي مخصص للكورسات والمسارات المدفوعة فقط');
+      }
+      const existingFinalExam = await this.prisma.exam.findFirst({
+        where: {
+          courseId,
+          examType: ExamType.FINAL_EXAM,
+          id: { not: examId },
+        },
+      });
+      if (existingFinalExam) {
+        throw new BadRequestException('يوجد اختبار نهائي آخر بالفعل لهذا الكورس، لا يُسمح بوجود أكثر من اختبار نهائي واحد');
+      }
+    }
 
     return this.prisma.$transaction(async (tx) => {
       if (questions) {
@@ -704,7 +754,19 @@ export class ExamsService {
     };
   }
 
-  async getExamByCourse(courseId: number) {
+  async getExamByCourse(courseId: number, userId?: number) {
+    let student: any = null;
+    if (userId) {
+      student = await this.prisma.student.findUnique({ where: { userId } });
+      if (!student) {
+        const user = await this.prisma.user.findUnique({
+          where: { id: userId },
+          include: { studentProfile: true },
+        });
+        student = user?.studentProfile ?? null;
+      }
+    }
+
     const exams = await this.prisma.exam.findMany({
       where: { courseId },
       include: {
@@ -740,6 +802,8 @@ export class ExamsService {
             isRanked: true,
             timeTaken: true,
             completedAt: true,
+            status: true,
+            studentId: true,
             student: {
               select: {
                 id: true,
@@ -747,13 +811,49 @@ export class ExamsService {
               },
             },
           },
+          orderBy: { score: 'desc' },
         },
       },
       orderBy: { createdAt: 'desc' },
     });
     if (!exams || exams.length === 0) throw new NotFoundException('No exams found for this course');
 
-    return exams.map((exam) => this.formatExamCard(exam));
+    return exams.map((exam) => {
+      const formatted = this.formatExamCard(exam);
+      let userAttempt: any = null;
+      let remainingAttempts = exam.maxAttempts;
+      let isCompleted = false;
+      let isPassed = false;
+      let score: number | null = null;
+
+      if (student) {
+        const studentAttempts = (exam.attempts || []).filter(
+          (a) => a.studentId === student.id,
+        );
+        remainingAttempts = Math.max(0, exam.maxAttempts - studentAttempts.length);
+        const bestAttempt = studentAttempts[0] || null;
+        if (bestAttempt) {
+          isCompleted = true;
+          isPassed = bestAttempt.status === ExamStatus.PASSED;
+          score = bestAttempt.score;
+          userAttempt = {
+            id: bestAttempt.id,
+            score: bestAttempt.score,
+            status: bestAttempt.status,
+            completedAt: bestAttempt.completedAt,
+          };
+        }
+      }
+
+      return {
+        ...formatted,
+        remainingAttempts,
+        isCompleted,
+        isPassed,
+        score,
+        userAttempt,
+      };
+    });
   }
 
   async getHomeExams(userId: number, role: Role) {
