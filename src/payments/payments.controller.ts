@@ -28,6 +28,7 @@ import { CreatePaymentAccountDto } from './dto/create-payment-account.dto';
 import { UpdatePaymentAccountDto } from './dto/update-payment-account.dto';
 import { VerifyCheckoutDto } from './dto/verify-checkout.dto';
 import { ConfirmExternalPaymentDto } from './dto/confirm-external-payment.dto';
+import { ExternalPaymentApiKeyGuard } from './guards/external-payment-api-key.guard';
 import { AuthRollGuard } from 'src/auth/guards/auth-roll.guard';
 import { VerifiedOnlyGuard } from 'src/auth/guards/verified-only.guard';
 import { userRoles } from 'src/auth/decorators/user_roll.decorator';
@@ -181,20 +182,32 @@ export class PaymentsController {
   // ==========================================
 
   @ApiOperation({
-    summary: 'فحص الحساب والتحقق من المستخدم وصلاحيته للدفع لتطبيق خارجي',
+    summary: 'فحص الحساب والتحقق من المستخدم وصلاحيته للدفع لتطبيق خارجي (محمي بمفتاح سري)',
     description: 'يتحقق من وجود المستخدم، والكورس، وحالة الاشتراك المسبق، ويرجع الأسعار وأرقام الحسابات',
   })
+  @ApiHeader({
+    name: 'x-api-key',
+    description: 'المفتاح السري المشترك المعتمد للربط الخارجي مع كرتي',
+    required: true,
+  })
   @Post('external/verify-checkout')
+  @UseGuards(ExternalPaymentApiKeyGuard)
   @SkipThrottle()
   verifyCheckout(@Body() dto: VerifyCheckoutDto) {
     return this.paymentsService.verifyCheckout(dto);
   }
 
   @ApiOperation({
-    summary: 'تأكيد السداد وتفعيل اشتراك الطالب فورياً لتطبيق خارجي (كرتي / بوابة دفع)',
+    summary: 'تأكيد السداد وتفعيل اشتراك الطالب فورياً لتطبيق خارجي (محمي بمفتاح سري)',
     description: 'يقوم بتسجيل السداد كمعتمد فوري وتفعيل اشتراك الطالب في الكورس مباشرة في خطوة واحدة',
   })
+  @ApiHeader({
+    name: 'x-api-key',
+    description: 'المفتاح السري المشترك المعتمد للربط الخارجي مع كرتي',
+    required: true,
+  })
   @Post('external/confirm-payment')
+  @UseGuards(ExternalPaymentApiKeyGuard)
   @SkipThrottle()
   confirmExternalPayment(@Body() dto: ConfirmExternalPaymentDto) {
     return this.paymentsService.confirmExternalPayment(dto);
