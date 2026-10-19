@@ -501,6 +501,8 @@ export class LessonsService {
       isLocked: shouldMask,
       isScheduledFuture: !!isScheduledFuture,
       courseId: lesson.module.course.id,
+      isPaidCourse,
+      isFreePreview: lesson.isFreePreview,
       commentsCount,
       latestComments: latestComments,
     };

@@ -902,14 +902,10 @@ export class ExamsService {
             },
           },
         ],
-        AND: [
-          {
-            OR: [
-              { endTime: null },
-              { endTime: { gte: twelveHoursAgo } },
-            ],
-          },
-        ],
+        // لا تقم بإظهار الاختبارات التي ليس لها زمن محدد (بداية ونهاية) ضمن الصفحة الرئيسية
+        startTime: { not: null },
+        endTime: { not: null, gte: twelveHoursAgo },
+        examType: { notIn: [ExamType.FINAL_EXAM] },
       },
       include: {
         course: true,
@@ -959,7 +955,10 @@ export class ExamsService {
 
     const nonPaidExams = exams.filter((exam) => {
       const course = exam.course || exam.lesson?.module?.course;
-      return !course?.isPaid;
+      if (course?.isPaid) return false;
+      if (!exam.startTime || !exam.endTime) return false;
+      if (exam.examType === ExamType.FINAL_EXAM) return false;
+      return true;
     });
 
     const formatted = nonPaidExams.map((exam) => this.formatExamCard(exam));
