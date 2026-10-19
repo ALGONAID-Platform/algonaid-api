@@ -82,7 +82,6 @@ export class CoursesEvaluationService {
                     attempts: {
                       where: { studentId },
                       orderBy: { score: 'desc' },
-                      take: 1,
                     },
                   },
                 },
@@ -92,6 +91,14 @@ export class CoursesEvaluationService {
         },
         certificates: {
           where: { studentId },
+        },
+        exams: {
+          include: {
+            attempts: {
+              where: { studentId },
+              orderBy: { score: 'desc' },
+            },
+          },
         },
       },
     });
@@ -169,6 +176,55 @@ export class CoursesEvaluationService {
           )
         : 0;
 
+    // البحث عن الاختبار النهائي الخاص بالدورة
+    const courseLevelExams = course.exams || [];
+    const finalExam =
+      courseLevelExams.find(
+        (e) =>
+          e.lessonId === null ||
+          e.examType === 'COURSE_QUIZ' ||
+          e.title.toLowerCase().includes('نهائي') ||
+          e.title.toLowerCase().includes('final'),
+      ) || null;
+
+    let finalExamData: any = null;
+    let finalExamScore: number | null = null;
+
+    if (finalExam) {
+      const allFinalAttempts = finalExam.attempts || [];
+      const completedFinalAttempts = allFinalAttempts.filter(
+        (a) => a.status !== 'IN_PROGRESS',
+      );
+      const bestFinalAttempt =
+        completedFinalAttempts[0] || allFinalAttempts[0] || null;
+      const finalMaxAttempts = finalExam.maxAttempts ?? 1;
+      const finalAttemptsCount = completedFinalAttempts.length;
+      const finalRemainingAttempts = Math.max(
+        0,
+        finalMaxAttempts - finalAttemptsCount,
+      );
+      const isFinalExamPassed = bestFinalAttempt
+        ? bestFinalAttempt.status === 'PASSED'
+        : false;
+      const isFinalAttemptsExhausted = finalAttemptsCount >= finalMaxAttempts;
+      finalExamScore = bestFinalAttempt ? bestFinalAttempt.score : null;
+
+      finalExamData = {
+        id: finalExam.id,
+        title: finalExam.title,
+        description: finalExam.description,
+        score: finalExamScore,
+        passingScore: finalExam.passingScore,
+        maxAttempts: finalMaxAttempts,
+        attemptsCount: finalAttemptsCount,
+        remainingAttempts: finalRemainingAttempts,
+        isPassed: isFinalExamPassed,
+        isCompleted: completedFinalAttempts.length > 0,
+        canAttempt: !isFinalExamPassed && !isFinalAttemptsExhausted,
+        isAttemptsExhausted: isFinalAttemptsExhausted,
+      };
+    }
+
     // محرك احتساب الدرجة التراكمية (Cumulative GPA) بمعادلة وزنية دقيقة
     let cumulativeGpa = 0;
     if (totalAssignments > 0 && totalExams > 0) {
@@ -189,6 +245,11 @@ export class CoursesEvaluationService {
       cumulativeGpa = attendancePercentage;
     }
 
+    // إذا تم حل الاختبار النهائي، يتم احتساب وزنه ونسبته من ضمن المعدل التراكمي النهائي
+    if (finalExamScore !== null) {
+      cumulativeGpa = Math.round(cumulativeGpa * 0.6 + finalExamScore * 0.4);
+    }
+
     // تقدير الحرف (Grade Letter)
     const gradeLetter = this.calculateGradeLetter(cumulativeGpa);
 
@@ -204,7 +265,8 @@ export class CoursesEvaluationService {
     const isCertificateEligible =
       attendancePercentage >= minAttendance &&
       cumulativeGpa >= minScore &&
-      (totalAssignments === 0 || submittedAssignments === totalAssignments);
+      (totalAssignments === 0 || submittedAssignments === totalAssignments) &&
+      (!finalExam || (finalExamData && finalExamData.isPassed));
 
     const existingCertificate = course.certificates[0] || null;
 
@@ -213,7 +275,17 @@ export class CoursesEvaluationService {
       const dayNumber = lesson.dayNumber || index + 1;
       const progress = lesson.lessonProgress[0];
       const submission = lesson.assignment?.submissions[0];
-      const attempt = lesson.exam?.attempts[0];
+      const allExamAttempts = lesson.exam?.attempts || [];
+      const completedExamAttempts = allExamAttempts.filter(
+        (a) => a.status !== 'IN_PROGRESS',
+      );
+      const bestAttempt = completedExamAttempts[0] || allExamAttempts[0] || null;
+      const examMaxAttempts = lesson.exam?.maxAttempts ?? 1;
+      const examAttemptsCount = completedExamAttempts.length;
+      const examRemainingAttempts = Math.max(0, examMaxAttempts - examAttemptsCount);
+      const isExamPassed = bestAttempt ? bestAttempt.status === 'PASSED' : false;
+      const isExamAttemptsExhausted = examAttemptsCount >= examMaxAttempts;
+      const canAttemptExam = !isExamPassed && !isExamAttemptsExhausted;
 
       return {
         dayNumber,
@@ -245,9 +317,14 @@ export class CoursesEvaluationService {
           ? {
               id: lesson.exam.id,
               title: lesson.exam.title,
-              passed: attempt ? attempt.status === 'PASSED' : false,
-              score: attempt?.score ?? null,
+              passed: isExamPassed,
+              score: bestAttempt?.score ?? null,
               passingScore: lesson.exam.passingScore,
+              maxAttempts: examMaxAttempts,
+              attemptsCount: examAttemptsCount,
+              remainingAttempts: examRemainingAttempts,
+              canAttempt: canAttemptExam,
+              isAttemptsExhausted: isExamAttemptsExhausted,
             }
           : null,
       };
@@ -303,6 +380,7 @@ export class CoursesEvaluationService {
               qrCodeUrl: existingCertificate.qrCodeUrl,
             }
           : null,
+        finalExam: finalExamData,
       },
       dailyTimeline,
     };

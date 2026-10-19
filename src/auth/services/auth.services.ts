@@ -227,8 +227,13 @@ try {
     let { email, password, name } = dto;
     email = email.toLowerCase().trim();
 
-    const user = await this.prisma.user.findUnique({
-      where: { email },
+    let user = await this.prisma.user.findFirst({
+      where: {
+        email: {
+          equals: email,
+          mode: 'insensitive',
+        },
+      },
       include: { studentProfile: true, teacherProfile: true },
     });
 
@@ -241,6 +246,17 @@ try {
       const isPasswordValid = await bcrypt.compare(password, user.password);
       if (!isPasswordValid) {
         throw new UnauthorizedException(MESSAGES.AUTH.INVALID_CREDENTIALS);
+      }
+
+      // If user signed in with updated name from complete profile
+      if (name && name.trim() && user.name !== name.trim()) {
+        try {
+          user = await this.prisma.user.update({
+            where: { id: user.id },
+            data: { name: name.trim() },
+            include: { studentProfile: true, teacherProfile: true },
+          });
+        } catch (_) {}
       }
 
       const token = await this.generateToken(user.id, user.email, user.role);
@@ -266,36 +282,72 @@ try {
       const hashedVerificationToken = crypto.createHash('sha256').update(rawVerificationToken).digest('hex');
       const verificationTokenExpiry = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
 
-      const newUser = await this.prisma.user.create({
-        data: {
-          email,
-          password: hashedPassword,
-          name,
-          role: Role.STUDENT,
-          verificationToken: hashedVerificationToken,
-          verificationTokenExpiry,
-          studentProfile: {
-            create: {
-              academicId: `STU-${Date.now()}`,
+      try {
+        const newUser = await this.prisma.user.create({
+          data: {
+            email,
+            password: hashedPassword,
+            name: name.trim(),
+            role: Role.STUDENT,
+            verificationToken: hashedVerificationToken,
+            verificationTokenExpiry,
+            studentProfile: {
+              create: {
+                academicId: `STU-${Date.now()}`,
+              },
             },
           },
-        },
-        include: { studentProfile: true, teacherProfile: true },
-      });
+          include: { studentProfile: true, teacherProfile: true },
+        });
 
-      // Send email asynchronously without blocking
-      this.mailService.sendVerificationEmail(email, rawVerificationToken).catch(err => {
-        console.error('❌ Verification email failed:', err);
-      });
+        // Send email asynchronously without blocking
+        this.mailService.sendVerificationEmail(email, rawVerificationToken).catch(err => {
+          console.error('❌ Verification email failed:', err);
+        });
 
-      const token = await this.generateToken(newUser.id, newUser.email, newUser.role);
+        const token = await this.generateToken(newUser.id, newUser.email, newUser.role);
 
-      return {
-        message: MESSAGES.AUTH.USER_REGISTERED,
-        user: this.formatUserResponse(newUser),
-        access_token: token,
-        isNewUser: true,
-      };
+        return {
+          message: MESSAGES.AUTH.USER_REGISTERED,
+          user: this.formatUserResponse(newUser),
+          access_token: token,
+          isNewUser: true,
+        };
+      } catch (error: any) {
+        if (error.code === 'P2002') {
+          // Unique constraint collision: account exists, authenticate directly
+          const existingUser = await this.prisma.user.findFirst({
+            where: {
+              email: {
+                equals: email,
+                mode: 'insensitive',
+              },
+            },
+            include: { studentProfile: true, teacherProfile: true },
+          });
+
+          if (existingUser) {
+            if (!existingUser.password) {
+              throw new UnauthorizedException(MESSAGES.AUTH.GOOGLE_ACCOUNT_LOGIN_REQUIRED);
+            }
+
+            const isPasswordValid = await bcrypt.compare(password, existingUser.password);
+            if (!isPasswordValid) {
+              throw new UnauthorizedException(MESSAGES.AUTH.INVALID_CREDENTIALS);
+            }
+
+            const token = await this.generateToken(existingUser.id, existingUser.email, existingUser.role);
+
+            return {
+              message: MESSAGES.AUTH.LOGGED_IN,
+              user: this.formatUserResponse(existingUser),
+              access_token: token,
+              isNewUser: false,
+            };
+          }
+        }
+        throw error;
+      }
     }
   }
 
@@ -312,8 +364,13 @@ try {
       );
     }
 
-    const user = await this.prisma.user.findUnique({
-      where: { email },
+    const user = await this.prisma.user.findFirst({
+      where: {
+        email: {
+          equals: email,
+          mode: 'insensitive',
+        },
+      },
       include: { studentProfile: true, teacherProfile: true },
     });
 
@@ -466,8 +523,13 @@ try {
   async validateGoogleUser(googleUser: any) {
     const { email, name, googleId, avatar } = googleUser;
 
-    let user = await this.prisma.user.findUnique({
-      where: { email },
+    let user = await this.prisma.user.findFirst({
+      where: {
+        email: {
+          equals: email,
+          mode: 'insensitive',
+        },
+      },
       include: { studentProfile: true, teacherProfile: true },
     });
 
