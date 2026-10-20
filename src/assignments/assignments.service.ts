@@ -76,7 +76,7 @@ export class AssignmentsService {
 
     let attachmentUrl = dto.attachmentUrl;
     if (attachmentFile) {
-      attachmentUrl = await this.storageService.upload(attachmentFile);
+      attachmentUrl = await this.storageService.upload(attachmentFile, 'assignments');
     }
 
     if (dto.examId) {
@@ -141,7 +141,7 @@ export class AssignmentsService {
 
     let attachmentUrl = dto.attachmentUrl !== undefined ? dto.attachmentUrl : assignment.attachmentUrl;
     if (attachmentFile) {
-      attachmentUrl = await this.storageService.upload(attachmentFile);
+      attachmentUrl = await this.storageService.upload(attachmentFile, 'assignments');
     }
 
     const data: any = { ...dto };
@@ -360,7 +360,7 @@ export class AssignmentsService {
     // رفع الملف إن وجد
     let fileUrl = dto.fileUrl;
     if (file) {
-      fileUrl = await this.storageService.upload(file);
+      fileUrl = await this.storageService.upload(file, 'assignments');
     }
 
     if (!dto.content && !fileUrl) {
@@ -648,7 +648,7 @@ export class AssignmentsService {
 
     let feedbackImageUrl = dto.feedbackImageUrl;
     if (feedbackImageFile) {
-      feedbackImageUrl = await this.storageService.upload(feedbackImageFile);
+      feedbackImageUrl = await this.storageService.upload(feedbackImageFile, 'assignments');
     }
 
     const gradedSubmission = await this.prisma.assignmentSubmission.update({

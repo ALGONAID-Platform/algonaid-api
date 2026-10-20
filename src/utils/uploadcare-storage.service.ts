@@ -8,6 +8,17 @@ import * as path from 'path';
 export class UploadcareStorageService {
   constructor(private configService: ConfigService) {}
 
+  private getUploadsBaseDir(): string {
+    if (fs.existsSync('/usr/src/app/uploads')) {
+      return '/usr/src/app/uploads';
+    }
+    const localUploads = path.join(process.cwd(), 'uploads');
+    if (!fs.existsSync(localUploads)) {
+      fs.mkdirSync(localUploads, { recursive: true });
+    }
+    return localUploads;
+  }
+
   async upload(file: Express.Multer.File, customFolder?: string): Promise<string> {
     if (!file) {
       throw new BadRequestException('لم يتم رفع أي ملف');
@@ -95,8 +106,10 @@ export class UploadcareStorageService {
     } else if (file.mimetype.startsWith('video/')) {
       defaultFolder = 'videos';
     }
-    const folderName = customFolder || defaultFolder;
-    const uploadDir = path.join('/usr/src/app/uploads', folderName);
+    const rawFolder = customFolder || defaultFolder;
+    const folderName = rawFolder.replace(/[^a-zA-Z0-9_-]/g, '') || defaultFolder;
+    const baseDir = this.getUploadsBaseDir();
+    const uploadDir = path.join(baseDir, folderName);
 
     if (!fs.existsSync(uploadDir)) {
       fs.mkdirSync(uploadDir, { recursive: true });
@@ -140,7 +153,7 @@ export class UploadcareStorageService {
     try {
       if (fileUrl && fileUrl.includes('/uploads/')) {
         const relativePath = fileUrl.split('/uploads/')[1];
-        const safeBase = '/usr/src/app/uploads';
+        const safeBase = this.getUploadsBaseDir();
         const resolvedPath = path.resolve(safeBase, relativePath);
 
         // Prevent path traversal: ensure the resolved path is still within uploads/

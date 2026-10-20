@@ -9,6 +9,7 @@ import {
   Body,
   Query,
   Param,
+  Req,
 } from '@nestjs/common';
 import { AuthRollGuard } from '../auth/guards/auth-roll.guard';
 import { userRoles } from '../auth/decorators/user_roll.decorator';
@@ -117,9 +118,11 @@ export class MediaController {
     private readonly configService: ConfigService,
   ) {}
 
-  @Post(['images', 'upload'])
+  @Post(['images', 'upload', 'receipts', 'posts'])
   @UseGuards(AuthRollGuard)
   @userRoles(Role.STUDENT, Role.ADMIN, Role.OWNER)
+  @ApiOperation({ summary: 'رفع صورة (تدعم تحديد المجلد: receipts, posts, assignments, images)' })
+  @ApiQuery({ name: 'folder', required: false, description: 'اسم مجلد الحفظ (مثل: receipts, posts, assignments)' })
   @UseInterceptors(
     FileFieldsInterceptor(
       [
@@ -144,6 +147,9 @@ export class MediaController {
   async uploadImage(
     @UploadedFiles()
     files: { file?: Express.Multer.File[]; image?: Express.Multer.File[] },
+    @Query('folder') queryFolder?: string,
+    @Body('folder') bodyFolder?: string,
+    @Req() req?: any,
   ) {
     const file = files?.file?.[0] || files?.image?.[0];
     if (!file) {
@@ -151,7 +157,18 @@ export class MediaController {
     }
 
     try {
-      const url = await this.uploadcareStorageService.upload(file);
+      let targetFolder = queryFolder || bodyFolder;
+      if (!targetFolder && req?.url) {
+        if (req.url.includes('/receipts')) targetFolder = 'receipts';
+        else if (req.url.includes('/posts')) targetFolder = 'posts';
+        else if (req.url.includes('/assignments')) targetFolder = 'assignments';
+      }
+
+      if (targetFolder === 'payments') {
+        targetFolder = 'receipts';
+      }
+
+      const url = await this.uploadcareStorageService.upload(file, targetFolder);
       return {
         url,
         imageUrl: url,
