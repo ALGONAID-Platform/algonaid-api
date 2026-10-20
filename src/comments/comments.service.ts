@@ -359,54 +359,11 @@ export class CommentsService {
   async getMyMentions(userId: number, userRole: Role = Role.STUDENT, page: number = 1, limit: number = 20) {
     const skip = (page - 1) * limit;
 
-    let whereClause: Prisma.MentionWhereInput;
-
-    if (userRole === Role.STUDENT) {
-      whereClause = {
-        mentionedUserId: userId,
-      };
-    } else {
-      // Teacher (ADMIN) or OWNER
-      const teacher = await this.prisma.teacher.findUnique({
-        where: { userId },
-        include: { courses: { select: { id: true } } }
-      });
-      const teacherCourseIds = teacher ? teacher.courses.map(c => c.id) : [];
-
-      const orConditions: any[] = [
-        { mentionedUserId: userId },
-        { postComment: { post: { authorId: userId } } },
-        { post: { authorId: userId } },
-      ];
-
-      if (teacherCourseIds.length > 0) {
-        orConditions.push(
-          {
-            comment: {
-              lesson: {
-                module: {
-                  courseId: { in: teacherCourseIds }
-                }
-              }
-            }
-          },
-          {
-            comment: {
-              exam: {
-                OR: [
-                  { courseId: { in: teacherCourseIds } },
-                  { lesson: { module: { courseId: { in: teacherCourseIds } } } }
-                ]
-              }
-            }
-          }
-        );
-      }
-
-      whereClause = {
-        OR: orConditions
-      };
-    }
+    // كل مستخدم (طالباً كان أو معلماً أو أدمن) يجلب فقط الإشعارات والإشارات الموجهة إليه حصرياً
+    // هذا يمنع تكرار إشعارات الإعلانات العامة للكورسات (مثل إضافة اختبار جديد أو درس جديد) للأدمن/المعلم بعدد الطلاب
+    const whereClause: Prisma.MentionWhereInput = {
+      mentionedUserId: userId,
+    };
 
     const [data, total] = await Promise.all([
       (this.prisma.mention.findMany as any)({
@@ -576,55 +533,10 @@ export class CommentsService {
   }
 
   async getUnreadMentionsCount(userId: number, userRole: Role = Role.STUDENT) {
-    let whereClause: Prisma.MentionWhereInput;
-
-    if (userRole === Role.STUDENT) {
-      whereClause = {
-        mentionedUserId: userId,
-        isRead: false,
-      };
-    } else {
-      const teacher = await this.prisma.teacher.findUnique({
-        where: { userId },
-        include: { courses: { select: { id: true } } }
-      });
-      const teacherCourseIds = teacher ? teacher.courses.map(c => c.id) : [];
-
-      const orConditions: any[] = [
-        { mentionedUserId: userId },
-        { postComment: { post: { authorId: userId } } },
-        { post: { authorId: userId } },
-      ];
-
-      if (teacherCourseIds.length > 0) {
-        orConditions.push(
-          {
-            comment: {
-              lesson: {
-                module: {
-                  courseId: { in: teacherCourseIds }
-                }
-              }
-            }
-          },
-          {
-            comment: {
-              exam: {
-                OR: [
-                  { courseId: { in: teacherCourseIds } },
-                  { lesson: { module: { courseId: { in: teacherCourseIds } } } }
-                ]
-              }
-            }
-          }
-        );
-      }
-
-      whereClause = {
-        isRead: false,
-        OR: orConditions
-      };
-    }
+    const whereClause: Prisma.MentionWhereInput = {
+      mentionedUserId: userId,
+      isRead: false,
+    };
 
     const count = await this.prisma.mention.count({
       where: whereClause
@@ -640,8 +552,7 @@ export class CommentsService {
       throw new NotFoundException('Mention not found');
     }
 
-    const isTeacherOrOwner = userRole === Role.ADMIN || userRole === Role.OWNER;
-    const isAuthorized = mention.mentionedUserId === userId || isTeacherOrOwner;
+    const isAuthorized = mention.mentionedUserId === userId;
 
     if (!isAuthorized) {
       throw new ForbiddenException('You do not have access to this mention');

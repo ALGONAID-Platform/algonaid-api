@@ -133,6 +133,11 @@ export class NotificationsService {
       },
     });
 
+    // استثناء كويز الدرس LESSON_QUIZ من إشعارات النتائج بالكامل
+    if (exam?.examType === ExamType.LESSON_QUIZ) {
+      return null;
+    }
+
     const teacherUserId =
       exam?.course?.teacher?.userId ||
       exam?.lesson?.module?.course?.teacher?.userId;
@@ -282,6 +287,12 @@ export class NotificationsService {
     examType?: ExamType,
   ) {
     try {
+      // استثناء كويز الدرس LESSON_QUIZ بالكامل من إرسال الإشعارات
+      if (examType === ExamType.LESSON_QUIZ) {
+        this.logger.log(`Skipping notification broadcast for LESSON_QUIZ: ${examTitle} (ID: ${examId})`);
+        return null;
+      }
+
       // 1. التحقق من عدم التكرار (منع تكرار التعليق إذا تم إرساله مسبقاً لهذا الاختبار)
       const existingComment = await this.prisma.comment.findFirst({
         where: {

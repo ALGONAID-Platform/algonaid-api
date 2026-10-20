@@ -18,11 +18,12 @@ export class ExamsScheduler {
   async handleExpiredChallenges() {
     const now = new Date();
 
-    // جلب جميع الاختبارات المنتهية التي لم يُعلن عن نتائجها بعد
+    // جلب جميع الاختبارات المنتهية (باستثناء كويزات الدروس LESSON_QUIZ) التي لم يُعلن عن نتائجها بعد
     // استبعاد الاختبارات المعلنة مسبقاً يضمن أداءً فائقاً وعدم استهلاك الموارد كل دقيقة
     const expiredExams = await this.prisma.exam.findMany({
       where: {
         endTime: { lte: now },
+        examType: { not: ExamType.LESSON_QUIZ },
         comments: {
           none: {
             text: { contains: 'إعلان نتائج وتكريم الأوائل' },
@@ -55,6 +56,7 @@ export class ExamsScheduler {
     if (expiredExams.length === 0) return;
 
     for (const exam of expiredExams) {
+      if (exam.examType === ExamType.LESSON_QUIZ) continue;
       try {
         // 1. إغلاق أي محاولات كانت لا تزال معلقة أثناء انتهاء الوقت
         const updated = await this.prisma.examAttempt.updateMany({

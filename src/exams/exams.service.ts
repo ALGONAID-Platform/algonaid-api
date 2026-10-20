@@ -453,7 +453,8 @@ export class ExamsService {
         const teacherUserId = lesson.module?.course?.teacher?.userId || userId;
         const teacherName = lesson.module?.course?.teacher?.user?.name || user?.name || 'المعلم';
 
-        if (targetCourseId) {
+        // إرسال إشعار رسمي للطلاب المسجلين في هذا الكورس (يُستثنى كويز الدرس LESSON_QUIZ بناءً على رغبة الإدارة)
+        if (targetCourseId && createdExam.examType !== ExamType.LESSON_QUIZ) {
           await this.notificationsService.notifyNewExamToEnrolledStudents(
             teacherUserId,
             teacherName,
@@ -1347,11 +1348,11 @@ export class ExamsService {
 
     const passingPoints = totalPoints > 0 ? Math.ceil((attempt.exam.passingScore / 100) * totalPoints) : 0;
 
-    // إرسال إشعار فوري بالترتيب والدرجة في قسم الردود للاختبارات التي انتهت مدتها أو بدون تاريخ إغلاق مستقبلي
+    // إرسال إشعار فوري بالترتيب والدرجة للاختبارات المنتهية (يُستثنى كويز الدرس LESSON_QUIZ بالكامل من الإشعارات)
     const isEnded = Boolean(attempt.exam.endTime && new Date(attempt.exam.endTime) <= now);
     const hasNoFutureEnd = !attempt.exam.endTime || isEnded;
 
-    if (hasNoFutureEnd && student) {
+    if (hasNoFutureEnd && student && attempt.exam.examType !== ExamType.LESSON_QUIZ) {
       try {
         const allRanked = await this.prisma.examAttempt.findMany({
           where: {
