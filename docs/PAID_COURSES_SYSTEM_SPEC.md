@@ -317,36 +317,9 @@ flowchart TD
     "title": "معسكر احتراف تطوير تطبيقات فلاتر 2026",
     "imageUrl": "https://ucarecdn.com/course-thumb.jpg",
     "instructorName": "أ. بشار الجُنيد",
-    "courseType": "LIVE",
-    "isFull": false,
-    "prices": {
-      "yerOld": 35000,
-      "yerNew": 100000,
-      "sar": 200
-    },
-    "pricing": {
-      "yerOld": {
-        "currency": "YER_OLD",
-        "label": "ريال يمني (عملة قديمة)",
-        "amount": 35000,
-        "originalAmount": 50000,
-        "discountedAmount": 35000
-      },
-      "yerNew": {
-        "currency": "YER_NEW",
-        "label": "ريال يمني (عملة جديدة)",
-        "amount": 100000,
-        "originalAmount": 150000,
-        "discountedAmount": 100000
-      },
-      "sar": {
-        "currency": "SAR",
-        "label": "ريال سعودي",
-        "amount": 200,
-        "originalAmount": 300,
-        "discountedAmount": 200
-      }
-    }
+    "currency": "USD",
+    "price": 50,
+    "discountedPrice": 35
   }
 ]
 ```

@@ -274,11 +274,8 @@ export class CoursesService {
     });
 
     return courses.map((course) => {
-      const generalPrice = Number(course.discountedPrice || course.price || 0);
-
-      const originalPriceUsd = course.price ? Number(course.price) : null;
-      const discountedPriceUsd = course.discountedPrice ? Number(course.discountedPrice) : null;
-      const finalPriceUsd = generalPrice;
+      const price = course.price ? Number(course.price) : Number(course.discountedPrice || 0);
+      const discountedPrice = course.discountedPrice ? Number(course.discountedPrice) : null;
 
       return {
         id: course.id,
@@ -286,22 +283,8 @@ export class CoursesService {
         imageUrl: course.thumbnail || null,
         instructorName: course.teacher?.user?.name || 'أ. بشار الجُنيد',
         currency: 'USD',
-        currencyLabel: 'دولار أمريكي',
-        price: finalPriceUsd,
-        originalPrice: originalPriceUsd,
-        discountedPrice: discountedPriceUsd,
-        prices: {
-          usd: finalPriceUsd,
-        },
-        pricing: {
-          usd: {
-            currency: 'USD',
-            label: 'دولار أمريكي',
-            amount: finalPriceUsd,
-            originalAmount: originalPriceUsd,
-            discountedAmount: discountedPriceUsd,
-          },
-        },
+        price,
+        discountedPrice,
       };
     });
   }
