@@ -269,33 +269,16 @@ export class CoursesService {
             },
           },
         },
-        _count: {
-          select: {
-            enrollments: {
-              where: { status: 'ACTIVE' },
-            },
-          },
-        },
       },
       orderBy: { createdAt: 'desc' },
     });
 
     return courses.map((course) => {
-      const activeEnrollmentsCount = course._count?.enrollments || 0;
-      const isFull = course.maxStudents != null ? activeEnrollmentsCount >= course.maxStudents : false;
       const generalPrice = Number(course.discountedPrice || course.price || 0);
 
       const originalPriceUsd = course.price ? Number(course.price) : null;
       const discountedPriceUsd = course.discountedPrice ? Number(course.discountedPrice) : null;
       const finalPriceUsd = generalPrice;
-
-      const originalPriceYerOld = course.priceYerOld ? Number(course.priceYerOld) : null;
-      const discountedPriceYerOld = course.discountedPriceYerOld ? Number(course.discountedPriceYerOld) : null;
-      const finalPriceYerOld = Number(course.discountedPriceYerOld || course.priceYerOld || generalPrice);
-
-      const originalPriceYerNew = course.priceYerNew ? Number(course.priceYerNew) : null;
-      const discountedPriceYerNew = course.discountedPriceYerNew ? Number(course.discountedPriceYerNew) : null;
-      const finalPriceYerNew = Number(course.discountedPriceYerNew || course.priceYerNew || generalPrice);
 
       const originalPriceSar = course.priceSar ? Number(course.priceSar) : null;
       const discountedPriceSar = course.discountedPriceSar ? Number(course.discountedPriceSar) : null;
@@ -306,13 +289,9 @@ export class CoursesService {
         title: course.title,
         imageUrl: course.thumbnail || null,
         instructorName: course.teacher?.user?.name || 'أ. بشار الجُنيد',
-        courseType: course.courseType,
-        isFull,
         prices: {
           usd: finalPriceUsd,
           sar: finalPriceSar,
-          yerOld: finalPriceYerOld,
-          yerNew: finalPriceYerNew,
         },
         pricing: {
           usd: {
@@ -328,20 +307,6 @@ export class CoursesService {
             amount: finalPriceSar,
             originalAmount: originalPriceSar,
             discountedAmount: discountedPriceSar,
-          },
-          yerOld: {
-            currency: 'YER_OLD',
-            label: 'ريال يمني (عملة قديمة)',
-            amount: finalPriceYerOld,
-            originalAmount: originalPriceYerOld,
-            discountedAmount: discountedPriceYerOld,
-          },
-          yerNew: {
-            currency: 'YER_NEW',
-            label: 'ريال يمني (عملة جديدة)',
-            amount: finalPriceYerNew,
-            originalAmount: originalPriceYerNew,
-            discountedAmount: discountedPriceYerNew,
           },
         },
       };

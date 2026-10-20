@@ -212,7 +212,7 @@ export function SwaggerGetKarttyCourses() {
     return applyDecorators(
         ApiOperation({
             summary: 'عرض الكورسات المدفوعة لتطبيق كارتي (Kartty)',
-            description: 'نقطة وصول عامة وخفيفة الوزن توفر بيانات الكورسات المدفوعة الأساسية (المعرف، العنوان، الصورة، المدرب، والأسعار بالعملة اليمنية القديمة والجديدة والسعودي) للاشتراك عبر كارتي',
+            description: 'نقطة وصول عامة وخفيفة الوزن توفر بيانات الكورسات المدفوعة الأساسية (المعرف، العنوان، الصورة، المدرب، والأسعار بالدولار والسعودي فقط) للاشتراك عبر كارتي',
         }),
         ApiResponse({
             status: 200,
@@ -224,13 +224,9 @@ export function SwaggerGetKarttyCourses() {
                         title: 'دورة القدرات العامة',
                         imageUrl: 'https://example.com/thumbnail.jpg',
                         instructorName: 'أ. بشار الجُنيد',
-                        courseType: 'RECORDED',
-                        isFull: false,
                         prices: {
                             usd: 25,
-                            sar: 80,
-                            yerOld: 35000,
-                            yerNew: 120000
+                            sar: 80
                         },
                         pricing: {
                             usd: {
@@ -239,20 +235,6 @@ export function SwaggerGetKarttyCourses() {
                                 amount: 25,
                                 originalAmount: 35,
                                 discountedAmount: 25
-                            },
-                            yerOld: {
-                                currency: 'YER_OLD',
-                                label: 'ريال يمني (عملة قديمة)',
-                                amount: 35000,
-                                originalAmount: 50000,
-                                discountedAmount: 35000
-                            },
-                            yerNew: {
-                                currency: 'YER_NEW',
-                                label: 'ريال يمني (عملة جديدة)',
-                                amount: 120000,
-                                originalAmount: 150000,
-                                discountedAmount: 120000
                             },
                             sar: {
                                 currency: 'SAR',
