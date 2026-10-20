@@ -151,6 +151,17 @@ export class CoursesController {
     return this.coursesEvaluationService.claimCertificate(id, user.id);
   }
 
+  @Get(':id/certificate')
+  @UseGuards(AuthRollGuard)
+  @userRoles(Role.STUDENT, Role.ADMIN, Role.OWNER)
+  @ApiOperation({ summary: 'Get course certificate status and image' })
+  getCertificate(
+    @Param('id', ParseIntPipe) id: number,
+    @CurrentUser() user: types.JwtPayloadType,
+  ) {
+    return this.coursesEvaluationService.claimCertificate(id, user.id);
+  }
+
   @Post(':id/reviews')
   @UseGuards(AuthRollGuard)
   @userRoles(Role.STUDENT, Role.ADMIN, Role.OWNER)

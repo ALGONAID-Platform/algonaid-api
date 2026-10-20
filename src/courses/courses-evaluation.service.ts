@@ -6,6 +6,7 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { Role } from '@prisma/client';
+import { CertificateGeneratorService } from '../certificates/certificate-generator.service';
 
 export interface CreateReviewDto {
   rating: number;
@@ -14,7 +15,10 @@ export interface CreateReviewDto {
 
 @Injectable()
 export class CoursesEvaluationService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly certificateGenerator: CertificateGeneratorService,
+  ) {}
 
   /**
    * جلب بطاقة أداء وتقييم الطالب في الدورة ومساره اليومي
@@ -449,12 +453,27 @@ export class CoursesEvaluationService {
   }
 
   /**
-   * إصدار والمطالبة بالشهادة المعتمدة للدورة
+   * إصدار والمطالبة بالشهادة المعتمدة للدورة وتوليد صورتها تلقائياً
    */
   async claimCertificate(courseId: number, userId: number) {
     const evaluation = await this.getMyEvaluation(courseId, userId);
 
     if (evaluation.summary.certificate) {
+      // إذا كانت الشهادة مصدرة ولكن صورتها لم تكن مولدة بعد، نولدها الآن
+      if (!evaluation.summary.certificate.pdfUrl) {
+        const generated = await this.generateCertificateImage(
+          evaluation,
+          evaluation.summary.certificate.serialNumber,
+          new Date(evaluation.summary.certificate.issueDate),
+        );
+        if (generated?.url) {
+          await this.prisma.certificate.update({
+            where: { id: evaluation.summary.certificate.id },
+            data: { pdfUrl: generated.url },
+          });
+          evaluation.summary.certificate.pdfUrl = generated.url;
+        }
+      }
       return evaluation.summary.certificate;
     }
 
@@ -468,6 +487,14 @@ export class CoursesEvaluationService {
     const randomCode = Math.floor(1000 + Math.random() * 9000);
     const serialNumber = `ALG-${currentYear}-C${courseId}-S${evaluation.student.id}-${randomCode}`;
     const qrCodeUrl = `https://algonaid.com/certificates/verify/${serialNumber}`;
+    const issueDate = new Date();
+
+    // توليد صورة الشهادة ديناميكياً بناءً على القالب والمواصفات
+    const generated = await this.generateCertificateImage(
+      evaluation,
+      serialNumber,
+      issueDate,
+    );
 
     const certificate = await this.prisma.certificate.create({
       data: {
@@ -476,10 +503,42 @@ export class CoursesEvaluationService {
         courseId,
         finalGrade: evaluation.summary.cumulativeGpa,
         qrCodeUrl,
+        pdfUrl: generated?.url || null,
+        issueDate,
       },
     });
 
     return certificate;
+  }
+
+  private async generateCertificateImage(
+    evaluation: any,
+    serialNumber: string,
+    issueDate: Date,
+  ) {
+    try {
+      const durationText = evaluation.course.durationWeeks
+        ? `${evaluation.course.durationWeeks} أسابيع`
+        : '40 ساعة تدريبية';
+
+      const courseTypeText = evaluation.course.isPaid
+        ? 'دورة تدريبية متخصصة'
+        : 'دورة تدريبية معتمدة';
+
+      return await this.certificateGenerator.generateCertificate({
+        studentName: evaluation.student.name,
+        courseName: evaluation.course.title,
+        lecturesCount: evaluation.summary.totalLessonsCount,
+        courseDuration: durationText,
+        courseType: courseTypeText,
+        certificateId: serialNumber,
+        issueDate,
+        saveToFile: true,
+      });
+    } catch (err) {
+      console.error('Error generating certificate image:', err);
+      return null;
+    }
   }
 
   /**

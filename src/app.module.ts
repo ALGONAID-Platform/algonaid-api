@@ -26,6 +26,7 @@ import { PostCommentsModule } from './post-comments/post-comments.module';
 import { PaymentsModule } from './payments/payments.module';
 import { AssignmentsModule } from './assignments/assignments.module';
 import { NotificationsModule } from './notifications/notifications.module';
+import { CertificatesModule } from './certificates/certificates.module';
 
 import * as fs from 'fs';
 
@@ -70,6 +71,7 @@ const uploadsRoot = fs.existsSync('/usr/src/app/uploads')
     PostCommentsModule,
     PaymentsModule,
     NotificationsModule,
+    CertificatesModule,
     ThrottlerModule.forRoot([{
       ttl: 60000,
       limit: 1000,
