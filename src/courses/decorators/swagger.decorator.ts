@@ -227,11 +227,19 @@ export function SwaggerGetKarttyCourses() {
                         courseType: 'RECORDED',
                         isFull: false,
                         prices: {
+                            usd: 25,
+                            sar: 80,
                             yerOld: 35000,
-                            yerNew: 120000,
-                            sar: 80
+                            yerNew: 120000
                         },
                         pricing: {
+                            usd: {
+                                currency: 'USD',
+                                label: 'دولار أمريكي',
+                                amount: 25,
+                                originalAmount: 35,
+                                discountedAmount: 25
+                            },
                             yerOld: {
                                 currency: 'YER_OLD',
                                 label: 'ريال يمني (عملة قديمة)',

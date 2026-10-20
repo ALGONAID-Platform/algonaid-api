@@ -285,6 +285,10 @@ export class CoursesService {
       const isFull = course.maxStudents != null ? activeEnrollmentsCount >= course.maxStudents : false;
       const generalPrice = Number(course.discountedPrice || course.price || 0);
 
+      const originalPriceUsd = course.price ? Number(course.price) : null;
+      const discountedPriceUsd = course.discountedPrice ? Number(course.discountedPrice) : null;
+      const finalPriceUsd = generalPrice;
+
       const originalPriceYerOld = course.priceYerOld ? Number(course.priceYerOld) : null;
       const discountedPriceYerOld = course.discountedPriceYerOld ? Number(course.discountedPriceYerOld) : null;
       const finalPriceYerOld = Number(course.discountedPriceYerOld || course.priceYerOld || generalPrice);
@@ -305,11 +309,26 @@ export class CoursesService {
         courseType: course.courseType,
         isFull,
         prices: {
+          usd: finalPriceUsd,
+          sar: finalPriceSar,
           yerOld: finalPriceYerOld,
           yerNew: finalPriceYerNew,
-          sar: finalPriceSar,
         },
         pricing: {
+          usd: {
+            currency: 'USD',
+            label: 'دولار أمريكي',
+            amount: finalPriceUsd,
+            originalAmount: originalPriceUsd,
+            discountedAmount: discountedPriceUsd,
+          },
+          sar: {
+            currency: 'SAR',
+            label: 'ريال سعودي',
+            amount: finalPriceSar,
+            originalAmount: originalPriceSar,
+            discountedAmount: discountedPriceSar,
+          },
           yerOld: {
             currency: 'YER_OLD',
             label: 'ريال يمني (عملة قديمة)',
@@ -323,13 +342,6 @@ export class CoursesService {
             amount: finalPriceYerNew,
             originalAmount: originalPriceYerNew,
             discountedAmount: discountedPriceYerNew,
-          },
-          sar: {
-            currency: 'SAR',
-            label: 'ريال سعودي',
-            amount: finalPriceSar,
-            originalAmount: originalPriceSar,
-            discountedAmount: discountedPriceSar,
           },
         },
       };
