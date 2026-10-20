@@ -9,6 +9,7 @@ export type NotificationType =
   | 'ASSIGNMENT_FEEDBACK'
   | 'ASSIGNMENT_SUBMISSION'
   | 'NEW_LESSON'
+  | 'LIVE_LESSON'
   | 'SYSTEM'
   | 'REPLY'
   | 'MENTION';
@@ -266,6 +267,114 @@ export class NotificationsService {
     } catch (error) {
       this.logger.error(
         `Failed to broadcast new lesson notification for lesson ${lessonId}: ${error.message}`,
+        error.stack,
+      );
+      return null;
+    }
+  }
+
+  /**
+   * إشعار بدء البث المباشر للطلاب المشتركين في الكورس المدفوع فقط:
+   * تعليق واحد رسمي فقط في قسم تعليقات الدرس مع إشارة جماعية @[الكل](all) للطلاب المشتركين فقط.
+   * استبعاد المعلم والأدمن والمالك، وخالي تماماً من التكرار.
+   */
+  async notifyLiveLessonStartedToEnrolledStudents(
+    teacherUserId: number,
+    teacherName: string,
+    courseId: number,
+    courseTitle: string,
+    lessonTitle: string,
+    lessonId: number,
+  ) {
+    try {
+      // 1. التحقق من أن الكورس مدفوع (خاص بالمشتركين في الكورس المدفوع فقط)
+      const course = await this.prisma.course.findUnique({
+        where: { id: courseId },
+        select: { id: true, isPaid: true, title: true },
+      });
+
+      if (!course || !course.isPaid) {
+        this.logger.log(
+          `Skipping live notification for course ${courseId} because it is not a paid course.`,
+        );
+        return null;
+      }
+
+      // 2. التحقق من عدم تكرار الإشعار لنفس الدرس
+      const existingComment = await this.prisma.comment.findFirst({
+        where: {
+          lessonId,
+          text: { contains: 'بدأ البث المباشر لدرس' },
+        },
+        select: { id: true },
+      });
+
+      if (existingComment) {
+        this.logger.log(
+          `Live lesson notification already exists for lesson ${lessonId}. Skipping.`,
+        );
+        return existingComment;
+      }
+
+      // 3. جلب جميع الطلاب النشطين المشتركين في هذا الكورس المدفوع
+      const enrollments = await this.prisma.enrollment.findMany({
+        where: {
+          courseId,
+          status: 'ACTIVE',
+        },
+        select: {
+          student: {
+            select: { userId: true },
+          },
+        },
+      });
+
+      // استبعاد الأدمن والمالك والمعلم نفسه من قائمة المنشن
+      const adminUsers = await this.prisma.user.findMany({
+        where: { role: { in: [Role.OWNER, Role.ADMIN] } },
+        select: { id: true },
+      });
+      const excludedIds = new Set([teacherUserId, ...adminUsers.map((a) => a.id)]);
+
+      // استخراج معرفات الطلاب المستهدفين فقط
+      const recipientUserIds = enrollments
+        .map((e) => e.student?.userId)
+        .filter((uid): uid is number => !!uid && !excludedIds.has(uid));
+
+      // 4. إنشاء تعليق رسمي واحد فقط في قسم التعليقات الخاص بالدرس مع إشارة للكل
+      const finalCourseTitle = course.title || courseTitle || 'الكورس';
+      const message = `@[الكل](all) 🔴 بدأ البث المباشر لدرس **${lessonTitle}** في كورس **${finalCourseTitle}** الآن! تفضلوا بالانضمام إلى المحاضرة التفاعلية المباشرة.`;
+
+      const comment = await this.prisma.comment.create({
+        data: {
+          userId: teacherUserId,
+          text: message,
+          lessonId,
+          parentId: null,
+        },
+      });
+
+      // 5. إنشاء إشارات (Mentions) للطلاب المشتركين دفعة واحدة (Bulk insert)
+      if (recipientUserIds.length > 0) {
+        const uniqueRecipientUserIds = Array.from(new Set(recipientUserIds));
+
+        await this.prisma.mention.createMany({
+          data: uniqueRecipientUserIds.map((userId) => ({
+            commentId: comment.id,
+            mentionedUserId: userId,
+            isRead: false,
+          })),
+        });
+
+        this.logger.log(
+          `Posted 1 live broadcast comment and created ${uniqueRecipientUserIds.length} mentions for lesson ${lessonId} (Course ${courseId})`,
+        );
+      }
+
+      return comment;
+    } catch (error) {
+      this.logger.error(
+        `Failed to broadcast live lesson notification for lesson ${lessonId}: ${error.message}`,
         error.stack,
       );
       return null;

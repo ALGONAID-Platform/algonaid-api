@@ -4,7 +4,7 @@ import { CreateLessonDto } from './dto/create-lesson.dto';
 import { UpdateLessonDto } from './dto/update-lesson.dto';
 import { UpdateLiveStatusDto } from './dto/update-live-status.dto';
 import { MESSAGES } from 'src/utils/messages';
-import { LessonStatus, Role } from '@prisma/client';
+import { LessonStatus, LiveStatus, Role } from '@prisma/client';
 import { NotificationsService } from 'src/notifications/notifications.service';
 
 @Injectable()
@@ -199,6 +199,29 @@ export class LessonsService {
 
         if (courseId) {
           await this.notificationsService.notifyNewLessonToEnrolledStudents(
+            teacherUserId,
+            teacherName,
+            courseId,
+            courseTitle,
+            lesson.title,
+            lesson.id,
+          );
+        }
+      } catch (err) {
+        // عدم تعطيل إنشاء الدرس في حال حدوث خطأ أثناء إرسال الإشعار
+      }
+    }
+
+    // إرسال إشعار لبدء البث المباشر للطلاب المشتركين إذا تم إنشاء الدرس بحالة بث مباشر
+    if (lesson.liveStatus === LiveStatus.LIVE_NOW) {
+      try {
+        const courseId = lesson.module?.course?.id;
+        const courseTitle = lesson.module?.course?.title || 'الكورس';
+        const teacherUserId = lesson.module?.course?.teacher?.userId || userId;
+        const teacherName = lesson.module?.course?.teacher?.user?.name || user?.name || 'المعلم';
+
+        if (courseId) {
+          await this.notificationsService.notifyLiveLessonStartedToEnrolledStudents(
             teacherUserId,
             teacherName,
             courseId,
@@ -625,6 +648,30 @@ export class LessonsService {
       } catch (err) {}
     }
 
+    // إرسال إشعار بدء البث المباشر للطلاب المشتركين في الكورس المدفوع عند تحول حالة الدرس إلى مباشر
+    if (
+      (data.liveStatus === LiveStatus.LIVE_NOW || (data.liveStatus as any) === 'LIVE_NOW') &&
+      lesson.liveStatus !== LiveStatus.LIVE_NOW
+    ) {
+      try {
+        const courseId = updatedLesson.module?.course?.id;
+        const courseTitle = updatedLesson.module?.course?.title || 'الكورس';
+        const teacherUserId = updatedLesson.module?.course?.teacher?.userId || userId;
+        const teacherName = updatedLesson.module?.course?.teacher?.user?.name || user?.name || 'المعلم';
+
+        if (courseId) {
+          await this.notificationsService.notifyLiveLessonStartedToEnrolledStudents(
+            teacherUserId,
+            teacherName,
+            courseId,
+            courseTitle,
+            updatedLesson.title,
+            updatedLesson.id,
+          );
+        }
+      } catch (err) {}
+    }
+
     return updatedLesson;
   }
 
@@ -658,7 +705,16 @@ export class LessonsService {
       include: {
         module: {
           include: {
-            course: true,
+            course: {
+              include: {
+                teacher: {
+                  select: {
+                    userId: true,
+                    user: { select: { id: true, name: true } },
+                  },
+                },
+              },
+            },
           },
         },
       },
@@ -687,6 +743,30 @@ export class LessonsService {
         ...(dto.recordingVideoUrl !== undefined && { recordingVideoUrl: dto.recordingVideoUrl }),
       },
     });
+
+    // إرسال إشعار بدء البث المباشر للطلاب المشتركين في الكورس المدفوع عند تحول حالة الدرس إلى مباشر
+    if (
+      (dto.liveStatus === LiveStatus.LIVE_NOW || (dto.liveStatus as any) === 'LIVE_NOW') &&
+      lesson.liveStatus !== LiveStatus.LIVE_NOW
+    ) {
+      try {
+        const courseId = lesson.module?.course?.id;
+        const courseTitle = lesson.module?.course?.title || 'الكورس';
+        const teacherUserId = lesson.module?.course?.teacher?.userId || userId;
+        const teacherName = lesson.module?.course?.teacher?.user?.name || user?.name || 'المعلم';
+
+        if (courseId) {
+          await this.notificationsService.notifyLiveLessonStartedToEnrolledStudents(
+            teacherUserId,
+            teacherName,
+            courseId,
+            courseTitle,
+            updated.title,
+            updated.id,
+          );
+        }
+      } catch (err) {}
+    }
 
     return {
       message: 'تم تحديث حالة البث المباشر بنجاح.',
