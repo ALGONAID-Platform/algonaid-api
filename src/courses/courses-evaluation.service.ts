@@ -321,6 +321,41 @@ export class CoursesEvaluationService {
 
     const existingCertificate = course.certificates[0] || null;
 
+    if (
+      existingCertificate &&
+      (!existingCertificate.pdfUrl || existingCertificate.pdfUrl.endsWith('image.png'))
+    ) {
+      try {
+        const durationText = course.durationWeeks
+          ? `${course.durationWeeks} أسابيع`
+          : '40 ساعة تدريبية';
+        const courseTypeText = course.isPaid
+          ? 'دورة تدريبية متخصصة'
+          : 'دورة تدريبية معتمدة';
+
+        const generated = await this.certificateGenerator.generateCertificate({
+          studentName: user.name,
+          courseName: course.title,
+          lecturesCount: totalLessons,
+          courseDuration: durationText,
+          courseType: courseTypeText,
+          certificateId: existingCertificate.serialNumber,
+          issueDate: new Date(existingCertificate.issueDate),
+          saveToFile: true,
+        });
+
+        if (generated?.url) {
+          await this.prisma.certificate.update({
+            where: { id: existingCertificate.id },
+            data: { pdfUrl: generated.url },
+          });
+          existingCertificate.pdfUrl = generated.url;
+        }
+      } catch (err) {
+        console.error('Failed to auto-generate certificate image on getMyEvaluation:', err);
+      }
+    }
+
     // بناء المخطط الزمني اليومي (Daily Timeline)
     const dailyTimeline = allLessons.map((lesson, index) => {
       const dayNumber = lesson.dayNumber || index + 1;
@@ -459,8 +494,11 @@ export class CoursesEvaluationService {
     const evaluation = await this.getMyEvaluation(courseId, userId);
 
     if (evaluation.summary.certificate) {
-      // إذا كانت الشهادة مصدرة ولكن صورتها لم تكن مولدة بعد، نولدها الآن
-      if (!evaluation.summary.certificate.pdfUrl) {
+      // إذا كانت الشهادة مصدرة ولكن صورتها لم تكن مولدة بعد أو كانت فارغة، نولدها الآن
+      if (
+        !evaluation.summary.certificate.pdfUrl ||
+        evaluation.summary.certificate.pdfUrl.endsWith('image.png')
+      ) {
         const generated = await this.generateCertificateImage(
           evaluation,
           evaluation.summary.certificate.serialNumber,
