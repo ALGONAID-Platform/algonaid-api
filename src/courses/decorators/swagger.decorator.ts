@@ -212,7 +212,7 @@ export function SwaggerGetKarttyCourses() {
     return applyDecorators(
         ApiOperation({
             summary: 'عرض الكورسات المدفوعة لتطبيق كارتي (Kartty)',
-            description: 'نقطة وصول عامة وخفيفة الوزن توفر بيانات الكورسات المدفوعة الأساسية (المعرف، العنوان، الصورة، المدرب، والأسعار بالدولار والسعودي فقط) للاشتراك عبر كارتي',
+            description: 'نقطة وصول عامة وخفيفة الوزن توفر بيانات الكورسات المدفوعة الأساسية (المعرف، العنوان، الصورة، المدرب، والأسعار بالدولار الأمريكي فقط) للاشتراك عبر كارتي',
         }),
         ApiResponse({
             status: 200,
@@ -224,9 +224,13 @@ export function SwaggerGetKarttyCourses() {
                         title: 'دورة القدرات العامة',
                         imageUrl: 'https://example.com/thumbnail.jpg',
                         instructorName: 'أ. بشار الجُنيد',
+                        currency: 'USD',
+                        currencyLabel: 'دولار أمريكي',
+                        price: 25,
+                        originalPrice: 35,
+                        discountedPrice: 25,
                         prices: {
-                            usd: 25,
-                            sar: 80
+                            usd: 25
                         },
                         pricing: {
                             usd: {
@@ -235,13 +239,6 @@ export function SwaggerGetKarttyCourses() {
                                 amount: 25,
                                 originalAmount: 35,
                                 discountedAmount: 25
-                            },
-                            sar: {
-                                currency: 'SAR',
-                                label: 'ريال سعودي',
-                                amount: 80,
-                                originalAmount: 100,
-                                discountedAmount: 80
                             }
                         }
                     }

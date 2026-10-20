@@ -280,18 +280,18 @@ export class CoursesService {
       const discountedPriceUsd = course.discountedPrice ? Number(course.discountedPrice) : null;
       const finalPriceUsd = generalPrice;
 
-      const originalPriceSar = course.priceSar ? Number(course.priceSar) : null;
-      const discountedPriceSar = course.discountedPriceSar ? Number(course.discountedPriceSar) : null;
-      const finalPriceSar = Number(course.discountedPriceSar || course.priceSar || 0);
-
       return {
         id: course.id,
         title: course.title,
         imageUrl: course.thumbnail || null,
         instructorName: course.teacher?.user?.name || 'أ. بشار الجُنيد',
+        currency: 'USD',
+        currencyLabel: 'دولار أمريكي',
+        price: finalPriceUsd,
+        originalPrice: originalPriceUsd,
+        discountedPrice: discountedPriceUsd,
         prices: {
           usd: finalPriceUsd,
-          sar: finalPriceSar,
         },
         pricing: {
           usd: {
@@ -300,13 +300,6 @@ export class CoursesService {
             amount: finalPriceUsd,
             originalAmount: originalPriceUsd,
             discountedAmount: discountedPriceUsd,
-          },
-          sar: {
-            currency: 'SAR',
-            label: 'ريال سعودي',
-            amount: finalPriceSar,
-            originalAmount: originalPriceSar,
-            discountedAmount: discountedPriceSar,
           },
         },
       };
