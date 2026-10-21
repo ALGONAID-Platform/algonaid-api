@@ -120,8 +120,7 @@ export class ModulesService {
     return modules.map((mod) => {
       const { lessons, course, _count, ...rest } = mod;
 
-      const isInstructor = Boolean(instructorId && course?.instructorId === instructorId);
-      const isExempt = isOwner || isAdmin || isInstructor || activeEnrollmentCourseIds.includes(mod.courseId);
+      const isExempt = activeEnrollmentCourseIds.includes(mod.courseId);
       const isUnenrolledPaid = Boolean(course?.isPaid && !isExempt);
 
       const now = new Date();
@@ -226,9 +225,7 @@ export class ModulesService {
       const isAdmin = user?.role === Role.ADMIN;
       const isInstructor = user?.teacherProfile && course.instructorId === user.teacherProfile.id;
 
-      if (isOwner || isAdmin || isInstructor) {
-        isExempt = true;
-      } else if (studentId) {
+      if (studentId) {
         const enrollment = await this.prisma.enrollment.findUnique({
           where: {
             studentId_courseId: {

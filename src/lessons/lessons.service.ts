@@ -35,8 +35,6 @@ export class LessonsService {
    */
   private async checkIsExemptFromMasking(courseId: number, instructorId: number, userId?: number): Promise<boolean> {
     if (!userId) return false;
-    const isStaff = await this.isStaffOrInstructor(instructorId, userId);
-    if (isStaff) return true;
 
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
@@ -330,7 +328,7 @@ export class LessonsService {
         lesson.liveStatus !== 'LIVE_NOW' &&
         lesson.liveStatus !== 'COMPLETED';
 
-      const shouldMask = !isStaff && (isUnenrolledPaid || isScheduledFuture);
+      const shouldMask = isUnenrolledPaid || (!isStaff && isScheduledFuture);
 
       const rawPdfFiles = pdfFiles || [];
       const primaryPdf = rawPdfFiles.length > 0 ? rawPdfFiles[0].url : lesson.pdfUrl;
@@ -456,7 +454,7 @@ export class LessonsService {
         lesson.liveStatus !== 'COMPLETED';
 
       const isUnenrolledPaid = isPaidCourse && !isEnrolled;
-      const shouldMask = !isStaff && (isUnenrolledPaid || isScheduledFuture);
+      const shouldMask = isUnenrolledPaid || (!isStaff && isScheduledFuture);
 
       const rawPdfFiles = pdfFiles || [];
       const primaryPdf = rawPdfFiles.length > 0 ? rawPdfFiles[0].url : lesson.pdfUrl;
@@ -671,7 +669,7 @@ export class LessonsService {
     );
     const isPaidCourse = lesson.module.course.isPaid;
     const isUnenrolledPaid = isPaidCourse && !isEnrolled;
-    const shouldMask = !isStaff && (isUnenrolledPaid || isScheduledFuture);
+    const shouldMask = isUnenrolledPaid || (!isStaff && isScheduledFuture);
 
     let formattedExam: any = null;
     if (lesson.exam) {
