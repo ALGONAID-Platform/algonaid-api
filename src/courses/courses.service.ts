@@ -154,7 +154,6 @@ export class CoursesService {
           name: teacherName,
           user: { name: teacherName },
         },
-        moduleTitles: modules.slice(0, 3).map((m) => m.title),
         modulesCount: _count.modules,
         enrollmentsCount: _count.enrollments || 0,
         isEnrolled: true, // دائماً ترو لأننا جلبناها من جدول التسجيلات
@@ -189,7 +188,6 @@ export class CoursesService {
       },
       include: {
         teacher: { include: { user: { select: { name: true } } } },
-        modules: { select: { title: true }, take: 3 },
         _count: { 
           select: { 
             modules: true,
@@ -202,7 +200,7 @@ export class CoursesService {
     });
 
     return courses.map((course) => {
-      const { modules, enrollments, _count, description, objectives, teacher, ...rest } = course;
+      const { enrollments, _count, description, objectives, teacher, ...rest } = course;
       const teacherName = teacher?.user?.name || 'المهندس/ نذير الجنيد';
       return {
         ...rest,
@@ -212,7 +210,6 @@ export class CoursesService {
           name: teacherName,
           user: { name: teacherName },
         },
-        moduleTitles: modules.map((m) => m.title),
         modulesCount: _count.modules,
         enrollmentsCount: _count.enrollments || 0,
         // ستكون دائماً false الآن في قائمة الاكتشاف، وهذا هو المنطق السليم
