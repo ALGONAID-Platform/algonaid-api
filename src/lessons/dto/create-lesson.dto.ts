@@ -29,6 +29,11 @@ export class CreateLessonDto {
   @IsString()
   pdfUrl?: string;
 
+  @ApiProperty({ example: [{ title: 'ملخص الدرس', url: 'https://ucarecdn.com/.../file.pdf' }], required: false, description: 'قائمة ملفات الـ PDF للدرس' })
+  @IsOptional()
+  @IsArray()
+  pdfFiles?: { title: string; url: string; order?: number }[];
+
   @ApiProperty({ example: 'https://api.exchangesmangement.online/uploads/lesson-cover.jpg', required: false, description: 'رابط صورة أو غلاف الدرس' })
   @IsOptional()
   @IsString()

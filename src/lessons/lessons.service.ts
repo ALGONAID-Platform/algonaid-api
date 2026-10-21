@@ -3,6 +3,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { CreateLessonDto } from './dto/create-lesson.dto';
 import { UpdateLessonDto } from './dto/update-lesson.dto';
 import { UpdateLiveStatusDto } from './dto/update-live-status.dto';
+import { CreateLessonPdfDto } from './dto/create-lesson-pdf.dto';
 import { MESSAGES } from 'src/utils/messages';
 import { LessonStatus, LiveStatus, Role } from '@prisma/client';
 import { NotificationsService } from 'src/notifications/notifications.service';
@@ -95,7 +96,7 @@ export class LessonsService {
   }
 
   async create(createLessonDto: CreateLessonDto, userId: number) {
-    const { moduleId, courseId, ...lessonData } = createLessonDto;
+    const { moduleId, courseId, pdfFiles: inputPdfFiles, ...lessonData } = createLessonDto;
 
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
@@ -164,12 +165,41 @@ export class LessonsService {
       finalModuleId = moduleId;
     }
 
+    let pdfFilesToCreate: { title: string; url: string; order: number }[] = [];
+    if (inputPdfFiles && Array.isArray(inputPdfFiles) && inputPdfFiles.length > 0) {
+      pdfFilesToCreate = inputPdfFiles.map((p, idx) => ({
+        title: p.title || (lessonData.title ? `ملف ${lessonData.title}` : `ملف ${idx + 1}`),
+        url: p.url,
+        order: p.order ?? idx,
+      }));
+    } else if (lessonData.pdfUrl) {
+      pdfFilesToCreate = [
+        {
+          title: lessonData.title ? `ملف ${lessonData.title}` : 'ملف الدرس',
+          url: lessonData.pdfUrl,
+          order: 0,
+        },
+      ];
+    }
+
+    if (!lessonData.pdfUrl && pdfFilesToCreate.length > 0) {
+      lessonData.pdfUrl = pdfFilesToCreate[0].url;
+    }
+
     const lesson = await this.prisma.lesson.create({
       data: {
         ...lessonData,
         moduleId: finalModuleId,
+        ...(pdfFilesToCreate.length > 0 && {
+          pdfFiles: {
+            create: pdfFilesToCreate,
+          },
+        }),
       },
       include: {
+        pdfFiles: {
+          orderBy: { order: 'asc' },
+        },
         module: {
           include: {
             course: {
@@ -295,6 +325,9 @@ export class LessonsService {
               dueDate: true,
             }
           },
+          pdfFiles: {
+            orderBy: { order: 'asc' },
+          },
           _count: {
             select: { comments: true }
           }
@@ -317,7 +350,7 @@ export class LessonsService {
     ]);
 
     const mappedLessons = lessons.map(lesson => {
-      const { exam, assignment, _count, ...rest } = lesson;
+      const { exam, assignment, _count, pdfFiles, ...rest } = lesson;
 
       // الدرس مجدول في المستقبل ولم يقم الأدمن بفتحه يدوياً عبر بدء البث (LIVE_NOW أو COMPLETED)
       const isScheduledFuture =
@@ -330,6 +363,12 @@ export class LessonsService {
       const isUnenrolledPaid = isPaidCourse && !isEnrolled && !lesson.isFreePreview;
       const shouldMask = !isStaff && (isUnenrolledPaid || isScheduledFuture);
 
+      const rawPdfFiles = pdfFiles || [];
+      const primaryPdf = rawPdfFiles.length > 0 ? rawPdfFiles[0].url : lesson.pdfUrl;
+      const formattedPdfFiles = rawPdfFiles.length > 0
+        ? rawPdfFiles.map(f => ({ id: f.id, title: f.title, url: f.url, order: f.order }))
+        : (lesson.pdfUrl ? [{ id: 0, title: 'ملف الدرس الأساسي', url: lesson.pdfUrl, order: 0 }] : []);
+
       return {
         ...rest,
         description: shouldMask ? null : lesson.description,
@@ -337,7 +376,8 @@ export class LessonsService {
         liveMeetingUrl: shouldMask ? null : lesson.liveMeetingUrl,
         videoUrl: shouldMask ? null : lesson.videoUrl,
         recordingVideoUrl: shouldMask ? null : lesson.recordingVideoUrl,
-        pdfUrl: shouldMask ? null : lesson.pdfUrl,
+        pdfUrl: shouldMask ? null : primaryPdf,
+        pdfFiles: shouldMask ? [] : formattedPdfFiles,
         assignment: shouldMask ? null : (assignment || null),
         exam: shouldMask ? null : exam,
         hasTest: shouldMask ? false : !!exam,
@@ -453,6 +493,9 @@ export class LessonsService {
             exam: true,
           },
         },
+        pdfFiles: {
+          orderBy: { order: 'asc' },
+        },
         module: {
           include: {
             course: {
@@ -552,14 +595,22 @@ export class LessonsService {
       };
     }
 
+    const { exam, pdfFiles, ...lessonRest } = lesson;
+    const rawPdfFiles = pdfFiles || [];
+    const primaryPdf = rawPdfFiles.length > 0 ? rawPdfFiles[0].url : lesson.pdfUrl;
+    const formattedPdfFiles = rawPdfFiles.length > 0
+      ? rawPdfFiles.map(f => ({ id: f.id, title: f.title, url: f.url, order: f.order }))
+      : (lesson.pdfUrl ? [{ id: 0, title: 'ملف الدرس الأساسي', url: lesson.pdfUrl, order: 0 }] : []);
+
     return {
-      ...lesson,
+      ...lessonRest,
       description: shouldMask ? null : lesson.description,
       content: isScheduledFuture ? null : (shouldMask ? null : lesson.content),
       liveMeetingUrl: shouldMask ? null : lesson.liveMeetingUrl,
       videoUrl: shouldMask ? null : lesson.videoUrl,
       recordingVideoUrl: shouldMask ? null : lesson.recordingVideoUrl,
-      pdfUrl: shouldMask ? null : lesson.pdfUrl,
+      pdfUrl: shouldMask ? null : primaryPdf,
+      pdfFiles: shouldMask ? [] : formattedPdfFiles,
       assignment: shouldMask ? null : lesson.assignment,
       exam: shouldMask ? null : formattedExam,
       isLocked: shouldMask,
@@ -587,7 +638,7 @@ export class LessonsService {
       throw new ForbiddenException(MESSAGES.LESSONS.UNAUTHORIZED_UPDATE);
     }
 
-    const { moduleId, courseId, ...data } = updateLessonDto;
+    const { moduleId, courseId, pdfFiles: inputPdfFiles, ...data } = updateLessonDto;
 
     let targetCourse = lesson.module.course;
     if (moduleId && moduleId !== lesson.moduleId) {
@@ -614,6 +665,9 @@ export class LessonsService {
         ...(moduleId && { moduleId }),
       },
       include: {
+        pdfFiles: {
+          orderBy: { order: 'asc' },
+        },
         module: {
           include: {
             course: {
@@ -632,6 +686,46 @@ export class LessonsService {
         },
       },
     });
+
+    if (inputPdfFiles && Array.isArray(inputPdfFiles)) {
+      await this.prisma.lessonPdf.deleteMany({ where: { lessonId: id } });
+      if (inputPdfFiles.length > 0) {
+        await this.prisma.lessonPdf.createMany({
+          data: inputPdfFiles.map((p, idx) => ({
+            lessonId: id,
+            title: p.title || (updatedLesson.title ? `ملف ${updatedLesson.title}` : `ملف ${idx + 1}`),
+            url: p.url,
+            order: p.order ?? idx,
+          })),
+        });
+        if (!data.pdfUrl) {
+          await this.prisma.lesson.update({
+            where: { id },
+            data: { pdfUrl: inputPdfFiles[0].url },
+          });
+        }
+      }
+    } else if (data.pdfUrl) {
+      const existingPdfs = await this.prisma.lessonPdf.findMany({
+        where: { lessonId: id },
+        orderBy: { order: 'asc' },
+      });
+      if (existingPdfs.length === 0) {
+        await this.prisma.lessonPdf.create({
+          data: {
+            lessonId: id,
+            title: updatedLesson.title ? `ملف ${updatedLesson.title}` : 'ملف الدرس',
+            url: data.pdfUrl,
+            order: 0,
+          },
+        });
+      } else {
+        await this.prisma.lessonPdf.update({
+          where: { id: existingPdfs[0].id },
+          data: { url: data.pdfUrl },
+        });
+      }
+    }
 
     if (lesson.status !== LessonStatus.PUBLISHED && updatedLesson.status === LessonStatus.PUBLISHED) {
       try {
@@ -777,5 +871,106 @@ export class LessonsService {
       message: 'تم تحديث حالة البث المباشر بنجاح.',
       lesson: updated,
     };
+  }
+
+  async addPdf(lessonId: number, dto: CreateLessonPdfDto, userId: number) {
+    const lesson = await this.prisma.lesson.findUnique({
+      where: { id: lessonId },
+      include: {
+        module: {
+          include: {
+            course: true,
+          },
+        },
+      },
+    });
+
+    if (!lesson) {
+      throw new NotFoundException(MESSAGES.LESSONS.LESSON_NOT_FOUND(lessonId));
+    }
+
+    const isStaff = await this.isStaffOrInstructor(lesson.module.course.instructorId, userId);
+    if (!isStaff) {
+      throw new ForbiddenException(MESSAGES.LESSONS.UNAUTHORIZED_UPDATE);
+    }
+
+    if (!dto.url) {
+      throw new BadRequestException('رابط الملف مطلوب');
+    }
+
+    const count = await this.prisma.lessonPdf.count({ where: { lessonId } });
+    const order = dto.order !== undefined ? dto.order : count;
+
+    const newPdf = await this.prisma.lessonPdf.create({
+      data: {
+        lessonId,
+        title: dto.title || 'ملف الدرس',
+        url: dto.url,
+        order,
+      },
+    });
+
+    if (!lesson.pdfUrl) {
+      await this.prisma.lesson.update({
+        where: { id: lessonId },
+        data: { pdfUrl: dto.url },
+      });
+    }
+
+    return newPdf;
+  }
+
+  async removePdf(lessonId: number, pdfId: number, userId: number) {
+    const lesson = await this.prisma.lesson.findUnique({
+      where: { id: lessonId },
+      include: {
+        module: {
+          include: {
+            course: true,
+          },
+        },
+      },
+    });
+
+    if (!lesson) {
+      throw new NotFoundException(MESSAGES.LESSONS.LESSON_NOT_FOUND(lessonId));
+    }
+
+    const isStaff = await this.isStaffOrInstructor(lesson.module.course.instructorId, userId);
+    if (!isStaff) {
+      throw new ForbiddenException(MESSAGES.LESSONS.UNAUTHORIZED_UPDATE);
+    }
+
+    const pdf = await this.prisma.lessonPdf.findUnique({
+      where: { id: pdfId },
+    });
+
+    if (!pdf || pdf.lessonId !== lessonId) {
+      throw new NotFoundException('ملف الـ PDF غير موجود في هذا الدرس');
+    }
+
+    await this.prisma.lessonPdf.delete({
+      where: { id: pdfId },
+    });
+
+    const remainingPdfs = await this.prisma.lessonPdf.findMany({
+      where: { lessonId },
+      orderBy: { order: 'asc' },
+    });
+
+    const newPrimaryUrl = remainingPdfs.length > 0 ? remainingPdfs[0].url : null;
+    await this.prisma.lesson.update({
+      where: { id: lessonId },
+      data: { pdfUrl: newPrimaryUrl },
+    });
+
+    return {
+      message: 'تم حذف ملف الـ PDF بنجاح',
+    };
+  }
+
+  async getPdfs(lessonId: number, userId?: number) {
+    const lesson = await this.findOne(lessonId, userId);
+    return lesson.pdfFiles || [];
   }
 }

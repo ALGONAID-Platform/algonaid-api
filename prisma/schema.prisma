@@ -250,6 +250,18 @@ model Lesson {
   assignment     Assignment?
   lessonProgress LessonProgress[]
   comments       Comment[]
+  pdfFiles       LessonPdf[]
+}
+
+model LessonPdf {
+  id        Int      @id @default(autoincrement())
+  title     String
+  url       String
+  order     Int      @default(0)
+  createdAt DateTime @default(now())
+
+  lessonId  Int
+  lesson    Lesson   @relation(fields: [lessonId], references: [id], onDelete: Cascade)
 }
 
 enum ExamType {

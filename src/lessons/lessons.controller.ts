@@ -9,6 +9,7 @@ import { CurrentUser } from 'src/auth/decorators/current-user.decorator';
 import { CreateLessonDto } from './dto/create-lesson.dto';
 import { UpdateLessonDto } from './dto/update-lesson.dto';
 import { UpdateLiveStatusDto } from './dto/update-live-status.dto';
+import { CreateLessonPdfDto } from './dto/create-lesson-pdf.dto';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { pdfFileSizeLimit } from 'src/utils/conistants';
 import { SwaggerCreateLesson, SwaggerGetAllLessonsByModule, SwaggerGetLesson, SwaggerUpdateLesson, SwaggerDeleteLesson } from './decorators/swagger.decorator';
@@ -144,5 +145,61 @@ export class LessonsController {
   @SwaggerDeleteLesson()
   remove(@Param('id', ParseIntPipe) id: number, @CurrentUser() user: types.JwtPayloadType) {
     return this.lessonsService.remove(id, user.id);
+  }
+
+  @Get(':id/pdfs')
+  @SkipThrottle()
+  @UseGuards(AuthRollGuard)
+  @userRoles(Role.STUDENT, Role.ADMIN, Role.OWNER)
+  @ApiOperation({ summary: 'Get all PDF files for a lesson' })
+  getPdfs(
+    @Param('id', ParseIntPipe) id: number,
+    @CurrentUser() user: types.JwtPayloadType,
+  ) {
+    return this.lessonsService.getPdfs(id, user.id);
+  }
+
+  @Post(':id/pdfs')
+  @UseGuards(AuthRollGuard)
+  @userRoles(Role.ADMIN, Role.OWNER)
+  @UseInterceptors(FileInterceptor('file', { fileFilter: pdfFileFilter }))
+  @ApiOperation({ summary: 'Add a PDF file to a lesson' })
+  async addPdf(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: CreateLessonPdfDto,
+    @CurrentUser() user: types.JwtPayloadType,
+    @UploadedFile(
+      new ParseFilePipe({
+        validators: [
+          new MaxFileSizeValidator({ maxSize: pdfFileSizeLimit }),
+          new FileTypeValidator({ fileType: 'application/pdf' }),
+        ],
+        fileIsRequired: false,
+      }),
+    )
+    file?: Express.Multer.File,
+  ) {
+    if (file) {
+      dto.url = await this.uploadcareStorageService.upload(file);
+      if (!dto.title && file.originalname) {
+        dto.title = file.originalname.replace(/\.pdf$/i, '');
+      }
+    }
+    if (!dto.url) {
+      throw new BadRequestException('يجب توفير ملف PDF أو رابط للملف');
+    }
+    return this.lessonsService.addPdf(id, dto, user.id);
+  }
+
+  @Delete(':id/pdfs/:pdfId')
+  @UseGuards(AuthRollGuard)
+  @userRoles(Role.ADMIN, Role.OWNER)
+  @ApiOperation({ summary: 'Delete a PDF file from a lesson' })
+  removePdf(
+    @Param('id', ParseIntPipe) id: number,
+    @Param('pdfId', ParseIntPipe) pdfId: number,
+    @CurrentUser() user: types.JwtPayloadType,
+  ) {
+    return this.lessonsService.removePdf(id, pdfId, user.id);
   }
 }
