@@ -103,7 +103,7 @@ export class CoursesService {
 
     return myEnrollments.map((enrol) => {
       const { course } = enrol;
-      const { modules, _count, practiceExams, ...rest } = course;
+      const { modules, _count, practiceExams, description, ...rest } = course;
 
       let totalLessons = 0;
       let completedLessons = 0;
@@ -147,6 +147,7 @@ export class CoursesService {
 
     return {
       ...rest,
+      description: null,
       moduleTitles: modules.slice(0, 3).map((m) => m.title),
       modulesCount: _count.modules,
       enrollmentsCount: _count.enrollments || 0,
@@ -195,9 +196,10 @@ export class CoursesService {
     });
 
     return courses.map((course) => {
-      const { modules, enrollments, _count, ...rest } = course;
+      const { modules, enrollments, _count, description, ...rest } = course;
       return {
         ...rest,
+        description: null,
         moduleTitles: modules.map((m) => m.title),
         modulesCount: _count.modules,
         enrollmentsCount: _count.enrollments || 0,
@@ -239,12 +241,13 @@ export class CoursesService {
     });
 
     return courses.map((course) => {
-      const { enrollments, _count, ...rest } = course;
+      const { enrollments, _count, description, ...rest } = course;
       const enrollmentsCount = _count.enrollments || 0;
       const isFull = course.maxStudents != null ? enrollmentsCount >= course.maxStudents : false;
       const remainingSeats = course.maxStudents != null ? Math.max(0, course.maxStudents - enrollmentsCount) : null;
       return {
         ...rest,
+        description: null,
         enrollmentsCount,
         maxStudents: course.maxStudents,
         isFull,
