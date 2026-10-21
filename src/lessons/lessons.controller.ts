@@ -102,6 +102,13 @@ export class LessonsController {
     return this.lessonsService.findOne(id, user.id);
   }
 
+  @Get(':id/guest')
+  @SkipThrottle()
+  @ApiOperation({ summary: 'Get lesson details for guest (masked if paid/locked)' })
+  findOneGuest(@Param('id', ParseIntPipe) id: number) {
+    return this.lessonsService.findOne(id);
+  }
+
   @Patch(':id/live-status')
   @ApiOperation({ summary: 'Update live status and recording URL of a lesson' })
   @UseGuards(AuthRollGuard)

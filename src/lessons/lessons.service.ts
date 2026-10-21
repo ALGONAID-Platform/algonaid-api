@@ -372,7 +372,7 @@ export class LessonsService {
       return {
         ...rest,
         description: shouldMask ? null : lesson.description,
-        content: isScheduledFuture ? null : (shouldMask ? null : lesson.content),
+        content: shouldMask ? null : lesson.content,
         liveMeetingUrl: shouldMask ? null : lesson.liveMeetingUrl,
         videoUrl: shouldMask ? null : lesson.videoUrl,
         recordingVideoUrl: shouldMask ? null : lesson.recordingVideoUrl,
@@ -605,7 +605,7 @@ export class LessonsService {
     return {
       ...lessonRest,
       description: shouldMask ? null : lesson.description,
-      content: isScheduledFuture ? null : (shouldMask ? null : lesson.content),
+      content: shouldMask ? null : lesson.content,
       liveMeetingUrl: shouldMask ? null : lesson.liveMeetingUrl,
       videoUrl: shouldMask ? null : lesson.videoUrl,
       recordingVideoUrl: shouldMask ? null : lesson.recordingVideoUrl,

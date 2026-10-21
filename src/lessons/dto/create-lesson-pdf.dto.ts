@@ -19,3 +19,4 @@ export class CreateLessonPdfDto {
   @Type(() => Number)
   order?: number;
 }
+

@@ -98,6 +98,9 @@ export class ModulesService {
                 examId: true,
               },
             },
+            pdfFiles: {
+              orderBy: { order: 'asc' },
+            },
             lessonProgress: studentId ? {
               where: { studentId },
             } : false,
@@ -121,17 +124,32 @@ export class ModulesService {
       const isExempt = isOwner || isAdmin || isInstructor || activeEnrollmentCourseIds.includes(mod.courseId);
       const isUnenrolledPaid = Boolean(course?.isPaid && !isExempt);
 
+      const now = new Date();
+
       const mappedLessons = lessons.map(lesson => {
         // @ts-ignore
-        const { _count: lessonCount, assignment, exam, ...lessonRest } = lesson;
+        const { _count: lessonCount, assignment, exam, pdfFiles, ...lessonRest } = lesson;
         const isAssignmentQuiz = Boolean(
           (assignment && assignment.type === 'QUIZ') ||
           (exam && (exam as any).assignment)
         );
         const hasCheckpointExam = Boolean(exam && !isAssignmentQuiz);
 
+        const isScheduledFuture =
+          !isExempt &&
+          lesson.scheduledAt &&
+          new Date(lesson.scheduledAt) > now &&
+          lesson.liveStatus !== 'LIVE_NOW' &&
+          lesson.liveStatus !== 'COMPLETED';
+
         const isFreePreview = Boolean(lesson.isFreePreview);
-        const shouldMask = isUnenrolledPaid && !isFreePreview;
+        const shouldMask = (isUnenrolledPaid && !isFreePreview) || isScheduledFuture;
+
+        const rawPdfFiles = (pdfFiles as any[]) || [];
+        const primaryPdf = rawPdfFiles.length > 0 ? rawPdfFiles[0].url : lesson.pdfUrl;
+        const formattedPdfFiles = rawPdfFiles.length > 0
+          ? rawPdfFiles.map(f => ({ id: f.id, title: f.title, url: f.url, order: f.order }))
+          : (lesson.pdfUrl ? [{ id: 0, title: 'ملف الدرس الأساسي', url: lesson.pdfUrl, order: 0 }] : []);
 
         return {
           ...lessonRest,
@@ -140,7 +158,8 @@ export class ModulesService {
           content: shouldMask ? null : lesson.content,
           videoUrl: shouldMask ? null : lesson.videoUrl,
           recordingVideoUrl: shouldMask ? null : lesson.recordingVideoUrl,
-          pdfUrl: shouldMask ? null : lesson.pdfUrl,
+          pdfUrl: shouldMask ? null : primaryPdf,
+          pdfFiles: shouldMask ? [] : formattedPdfFiles,
           liveMeetingUrl: shouldMask ? null : lesson.liveMeetingUrl,
           assignment: shouldMask ? null : assignment,
           exam: shouldMask ? null : exam,
@@ -149,6 +168,7 @@ export class ModulesService {
           hasAssignment: shouldMask ? false : Boolean(assignment),
           hasTest: shouldMask ? false : Boolean(exam),
           isLocked: shouldMask,
+          isScheduledFuture: Boolean(isScheduledFuture),
           isFreePreview,
           isPaidCourse: Boolean(course?.isPaid),
           commentsCount: shouldMask ? 0 : (lessonCount?.comments || 0),
@@ -250,6 +270,9 @@ export class ModulesService {
                 examId: true,
               },
             },
+            pdfFiles: {
+              orderBy: { order: 'asc' },
+            },
             lessonProgress: studentId ? {
               where: { studentId },
             } : false,
@@ -269,17 +292,32 @@ export class ModulesService {
     return modules.map((mod) => {
       const { lessons, _count, ...rest } = mod;
 
+      const now = new Date();
+
       const mappedLessons = lessons.map(lesson => {
         // @ts-ignore
-        const { _count: lessonCount, assignment, exam, ...lessonRest } = lesson;
+        const { _count: lessonCount, assignment, exam, pdfFiles, ...lessonRest } = lesson;
         const isAssignmentQuiz = Boolean(
           (assignment && assignment.type === 'QUIZ') ||
           (exam && (exam as any).assignment)
         );
         const hasCheckpointExam = Boolean(exam && !isAssignmentQuiz);
 
+        const isScheduledFuture =
+          !isExempt &&
+          lesson.scheduledAt &&
+          new Date(lesson.scheduledAt) > now &&
+          lesson.liveStatus !== 'LIVE_NOW' &&
+          lesson.liveStatus !== 'COMPLETED';
+
         const isFreePreview = Boolean(lesson.isFreePreview);
-        const shouldMask = isUnenrolledPaid && !isFreePreview;
+        const shouldMask = (isUnenrolledPaid && !isFreePreview) || isScheduledFuture;
+
+        const rawPdfFiles = (pdfFiles as any[]) || [];
+        const primaryPdf = rawPdfFiles.length > 0 ? rawPdfFiles[0].url : lesson.pdfUrl;
+        const formattedPdfFiles = rawPdfFiles.length > 0
+          ? rawPdfFiles.map(f => ({ id: f.id, title: f.title, url: f.url, order: f.order }))
+          : (lesson.pdfUrl ? [{ id: 0, title: 'ملف الدرس الأساسي', url: lesson.pdfUrl, order: 0 }] : []);
 
         return {
           ...lessonRest,
@@ -288,7 +326,8 @@ export class ModulesService {
           content: shouldMask ? null : lesson.content,
           videoUrl: shouldMask ? null : lesson.videoUrl,
           recordingVideoUrl: shouldMask ? null : lesson.recordingVideoUrl,
-          pdfUrl: shouldMask ? null : lesson.pdfUrl,
+          pdfUrl: shouldMask ? null : primaryPdf,
+          pdfFiles: shouldMask ? [] : formattedPdfFiles,
           liveMeetingUrl: shouldMask ? null : lesson.liveMeetingUrl,
           assignment: shouldMask ? null : assignment,
           exam: shouldMask ? null : exam,
@@ -297,6 +336,7 @@ export class ModulesService {
           hasAssignment: shouldMask ? false : Boolean(assignment),
           hasTest: shouldMask ? false : Boolean(exam),
           isLocked: shouldMask,
+          isScheduledFuture: Boolean(isScheduledFuture),
           isFreePreview,
           isPaidCourse: Boolean(course?.isPaid),
           commentsCount: shouldMask ? 0 : (lessonCount?.comments || 0),
