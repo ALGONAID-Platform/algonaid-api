@@ -268,6 +268,101 @@ export class LessonsService {
     return lesson;
   }
 
+  async findAllByCourse(courseId: number, userId?: number) {
+    const course = await this.prisma.course.findUnique({
+      where: { id: courseId },
+      select: { id: true, isPaid: true, instructorId: true },
+    });
+
+    if (!course) {
+      throw new NotFoundException('الكورس المحدد غير موجود');
+    }
+
+    const isStaff = await this.isStaffOrInstructor(course.instructorId, userId);
+    const isEnrolled = await this.checkIsExemptFromMasking(
+      course.id,
+      course.instructorId,
+      userId,
+    );
+    const isPaidCourse = course.isPaid;
+    const isUnenrolledPaid = isPaidCourse && !isEnrolled;
+    const now = new Date();
+
+    const lessons = await this.prisma.lesson.findMany({
+      where: {
+        module: { courseId },
+        status: LessonStatus.PUBLISHED,
+      },
+      include: {
+        exam: {
+          select: { id: true },
+        },
+        assignment: {
+          select: {
+            id: true,
+            title: true,
+            type: true,
+            maxScore: true,
+            dueDate: true,
+          },
+        },
+        pdfFiles: {
+          orderBy: { order: 'asc' },
+        },
+        _count: {
+          select: { comments: true },
+        },
+      },
+      orderBy: [
+        { dayNumber: 'asc' },
+        { order: 'asc' },
+        { createdAt: 'asc' },
+        { id: 'asc' },
+      ],
+    });
+
+    return lessons.map(lesson => {
+      const { exam, assignment, _count, pdfFiles, ...rest } = lesson;
+      const isScheduledFuture =
+        !isStaff &&
+        lesson.scheduledAt &&
+        new Date(lesson.scheduledAt) > now &&
+        lesson.liveStatus !== 'LIVE_NOW' &&
+        lesson.liveStatus !== 'COMPLETED';
+
+      const shouldMask = !isStaff && (isUnenrolledPaid || isScheduledFuture);
+
+      const rawPdfFiles = pdfFiles || [];
+      const primaryPdf = rawPdfFiles.length > 0 ? rawPdfFiles[0].url : lesson.pdfUrl;
+      const formattedPdfFiles = rawPdfFiles.length > 0
+        ? rawPdfFiles.map(f => ({ id: f.id, title: f.title, url: f.url, order: f.order }))
+        : (lesson.pdfUrl ? [{ id: 0, title: 'ملف الدرس الأساسي', url: lesson.pdfUrl, order: 0 }] : []);
+
+      return {
+        ...rest,
+        description: shouldMask ? null : lesson.description,
+        content: shouldMask ? null : lesson.content,
+        liveMeetingUrl: shouldMask ? null : lesson.liveMeetingUrl,
+        videoUrl: shouldMask ? null : lesson.videoUrl,
+        recordingVideoUrl: shouldMask ? null : lesson.recordingVideoUrl,
+        pdfUrl: shouldMask ? null : primaryPdf,
+        pdfFiles: shouldMask ? [] : formattedPdfFiles,
+        assignment: shouldMask ? null : (assignment || null),
+        exam: shouldMask ? null : exam,
+        hasTest: shouldMask ? false : !!exam,
+        hasExam: shouldMask ? false : !!exam,
+        hasAssignment: shouldMask ? false : !!assignment,
+        status: shouldMask ? null : lesson.status,
+        liveStatus: shouldMask ? null : lesson.liveStatus,
+        isLocked: shouldMask,
+        isScheduledFuture: !!isScheduledFuture,
+        isPaidCourse,
+        isFreePreview: Boolean(lesson.isFreePreview),
+        commentsCount: shouldMask ? 0 : _count.comments,
+      };
+    });
+  }
+
   async findAllByModule(moduleId: number, page: number = 1, limit: number = 8, userId?: number) {
     const module = await this.prisma.module.findUnique({
       where: { id: moduleId },
@@ -360,7 +455,7 @@ export class LessonsService {
         lesson.liveStatus !== 'LIVE_NOW' &&
         lesson.liveStatus !== 'COMPLETED';
 
-      const isUnenrolledPaid = isPaidCourse && !isEnrolled && !lesson.isFreePreview;
+      const isUnenrolledPaid = isPaidCourse && !isEnrolled;
       const shouldMask = !isStaff && (isUnenrolledPaid || isScheduledFuture);
 
       const rawPdfFiles = pdfFiles || [];
@@ -381,7 +476,10 @@ export class LessonsService {
         assignment: shouldMask ? null : (assignment || null),
         exam: shouldMask ? null : exam,
         hasTest: shouldMask ? false : !!exam,
+        hasExam: shouldMask ? false : !!exam,
         hasAssignment: shouldMask ? false : !!assignment,
+        status: shouldMask ? null : lesson.status,
+        liveStatus: shouldMask ? null : lesson.liveStatus,
         isLocked: shouldMask,
         isScheduledFuture: !!isScheduledFuture,
         isPaidCourse,
@@ -572,7 +670,7 @@ export class LessonsService {
       userId,
     );
     const isPaidCourse = lesson.module.course.isPaid;
-    const isUnenrolledPaid = isPaidCourse && !isEnrolled && !lesson.isFreePreview;
+    const isUnenrolledPaid = isPaidCourse && !isEnrolled;
     const shouldMask = !isStaff && (isUnenrolledPaid || isScheduledFuture);
 
     let formattedExam: any = null;
@@ -613,6 +711,11 @@ export class LessonsService {
       pdfFiles: shouldMask ? [] : formattedPdfFiles,
       assignment: shouldMask ? null : lesson.assignment,
       exam: shouldMask ? null : formattedExam,
+      hasExam: shouldMask ? false : !!lesson.exam,
+      hasTest: shouldMask ? false : !!lesson.exam,
+      hasAssignment: shouldMask ? false : !!lesson.assignment,
+      status: shouldMask ? null : lesson.status,
+      liveStatus: shouldMask ? null : lesson.liveStatus,
       isLocked: shouldMask,
       isScheduledFuture: !!isScheduledFuture,
       courseId: lesson.module.course.id,

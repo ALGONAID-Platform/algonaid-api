@@ -143,7 +143,7 @@ export class ModulesService {
           lesson.liveStatus !== 'COMPLETED';
 
         const isFreePreview = Boolean(lesson.isFreePreview);
-        const shouldMask = (isUnenrolledPaid && !isFreePreview) || isScheduledFuture;
+        const shouldMask = isUnenrolledPaid || isScheduledFuture;
 
         const rawPdfFiles = (pdfFiles as any[]) || [];
         const primaryPdf = rawPdfFiles.length > 0 ? rawPdfFiles[0].url : lesson.pdfUrl;
@@ -153,7 +153,7 @@ export class ModulesService {
 
         return {
           ...lessonRest,
-          // حجب المحتوى الحساس للكورسات المدفوعة لغير المشتركين ما لم يكن معاينة مجانية
+          // حجب المحتوى الحساس للكورسات المدفوعة لغير المشتركين
           description: shouldMask ? null : lesson.description,
           content: shouldMask ? null : lesson.content,
           videoUrl: shouldMask ? null : lesson.videoUrl,
@@ -167,6 +167,8 @@ export class ModulesService {
           isAssignmentQuiz: shouldMask ? false : isAssignmentQuiz,
           hasAssignment: shouldMask ? false : Boolean(assignment),
           hasTest: shouldMask ? false : Boolean(exam),
+          status: shouldMask ? null : lesson.status,
+          liveStatus: shouldMask ? null : lesson.liveStatus,
           isLocked: shouldMask,
           isScheduledFuture: Boolean(isScheduledFuture),
           isFreePreview,
@@ -311,7 +313,7 @@ export class ModulesService {
           lesson.liveStatus !== 'COMPLETED';
 
         const isFreePreview = Boolean(lesson.isFreePreview);
-        const shouldMask = (isUnenrolledPaid && !isFreePreview) || isScheduledFuture;
+        const shouldMask = isUnenrolledPaid || isScheduledFuture;
 
         const rawPdfFiles = (pdfFiles as any[]) || [];
         const primaryPdf = rawPdfFiles.length > 0 ? rawPdfFiles[0].url : lesson.pdfUrl;
@@ -321,7 +323,7 @@ export class ModulesService {
 
         return {
           ...lessonRest,
-          // حجب المحتوى الحساس للكورسات المدفوعة لغير المشتركين ما لم يكن معاينة مجانية
+          // حجب المحتوى الحساس للكورسات المدفوعة لغير المشتركين
           description: shouldMask ? null : lesson.description,
           content: shouldMask ? null : lesson.content,
           videoUrl: shouldMask ? null : lesson.videoUrl,
@@ -335,6 +337,8 @@ export class ModulesService {
           isAssignmentQuiz: shouldMask ? false : isAssignmentQuiz,
           hasAssignment: shouldMask ? false : Boolean(assignment),
           hasTest: shouldMask ? false : Boolean(exam),
+          status: shouldMask ? null : lesson.status,
+          liveStatus: shouldMask ? null : lesson.liveStatus,
           isLocked: shouldMask,
           isScheduledFuture: Boolean(isScheduledFuture),
           isFreePreview,

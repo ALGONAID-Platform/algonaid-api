@@ -57,6 +57,25 @@ export class LessonsController {
     return this.lessonsService.create(createLessonDto, user.id);
   }
 
+  @Get('course/:courseId')
+  @SkipThrottle()
+  @UseGuards(AuthRollGuard)
+  @userRoles(Role.STUDENT, Role.ADMIN, Role.OWNER)
+  @ApiOperation({ summary: 'Get all lessons for a specific course' })
+  findAllByCourse(
+    @Param('courseId', ParseIntPipe) courseId: number,
+    @CurrentUser() user: types.JwtPayloadType,
+  ) {
+    return this.lessonsService.findAllByCourse(courseId, user.id);
+  }
+
+  @Get('course/:courseId/guest')
+  @SkipThrottle()
+  @ApiOperation({ summary: 'Get all lessons for a specific course for guest' })
+  findAllByCourseGuest(@Param('courseId', ParseIntPipe) courseId: number) {
+    return this.lessonsService.findAllByCourse(courseId);
+  }
+
   @Get('module/:moduleId')
   @SkipThrottle()
   @UseGuards(AuthRollGuard)
