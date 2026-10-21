@@ -223,6 +223,54 @@ export class AssignmentsService {
    * جلب تكليف لدرس معين
    */
   async findByLessonId(lessonId: number, userId?: number, role?: Role) {
+    const lesson = await this.prisma.lesson.findUnique({
+      where: { id: lessonId },
+      include: {
+        module: {
+          include: {
+            course: { select: { id: true, isPaid: true, instructorId: true } },
+          },
+        },
+      },
+    });
+
+    if (!lesson) {
+      return null;
+    }
+
+    // إذا كان الكورس مدفوعاً، التحقق من صلاحية الوصول
+    if (lesson.module?.course?.isPaid) {
+      let isExempt = role === Role.ADMIN || role === Role.OWNER;
+      if (!isExempt && userId) {
+        const user = await this.prisma.user.findUnique({
+          where: { id: userId },
+          include: { studentProfile: true, teacherProfile: true },
+        });
+        if (user?.role === Role.ADMIN || user?.role === Role.OWNER) {
+          isExempt = true;
+        } else if (user?.teacherProfile && user.teacherProfile.id === lesson.module.course.instructorId) {
+          isExempt = true;
+        } else if (user?.studentProfile) {
+          const enrollment = await this.prisma.enrollment.findUnique({
+            where: {
+              studentId_courseId: {
+                studentId: user.studentProfile.id,
+                courseId: lesson.module.course.id,
+              },
+            },
+          });
+          if (enrollment && enrollment.status === 'ACTIVE') {
+            isExempt = true;
+          }
+        }
+      }
+
+      if (!isExempt) {
+        // حجب التكليف لغير المشتركين في الدورة المدفوعة
+        return null;
+      }
+    }
+
     const assignment = await this.prisma.assignment.findUnique({
       where: { lessonId },
       include: {
@@ -287,7 +335,12 @@ export class AssignmentsService {
             title: true,
             moduleId: true,
             module: {
-              select: { id: true, title: true, courseId: true },
+              select: {
+                id: true,
+                title: true,
+                courseId: true,
+                course: { select: { id: true, isPaid: true, instructorId: true } },
+              },
             },
           },
         },
@@ -298,6 +351,39 @@ export class AssignmentsService {
 
     if (!assignment) {
       throw new NotFoundException(`التكليف برقم ${id} غير موجود`);
+    }
+
+    // التحقق من اشتراك الطالب إذا كان الكورس مدفوعاً
+    const course = assignment.lesson?.module?.course;
+    if (course?.isPaid) {
+      let isExempt = false;
+      if (userId) {
+        const user = await this.prisma.user.findUnique({
+          where: { id: userId },
+          include: { studentProfile: true, teacherProfile: true },
+        });
+        if (user?.role === Role.ADMIN || user?.role === Role.OWNER) {
+          isExempt = true;
+        } else if (user?.teacherProfile && user.teacherProfile.id === course.instructorId) {
+          isExempt = true;
+        } else if (user?.studentProfile) {
+          const enrollment = await this.prisma.enrollment.findUnique({
+            where: {
+              studentId_courseId: {
+                studentId: user.studentProfile.id,
+                courseId: course.id,
+              },
+            },
+          });
+          if (enrollment && enrollment.status === 'ACTIVE') {
+            isExempt = true;
+          }
+        }
+      }
+
+      if (!isExempt) {
+        throw new ForbiddenException('التكليفات متاحة فقط للمشتركين النشطين في هذه الدورة');
+      }
     }
 
     let mySubmission = null;
@@ -380,8 +466,8 @@ export class AssignmentsService {
         },
       });
 
-      if (!enrollment) {
-        throw new ForbiddenException('يجب الاشتراك في الكورس أولاً لتتمكن من تسليم التكليف');
+      if (!enrollment || enrollment.status !== 'ACTIVE') {
+        throw new ForbiddenException('يجب أن يكون اشتراكك مفعلاً ونشطاً في الكورس لتتمكن من تسليم التكليف');
       }
     }
 

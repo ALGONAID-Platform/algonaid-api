@@ -332,17 +332,21 @@ export class LessonsService {
 
       return {
         ...rest,
-        content: isScheduledFuture ? null : lesson.content,
+        description: shouldMask ? null : lesson.description,
+        content: isScheduledFuture ? null : (shouldMask ? null : lesson.content),
         liveMeetingUrl: shouldMask ? null : lesson.liveMeetingUrl,
         videoUrl: shouldMask ? null : lesson.videoUrl,
         recordingVideoUrl: shouldMask ? null : lesson.recordingVideoUrl,
         pdfUrl: shouldMask ? null : lesson.pdfUrl,
+        assignment: shouldMask ? null : (assignment || null),
+        exam: shouldMask ? null : exam,
+        hasTest: shouldMask ? false : !!exam,
+        hasAssignment: shouldMask ? false : !!assignment,
         isLocked: shouldMask,
         isScheduledFuture: !!isScheduledFuture,
-        commentsCount: _count.comments,
-        hasTest: !!exam,
-        hasAssignment: !!assignment,
-        assignment: assignment || null,
+        isPaidCourse,
+        isFreePreview: Boolean(lesson.isFreePreview),
+        commentsCount: shouldMask ? 0 : _count.comments,
       };
     });
 
@@ -550,6 +554,7 @@ export class LessonsService {
 
     return {
       ...lesson,
+      description: shouldMask ? null : lesson.description,
       content: isScheduledFuture ? null : (shouldMask ? null : lesson.content),
       liveMeetingUrl: shouldMask ? null : lesson.liveMeetingUrl,
       videoUrl: shouldMask ? null : lesson.videoUrl,
@@ -562,8 +567,8 @@ export class LessonsService {
       courseId: lesson.module.course.id,
       isPaidCourse,
       isFreePreview: lesson.isFreePreview,
-      commentsCount,
-      latestComments: latestComments,
+      commentsCount: shouldMask ? 0 : commentsCount,
+      latestComments: shouldMask ? [] : latestComments,
     };
   }
 

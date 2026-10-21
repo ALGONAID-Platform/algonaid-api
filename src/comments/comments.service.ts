@@ -22,6 +22,29 @@ export class CommentsService {
     return false;
   }
 
+  private async checkCanAccessLessonComments(courseId: number, instructorId: number, userId?: number): Promise<boolean> {
+    if (!userId) return false;
+    const isStaff = await this.isStaffOrInstructor(instructorId, userId);
+    if (isStaff) return true;
+
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      include: { studentProfile: true },
+    });
+    if (!user?.studentProfile) return false;
+
+    const enrollment = await this.prisma.enrollment.findUnique({
+      where: {
+        studentId_courseId: {
+          studentId: user.studentProfile.id,
+          courseId,
+        },
+      },
+    });
+
+    return Boolean(enrollment && enrollment.status === 'ACTIVE');
+  }
+
   async create(userId: number, createCommentDto: CreateCommentDto) {
     const { text, lessonId, examId, parentId, mentionedUserIds, imageUrl } = createCommentDto;
 
@@ -49,6 +72,17 @@ export class CommentsService {
       });
       if (!lesson) throw new NotFoundException('Lesson not found');
       if (lesson.status !== 'PUBLISHED') throw new ForbiddenException('Comments are unavailable for unpublished lessons');
+
+      if (lesson.module?.course?.isPaid) {
+        const canAccess = await this.checkCanAccessLessonComments(
+          lesson.module.course.id,
+          lesson.module.course.instructorId,
+          userId,
+        );
+        if (!canAccess) {
+          throw new ForbiddenException('المناقشات والتعليقات متاحة فقط للمشتركين في هذه الدورة');
+        }
+      }
 
       const isStaff = await this.isStaffOrInstructor(lesson.module.course.instructorId, userId);
       const now = new Date();
@@ -153,6 +187,18 @@ export class CommentsService {
     });
     if (!lesson || lesson.status !== 'PUBLISHED') {
       throw new NotFoundException('Lesson not found');
+    }
+
+    if (lesson.module?.course?.isPaid) {
+      const canAccess = await this.checkCanAccessLessonComments(
+        lesson.module.course.id,
+        lesson.module.course.instructorId,
+        userId,
+      );
+      if (!canAccess) {
+        // حجب التعليقات والمناقشات لغير المشتركين في الدورة المدفوعة
+        return [];
+      }
     }
 
     if (userId) {

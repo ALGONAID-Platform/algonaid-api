@@ -47,18 +47,33 @@ export class ModulesService {
   async findAll(userId?: number) {
     let studentId: number | undefined;
     let isOwner = false;
+    let isAdmin = false;
+    let activeEnrollmentCourseIds: number[] = [];
+    let instructorId: number | undefined;
 
     if (userId) {
       const user = await this.prisma.user.findUnique({
         where: { id: userId },
-        include: { studentProfile: true }
+        include: { studentProfile: true, teacherProfile: true },
       });
       studentId = user?.studentProfile?.id;
       isOwner = user?.role === Role.OWNER;
+      isAdmin = user?.role === Role.ADMIN;
+      instructorId = user?.teacherProfile?.id;
+      if (studentId) {
+        const enrollments = await this.prisma.enrollment.findMany({
+          where: { studentId, status: 'ACTIVE' },
+          select: { courseId: true },
+        });
+        activeEnrollmentCourseIds = enrollments.map((e) => e.courseId);
+      }
     }
 
     const modules = await this.prisma.module.findMany({
       include: {
+        course: {
+          select: { id: true, isPaid: true, instructorId: true },
+        },
         lessons: {
           where: {
             ...(!isOwner && { status: LessonStatus.PUBLISHED })
@@ -100,7 +115,11 @@ export class ModulesService {
     });
 
     return modules.map((mod) => {
-      const { lessons, _count, ...rest } = mod;
+      const { lessons, course, _count, ...rest } = mod;
+
+      const isInstructor = Boolean(instructorId && course?.instructorId === instructorId);
+      const isExempt = isOwner || isAdmin || isInstructor || activeEnrollmentCourseIds.includes(mod.courseId);
+      const isUnenrolledPaid = Boolean(course?.isPaid && !isExempt);
 
       const mappedLessons = lessons.map(lesson => {
         // @ts-ignore
@@ -111,13 +130,28 @@ export class ModulesService {
         );
         const hasCheckpointExam = Boolean(exam && !isAssignmentQuiz);
 
+        const isFreePreview = Boolean(lesson.isFreePreview);
+        const shouldMask = isUnenrolledPaid && !isFreePreview;
+
         return {
           ...lessonRest,
-          assignment,
-          exam,
-          hasExam: hasCheckpointExam,
-          isAssignmentQuiz,
-          commentsCount: lessonCount?.comments || 0,
+          // حجب المحتوى الحساس للكورسات المدفوعة لغير المشتركين ما لم يكن معاينة مجانية
+          description: shouldMask ? null : lesson.description,
+          content: shouldMask ? null : lesson.content,
+          videoUrl: shouldMask ? null : lesson.videoUrl,
+          recordingVideoUrl: shouldMask ? null : lesson.recordingVideoUrl,
+          pdfUrl: shouldMask ? null : lesson.pdfUrl,
+          liveMeetingUrl: shouldMask ? null : lesson.liveMeetingUrl,
+          assignment: shouldMask ? null : assignment,
+          exam: shouldMask ? null : exam,
+          hasExam: shouldMask ? false : hasCheckpointExam,
+          isAssignmentQuiz: shouldMask ? false : isAssignmentQuiz,
+          hasAssignment: shouldMask ? false : Boolean(assignment),
+          hasTest: shouldMask ? false : Boolean(exam),
+          isLocked: shouldMask,
+          isFreePreview,
+          isPaidCourse: Boolean(course?.isPaid),
+          commentsCount: shouldMask ? 0 : (lessonCount?.comments || 0),
         };
       });
 
@@ -154,14 +188,40 @@ export class ModulesService {
     let studentId: number | undefined;
     let isOwner = false;
 
-    if (userId) {
+    const course = await this.prisma.course.findUnique({
+      where: { id: courseId },
+      select: { id: true, isPaid: true, instructorId: true },
+    });
+
+    let isExempt = false;
+    if (userId && course) {
       const user = await this.prisma.user.findUnique({
         where: { id: userId },
-        include: { studentProfile: true }
+        include: { studentProfile: true, teacherProfile: true },
       });
       studentId = user?.studentProfile?.id;
       isOwner = user?.role === Role.OWNER;
+      const isAdmin = user?.role === Role.ADMIN;
+      const isInstructor = user?.teacherProfile && course.instructorId === user.teacherProfile.id;
+
+      if (isOwner || isAdmin || isInstructor) {
+        isExempt = true;
+      } else if (studentId) {
+        const enrollment = await this.prisma.enrollment.findUnique({
+          where: {
+            studentId_courseId: {
+              studentId,
+              courseId: course.id,
+            },
+          },
+        });
+        if (enrollment && enrollment.status === 'ACTIVE') {
+          isExempt = true;
+        }
+      }
     }
+
+    const isUnenrolledPaid = Boolean(course?.isPaid && !isExempt);
 
     const modules = await this.prisma.module.findMany({
       where: { courseId },
@@ -218,13 +278,28 @@ export class ModulesService {
         );
         const hasCheckpointExam = Boolean(exam && !isAssignmentQuiz);
 
+        const isFreePreview = Boolean(lesson.isFreePreview);
+        const shouldMask = isUnenrolledPaid && !isFreePreview;
+
         return {
           ...lessonRest,
-          assignment,
-          exam,
-          hasExam: hasCheckpointExam,
-          isAssignmentQuiz,
-          commentsCount: lessonCount?.comments || 0,
+          // حجب المحتوى الحساس للكورسات المدفوعة لغير المشتركين ما لم يكن معاينة مجانية
+          description: shouldMask ? null : lesson.description,
+          content: shouldMask ? null : lesson.content,
+          videoUrl: shouldMask ? null : lesson.videoUrl,
+          recordingVideoUrl: shouldMask ? null : lesson.recordingVideoUrl,
+          pdfUrl: shouldMask ? null : lesson.pdfUrl,
+          liveMeetingUrl: shouldMask ? null : lesson.liveMeetingUrl,
+          assignment: shouldMask ? null : assignment,
+          exam: shouldMask ? null : exam,
+          hasExam: shouldMask ? false : hasCheckpointExam,
+          isAssignmentQuiz: shouldMask ? false : isAssignmentQuiz,
+          hasAssignment: shouldMask ? false : Boolean(assignment),
+          hasTest: shouldMask ? false : Boolean(exam),
+          isLocked: shouldMask,
+          isFreePreview,
+          isPaidCourse: Boolean(course?.isPaid),
+          commentsCount: shouldMask ? 0 : (lessonCount?.comments || 0),
         };
       });
 
