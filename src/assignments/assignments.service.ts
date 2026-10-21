@@ -46,6 +46,34 @@ export class AssignmentsService {
   }
 
   /**
+   * معالجة وتدقيق تاريخ التسليم (dueDate) مع دعم التصحيح التلقائي للأيام/الأشهر ذات الخانة الواحدة
+   */
+  private parseDueDate(rawDate?: string | Date | null): Date | null {
+    if (!rawDate) return null;
+    if (typeof rawDate === 'string') {
+      const trimmed = rawDate.trim();
+      if (!trimmed) return null;
+
+      // تصحيح تلقائي لصيغة التاريخ في حال كُتب اليوم أو الشهر بخانة واحدة (مثل 2026-11-8 أو 2026-5-9)
+      const normalized = trimmed.replace(
+        /^(\d{4})-(\d{1,2})-(\d{1,2})/,
+        (_, y, m, d) => `${y}-${m.padStart(2, '0')}-${d.padStart(2, '0')}`,
+      );
+
+      const parsed = new Date(normalized);
+      if (!isNaN(parsed.getTime())) {
+        return parsed;
+      }
+    } else if (rawDate instanceof Date && !isNaN(rawDate.getTime())) {
+      return rawDate;
+    }
+
+    throw new BadRequestException(
+      'تاريخ التسليم (dueDate) غير صالح. يرجى إدخال تاريخ صالح بصيغة ISO مثل: 2026-11-08T23:59:59.000Z',
+    );
+  }
+
+  /**
    * إنشاء تكليف جديد لدرس معين
    */
   async create(userId: number, role: Role, dto: CreateAssignmentDto, attachmentFile?: Express.Multer.File) {
@@ -86,7 +114,7 @@ export class AssignmentsService {
       }
     }
 
-    const dueDate = dto.dueDate ? new Date(dto.dueDate) : null;
+    const dueDate = this.parseDueDate(dto.dueDate);
 
     return this.prisma.assignment.create({
       data: {
@@ -147,7 +175,7 @@ export class AssignmentsService {
     const data: any = { ...dto };
     if (attachmentUrl !== undefined) data.attachmentUrl = attachmentUrl;
     if (dto.dueDate !== undefined) {
-      data.dueDate = dto.dueDate ? new Date(dto.dueDate) : null;
+      data.dueDate = this.parseDueDate(dto.dueDate);
     }
 
     return this.prisma.assignment.update({
