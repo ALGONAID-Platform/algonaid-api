@@ -56,7 +56,7 @@ export class CoursesService {
       include: {
         course: {
           include: {
-            teacher: { include: { user: { select: { name: true, avatar: true } } } },
+            teacher: { include: { user: { select: { name: true } } } },
             _count: { 
               select: { 
                 modules: true,
@@ -103,7 +103,8 @@ export class CoursesService {
 
     return myEnrollments.map((enrol) => {
       const { course } = enrol;
-      const { modules, _count, practiceExams, description, ...rest } = course;
+      const { modules, _count, practiceExams, description, objectives, teacher, ...rest } = course;
+      const teacherName = teacher?.user?.name || 'المهندس/ نذير الجنيد';
 
       let totalLessons = 0;
       let completedLessons = 0;
@@ -145,21 +146,26 @@ export class CoursesService {
           ? Math.round((completedLessons / totalLessons) * 100)
           : (allLessonsCount > 0 ? 100 : 0);
 
-    return {
-      ...rest,
-      description: null,
-      moduleTitles: modules.slice(0, 3).map((m) => m.title),
-      modulesCount: _count.modules,
-      enrollmentsCount: _count.enrollments || 0,
-      isEnrolled: true, // دائماً ترو لأننا جلبناها من جدول التسجيلات
-      enrollmentStatus: enrol.status,
-      totalLessons,
-      completedLessons,
-      progressPercentage,
-      lastContentAddedAt,
-    };
-  });
-}
+      return {
+        ...rest,
+        description: null,
+        objectives: [],
+        teacher: {
+          name: teacherName,
+          user: { name: teacherName },
+        },
+        moduleTitles: modules.slice(0, 3).map((m) => m.title),
+        modulesCount: _count.modules,
+        enrollmentsCount: _count.enrollments || 0,
+        isEnrolled: true, // دائماً ترو لأننا جلبناها من جدول التسجيلات
+        enrollmentStatus: enrol.status,
+        totalLessons,
+        completedLessons,
+        progressPercentage,
+        lastContentAddedAt,
+      };
+    });
+  }
 
 
   async findAll(userId?: number, role?: string) {
@@ -182,7 +188,7 @@ export class CoursesService {
         } : {}),
       },
       include: {
-        teacher: { include: { user: { select: { name: true, avatar: true } } } },
+        teacher: { include: { user: { select: { name: true } } } },
         modules: { select: { title: true }, take: 3 },
         _count: { 
           select: { 
@@ -196,10 +202,16 @@ export class CoursesService {
     });
 
     return courses.map((course) => {
-      const { modules, enrollments, _count, description, ...rest } = course;
+      const { modules, enrollments, _count, description, objectives, teacher, ...rest } = course;
+      const teacherName = teacher?.user?.name || 'المهندس/ نذير الجنيد';
       return {
         ...rest,
         description: null,
+        objectives: [],
+        teacher: {
+          name: teacherName,
+          user: { name: teacherName },
+        },
         moduleTitles: modules.map((m) => m.title),
         modulesCount: _count.modules,
         enrollmentsCount: _count.enrollments || 0,
@@ -229,7 +241,7 @@ export class CoursesService {
         }),
       },
       include: {
-        teacher: { include: { user: { select: { name: true, avatar: true } } } },
+        teacher: { include: { user: { select: { name: true } } } },
         _count: {
           select: {
             enrollments: { where: { status: 'ACTIVE' } },
@@ -241,13 +253,19 @@ export class CoursesService {
     });
 
     return courses.map((course) => {
-      const { enrollments, _count, description, ...rest } = course;
+      const { enrollments, _count, description, objectives, teacher, ...rest } = course;
+      const teacherName = teacher?.user?.name || 'المهندس/ نذير الجنيد';
       const enrollmentsCount = _count.enrollments || 0;
       const isFull = course.maxStudents != null ? enrollmentsCount >= course.maxStudents : false;
       const remainingSeats = course.maxStudents != null ? Math.max(0, course.maxStudents - enrollmentsCount) : null;
       return {
         ...rest,
         description: null,
+        objectives: [],
+        teacher: {
+          name: teacherName,
+          user: { name: teacherName },
+        },
         enrollmentsCount,
         maxStudents: course.maxStudents,
         isFull,
