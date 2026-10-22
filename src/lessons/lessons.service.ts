@@ -328,7 +328,8 @@ export class LessonsService {
         lesson.liveStatus !== 'LIVE_NOW' &&
         lesson.liveStatus !== 'COMPLETED';
 
-      const shouldMask = isUnenrolledPaid || (!isStaff && isScheduledFuture);
+      const isFreePreview = Boolean(lesson.isFreePreview);
+      const shouldMask = (isUnenrolledPaid && !isFreePreview) || (!isStaff && isScheduledFuture);
 
       const rawPdfFiles = pdfFiles || [];
       const primaryPdf = rawPdfFiles.length > 0 ? rawPdfFiles[0].url : lesson.pdfUrl;
@@ -454,7 +455,8 @@ export class LessonsService {
         lesson.liveStatus !== 'COMPLETED';
 
       const isUnenrolledPaid = isPaidCourse && !isEnrolled;
-      const shouldMask = isUnenrolledPaid || (!isStaff && isScheduledFuture);
+      const isFreePreview = Boolean(lesson.isFreePreview);
+      const shouldMask = (isUnenrolledPaid && !isFreePreview) || (!isStaff && isScheduledFuture);
 
       const rawPdfFiles = pdfFiles || [];
       const primaryPdf = rawPdfFiles.length > 0 ? rawPdfFiles[0].url : lesson.pdfUrl;
@@ -668,8 +670,9 @@ export class LessonsService {
       userId,
     );
     const isPaidCourse = lesson.module.course.isPaid;
+    const isFreePreview = Boolean(lesson.isFreePreview);
     const isUnenrolledPaid = isPaidCourse && !isEnrolled;
-    const shouldMask = isUnenrolledPaid || (!isStaff && isScheduledFuture);
+    const shouldMask = (isUnenrolledPaid && !isFreePreview) || (!isStaff && isScheduledFuture);
 
     let formattedExam: any = null;
     if (lesson.exam) {

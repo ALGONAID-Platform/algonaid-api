@@ -73,7 +73,7 @@ export class CommentsService {
       if (!lesson) throw new NotFoundException('Lesson not found');
       if (lesson.status !== 'PUBLISHED') throw new ForbiddenException('Comments are unavailable for unpublished lessons');
 
-      if (lesson.module?.course?.isPaid) {
+      if (lesson.module?.course?.isPaid && !lesson.isFreePreview) {
         const canAccess = await this.checkCanAccessLessonComments(
           lesson.module.course.id,
           lesson.module.course.instructorId,
@@ -189,7 +189,7 @@ export class CommentsService {
       throw new NotFoundException('Lesson not found');
     }
 
-    if (lesson.module?.course?.isPaid) {
+    if (lesson.module?.course?.isPaid && !lesson.isFreePreview) {
       const canAccess = await this.checkCanAccessLessonComments(
         lesson.module.course.id,
         lesson.module.course.instructorId,

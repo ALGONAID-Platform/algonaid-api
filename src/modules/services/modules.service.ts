@@ -142,7 +142,7 @@ export class ModulesService {
           lesson.liveStatus !== 'COMPLETED';
 
         const isFreePreview = Boolean(lesson.isFreePreview);
-        const shouldMask = isUnenrolledPaid || isScheduledFuture;
+        const shouldMask = (isUnenrolledPaid && !isFreePreview) || isScheduledFuture;
 
         const rawPdfFiles = (pdfFiles as any[]) || [];
         const primaryPdf = rawPdfFiles.length > 0 ? rawPdfFiles[0].url : lesson.pdfUrl;
@@ -310,7 +310,7 @@ export class ModulesService {
           lesson.liveStatus !== 'COMPLETED';
 
         const isFreePreview = Boolean(lesson.isFreePreview);
-        const shouldMask = isUnenrolledPaid || isScheduledFuture;
+        const shouldMask = (isUnenrolledPaid && !isFreePreview) || isScheduledFuture;
 
         const rawPdfFiles = (pdfFiles as any[]) || [];
         const primaryPdf = rawPdfFiles.length > 0 ? rawPdfFiles[0].url : lesson.pdfUrl;
