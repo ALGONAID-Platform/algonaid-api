@@ -207,168 +207,57 @@ export class ModulesService {
 
   async findByCourse(courseId: number, userId?: number) {
     let studentId: number | undefined;
-    let isOwner = false;
 
-    const course = await this.prisma.course.findUnique({
-      where: { id: courseId },
-      select: { id: true, isPaid: true, instructorId: true },
-    });
-
-    let isExempt = false;
-    if (userId && course) {
+    if (userId) {
       const user = await this.prisma.user.findUnique({
         where: { id: userId },
-        include: { studentProfile: true, teacherProfile: true },
+        include: { studentProfile: true },
       });
       studentId = user?.studentProfile?.id;
-      isOwner = user?.role === Role.OWNER;
-      const isAdmin = user?.role === Role.ADMIN;
-      const isInstructor = user?.teacherProfile && course.instructorId === user.teacherProfile.id;
-
-      if (studentId) {
-        const enrollment = await this.prisma.enrollment.findUnique({
-          where: {
-            studentId_courseId: {
-              studentId,
-              courseId: course.id,
-            },
-          },
-        });
-        if (enrollment && enrollment.status === 'ACTIVE') {
-          isExempt = true;
-        }
-      }
     }
-
-    const isUnenrolledPaid = Boolean(course?.isPaid && !isExempt);
 
     const modules = await this.prisma.module.findMany({
       where: { courseId },
       include: {
-        lessons: {
-          where: {
-            ...(!isOwner && { status: LessonStatus.PUBLISHED })
-          },
-          orderBy: [
-            { dayNumber: 'asc' },
-            { order: 'asc' },
-            { createdAt: 'asc' },
-            { id: 'asc' },
-          ],
-          include: {
-            exam: {
-              select: {
-                id: true,
-                assignment: { select: { id: true, type: true } },
-              },
-            },
-            assignment: {
-              select: {
-                id: true,
-                type: true,
-                examId: true,
-              },
-            },
-            pdfFiles: {
-              orderBy: { order: 'asc' },
-            },
-            lessonProgress: studentId ? {
-              where: { studentId },
-            } : false,
-            _count: { select: { comments: true } }
-          }
-        },
         _count: {
-          select: { 
+          select: {
             lessons: {
-              where: { status: LessonStatus.PUBLISHED }
+              where: { status: LessonStatus.PUBLISHED },
+            },
+          },
+        },
+        lessons: studentId
+          ? {
+              where: {
+                status: LessonStatus.PUBLISHED,
+                isMandatory: true,
+                lessonProgress: {
+                  some: {
+                    studentId,
+                    isCompleted: true,
+                  },
+                },
+              },
+              select: { id: true },
             }
-          }
-        }
-      }
+          : false,
+      },
+      orderBy: { id: 'asc' },
     });
 
     return modules.map((mod) => {
       const { lessons, _count, ...rest } = mod;
-
-      const now = new Date();
-
-      const mappedLessons = lessons.map(lesson => {
-        // @ts-ignore
-        const { _count: lessonCount, assignment, exam, pdfFiles, ...lessonRest } = lesson;
-        const isAssignmentQuiz = Boolean(
-          (assignment && assignment.type === 'QUIZ') ||
-          (exam && (exam as any).assignment)
-        );
-        const hasCheckpointExam = Boolean(exam && !isAssignmentQuiz);
-
-        const isScheduledFuture =
-          !isExempt &&
-          lesson.scheduledAt &&
-          new Date(lesson.scheduledAt) > now &&
-          lesson.liveStatus !== 'LIVE_NOW' &&
-          lesson.liveStatus !== 'COMPLETED';
-
-        const isFreePreview = Boolean(lesson.isFreePreview);
-        const shouldMask = (isUnenrolledPaid && !isFreePreview) || isScheduledFuture;
-
-        const rawPdfFiles = (pdfFiles as any[]) || [];
-        const primaryPdf = rawPdfFiles.length > 0 ? rawPdfFiles[0].url : lesson.pdfUrl;
-        const formattedPdfFiles = rawPdfFiles.length > 0
-          ? rawPdfFiles.map(f => ({ id: f.id, title: f.title, url: f.url, order: f.order }))
-          : (lesson.pdfUrl ? [{ id: 0, title: 'ملف الدرس الأساسي', url: lesson.pdfUrl, order: 0 }] : []);
-
-        return {
-          ...lessonRest,
-          // حجب المحتوى الحساس للكورسات المدفوعة لغير المشتركين
-          description: shouldMask ? null : lesson.description,
-          content: shouldMask ? null : lesson.content,
-          videoUrl: shouldMask ? null : lesson.videoUrl,
-          recordingVideoUrl: shouldMask ? null : lesson.recordingVideoUrl,
-          pdfUrl: shouldMask ? null : primaryPdf,
-          pdfFiles: shouldMask ? [] : formattedPdfFiles,
-          liveMeetingUrl: shouldMask ? null : lesson.liveMeetingUrl,
-          assignment: shouldMask ? null : assignment,
-          exam: shouldMask ? null : exam,
-          hasExam: shouldMask ? false : hasCheckpointExam,
-          isAssignmentQuiz: shouldMask ? false : isAssignmentQuiz,
-          hasAssignment: shouldMask ? false : Boolean(assignment),
-          hasTest: shouldMask ? false : Boolean(exam),
-          status: shouldMask ? null : lesson.status,
-          liveStatus: shouldMask ? null : lesson.liveStatus,
-          isLocked: shouldMask,
-          isScheduledFuture: Boolean(isScheduledFuture),
-          isFreePreview,
-          isPaidCourse: Boolean(course?.isPaid),
-          commentsCount: shouldMask ? 0 : (lessonCount?.comments || 0),
-        };
-      });
-
-      const mandatoryLessons = mappedLessons.filter((l) => (l as any).isMandatory !== false);
-      const totalLessons = mandatoryLessons.length;
-      let completedLessons = 0;
-
-      if (studentId) {
-        mandatoryLessons.forEach(lesson => {
-          // @ts-ignore
-          const progress = lesson.lessonProgress;
-          if (progress && progress.length > 0 && progress[0].isCompleted) {
-            completedLessons++;
-          }
-        });
-      }
-
+      const totalLessons = _count.lessons;
+      const completedLessons = lessons ? lessons.length : 0;
       const progressPercentage =
-        totalLessons > 0
-          ? Math.round((completedLessons / totalLessons) * 100)
-          : (mappedLessons.length > 0 ? 100 : 0);
+        totalLessons > 0 ? Math.round((completedLessons / totalLessons) * 100) : 0;
 
       return {
         ...rest,
-        lessons: mappedLessons,
         totalLessons,
         completedLessons,
         progressPercentage: studentId ? progressPercentage : undefined,
+        lessons: [],
       };
     });
   }
