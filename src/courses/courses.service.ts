@@ -3,7 +3,7 @@ import { CreateCourseDto } from './dto/create-course.dto';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { UpdateCourseDto } from './dto/update-course.dto';
 import { MESSAGES } from 'src/utils/messages';
-import { CourseType } from '@prisma/client';
+import { CourseType, LessonStatus } from '@prisma/client';
 import { ConvertToRecordedDto } from './dto/convert-to-recorded.dto';
 
 @Injectable()
@@ -175,6 +175,15 @@ export class CoursesService {
     const courses = await this.prisma.course.findMany({
       where: {
         isPaid: false,
+        modules: {
+          some: {
+            lessons: {
+              some: {
+                status: LessonStatus.PUBLISHED,
+              },
+            },
+          },
+        },
         ...((studentId && !isPrivileged) ? {
           NOT: {
             enrollments: {
@@ -225,6 +234,15 @@ export class CoursesService {
     const courses = await this.prisma.course.findMany({
       where: {
         isPaid: true,
+        modules: {
+          some: {
+            lessons: {
+              some: {
+                status: LessonStatus.PUBLISHED,
+              },
+            },
+          },
+        },
         // استبعد الكورسات التي اشترك فيها الطالب بالفعل
         ...(studentId && {
           NOT: {
@@ -276,6 +294,15 @@ export class CoursesService {
     const courses = await this.prisma.course.findMany({
       where: {
         isPaid: true,
+        modules: {
+          some: {
+            lessons: {
+              some: {
+                status: LessonStatus.PUBLISHED,
+              },
+            },
+          },
+        },
       },
       include: {
         teacher: {
@@ -318,6 +345,15 @@ export class CoursesService {
     const coursesData = await this.prisma.course.findMany({
       where: {
         isPaid: false,
+        modules: {
+          some: {
+            lessons: {
+              some: {
+                status: LessonStatus.PUBLISHED,
+              },
+            },
+          },
+        },
         OR: [
           { title: { contains: query, mode: 'insensitive' } },
           {
@@ -333,6 +369,7 @@ export class CoursesService {
                 lessons: {
                   some: {
                     title: { contains: query, mode: 'insensitive' },
+                    status: LessonStatus.PUBLISHED,
                   },
                 },
               },
@@ -372,6 +409,15 @@ export class CoursesService {
         title: { contains: query, mode: 'insensitive' },
         course: {
           isPaid: false,
+          modules: {
+            some: {
+              lessons: {
+                some: {
+                  status: LessonStatus.PUBLISHED,
+                },
+              },
+            },
+          },
         },
       },
       select: {
@@ -396,6 +442,7 @@ export class CoursesService {
     const lessonsData = await this.prisma.lesson.findMany({
       where: {
         title: { contains: query, mode: 'insensitive' },
+        status: LessonStatus.PUBLISHED,
         module: {
           course: {
             isPaid: false,
