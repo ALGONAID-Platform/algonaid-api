@@ -770,6 +770,47 @@ export class LessonsService {
       };
     }
 
+    if (shouldMask) {
+      return {
+        id: lesson.id,
+        title: lesson.title,
+        objectives: lesson.objectives || [],
+        moduleId: lesson.moduleId,
+        module: lesson.module,
+        order: lesson.order,
+        description: null,
+        content: null,
+        videoUrl: null,
+        recordingVideoUrl: null,
+        liveMeetingUrl: null,
+        pdfUrl: null,
+        pdfFiles: [],
+        imageUrl: null,
+        isReading: null,
+        scheduledAt: null,
+        durationMinutes: null,
+        liveStatus: null,
+        dayNumber: null,
+        isMandatory: null,
+        assignment: null,
+        exam: null,
+        hasTest: false,
+        hasExam: false,
+        hasAssignment: false,
+        status: null,
+        isLocked: true,
+        isScheduledFuture: !!isScheduledFuture,
+        courseId: lesson.module.course.id,
+        isPaidCourse: Boolean(isPaidCourse),
+        isFreePreview: false,
+        commentsCount: 0,
+        latestComments: [],
+        lessonProgress: [],
+        createdAt: null,
+        updatedAt: null,
+      };
+    }
+
     const { exam, pdfFiles, ...lessonRest } = lesson;
     const rawPdfFiles = pdfFiles || [];
     const primaryPdf = rawPdfFiles.length > 0 ? rawPdfFiles[0].url : lesson.pdfUrl;
@@ -779,27 +820,27 @@ export class LessonsService {
 
     return {
       ...lessonRest,
-      description: shouldMask ? null : lesson.description,
-      content: shouldMask ? null : lesson.content,
-      liveMeetingUrl: shouldMask ? null : lesson.liveMeetingUrl,
-      videoUrl: shouldMask ? null : lesson.videoUrl,
-      recordingVideoUrl: shouldMask ? null : lesson.recordingVideoUrl,
-      pdfUrl: shouldMask ? null : primaryPdf,
-      pdfFiles: shouldMask ? [] : formattedPdfFiles,
-      assignment: shouldMask ? null : lesson.assignment,
-      exam: shouldMask ? null : formattedExam,
-      hasExam: shouldMask ? false : !!lesson.exam,
-      hasTest: shouldMask ? false : !!lesson.exam,
-      hasAssignment: shouldMask ? false : !!lesson.assignment,
-      status: shouldMask ? null : lesson.status,
-      liveStatus: shouldMask ? null : lesson.liveStatus,
-      isLocked: shouldMask,
-      isScheduledFuture: !!isScheduledFuture,
+      description: lesson.description,
+      content: lesson.content,
+      liveMeetingUrl: lesson.liveMeetingUrl,
+      videoUrl: lesson.videoUrl,
+      recordingVideoUrl: lesson.recordingVideoUrl,
+      pdfUrl: primaryPdf,
+      pdfFiles: formattedPdfFiles,
+      assignment: lesson.assignment,
+      exam: formattedExam,
+      hasExam: !!lesson.exam,
+      hasTest: !!lesson.exam,
+      hasAssignment: !!lesson.assignment,
+      status: lesson.status,
+      liveStatus: lesson.liveStatus,
+      isLocked: false,
+      isScheduledFuture: false,
       courseId: lesson.module.course.id,
       isPaidCourse,
       isFreePreview: lesson.isFreePreview,
-      commentsCount: shouldMask ? 0 : commentsCount,
-      latestComments: shouldMask ? [] : latestComments,
+      commentsCount: commentsCount,
+      latestComments: latestComments,
     };
   }
 
