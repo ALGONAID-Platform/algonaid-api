@@ -515,4 +515,37 @@ export class UsersService {
       { id: 11, key: "reviewer", isUnlocked: false, progress: 0, target: 1, tier: 'STANDARD', earnedAt: null },
     ];
   }
+
+  async verifyUser(id: number, verified: boolean = true) {
+    const user = await this.prisma.user.findUnique({ where: { id } });
+    if (!user) {
+      throw new NotFoundException(`المستخدم ذو المعرف (${id}) غير موجود`);
+    }
+
+    const updatedUser = await this.prisma.user.update({
+      where: { id },
+      data: {
+        emailVerified: verified,
+        ...(verified && {
+          verificationToken: null,
+          verificationTokenExpiry: null,
+        }),
+      },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        role: true,
+        emailVerified: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+    });
+
+    return {
+      success: true,
+      message: verified ? 'تم توثيق حساب المستخدم بنجاح.' : 'تم إلغاء توثيق حساب المستخدم.',
+      data: updatedUser,
+    };
+  }
 }

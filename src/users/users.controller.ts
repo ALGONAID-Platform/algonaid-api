@@ -2,11 +2,14 @@ import { Controller, Get, Patch, Body, UseGuards, UseInterceptors, UploadedFiles
 import { UsersService } from './users.service';
 import { UpdateProfileDto } from './dtos/update-profile.dto';
 import { AuthGuard } from 'src/auth/guards/auth.guard';
+import { AuthRollGuard } from 'src/auth/guards/auth-roll.guard';
+import { userRoles } from 'src/auth/decorators/user_roll.decorator';
+import { Role } from '@prisma/client';
 import { CurrentUser } from 'src/auth/decorators/current-user.decorator';
 import { JwtPayloadType } from 'src/utils/types';
 import { FileFieldsInterceptor } from '@nestjs/platform-express';
 import { UploadcareStorageService } from 'src/utils/uploadcare-storage.service';
-import { ApiBearerAuth, ApiConsumes, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiBody, ApiConsumes, ApiOperation, ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger';
 
 @ApiTags('users')
 @ApiBearerAuth('JWT-auth')
@@ -16,6 +19,29 @@ export class UsersController {
     private readonly usersService: UsersService,
     private readonly uploadcareStorageService: UploadcareStorageService,
   ) {}
+
+  @ApiOperation({ summary: 'توثيق حساب مستخدم (صلاحية الأدمن والمالك فقط)' })
+  @ApiParam({ name: 'id', description: 'معرّف المستخدم (User ID)' })
+  @ApiBody({
+    required: false,
+    schema: {
+      type: 'object',
+      properties: {
+        verified: { type: 'boolean', example: true, description: 'حالة التوثيق (افتراضياً true)' },
+      },
+    },
+  })
+  @ApiResponse({ status: 200, description: 'تم توثيق الحساب بنجاح.' })
+  @Patch(':id/verify')
+  @UseGuards(AuthRollGuard)
+  @userRoles(Role.ADMIN, Role.OWNER)
+  async verifyUser(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() body?: { verified?: boolean },
+  ) {
+    const verified = body?.verified !== undefined ? Boolean(body.verified) : true;
+    return this.usersService.verifyUser(id, verified);
+  }
 
   @ApiOperation({ summary: 'Get user badges (achievements)' })
   @ApiResponse({ status: 200, description: 'Return the list of badges earned by the user.' })
