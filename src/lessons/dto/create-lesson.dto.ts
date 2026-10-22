@@ -1,4 +1,4 @@
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import { IsArray, IsBoolean, IsDate, IsEnum, IsInt, IsNotEmpty, IsOptional, IsString, IsUrl } from 'class-validator';
 import { LessonStatus, LiveStatus } from '@prisma/client';
@@ -9,7 +9,7 @@ export class CreateLessonDto {
   @IsString()
   title: string;
 
-  @ApiProperty({ example: 'A brief overview of NestJS', required: false })
+  @ApiPropertyOptional({ example: 'A brief overview of NestJS', description: 'وصف الدرس (اختياري)' })
   @IsOptional()
   @IsString()
   description?: string;

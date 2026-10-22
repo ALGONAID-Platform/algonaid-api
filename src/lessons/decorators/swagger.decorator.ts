@@ -8,9 +8,10 @@ export function SwaggerCreateLesson() {
         ApiBody({
             schema: {
                 type: 'object',
+                required: ['title'],
                 properties: {
-                    title: { type: 'string' },
-                    description: { type: 'string' },
+                    title: { type: 'string', description: 'عنوان الدرس' },
+                    description: { type: 'string', description: 'وصف الدرس (اختياري)', nullable: true },
                     content: { type: 'string' },
                     videoUrl: { type: 'string' },
                     exam: { type: 'string' },
