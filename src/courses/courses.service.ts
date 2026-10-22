@@ -51,8 +51,6 @@ export class CoursesService {
         studentId: student.id,
         status: 'ACTIVE',
       },
-      orderBy: { createdAt: 'desc' },
-      ...(limit ? { take: limit } : {}),
       include: {
         course: {
           include: {
@@ -101,7 +99,7 @@ export class CoursesService {
       },
     });
 
-    return myEnrollments.map((enrol) => {
+    const courses = myEnrollments.map((enrol) => {
       const { course } = enrol;
       const { modules, _count, practiceExams, description, objectives, teacher, ...rest } = course;
       const teacherName = teacher?.user?.name || 'المهندس/ نذير الجنيد';
@@ -109,6 +107,7 @@ export class CoursesService {
       let totalLessons = 0;
       let completedLessons = 0;
       let lastContentAddedAt: Date | null = null;
+      let lastAccessedAt: Date = enrol.updatedAt || enrol.createdAt;
 
       if (practiceExams && practiceExams.length > 0) {
         lastContentAddedAt = practiceExams[0].createdAt;
@@ -127,10 +126,28 @@ export class CoursesService {
             }
           }
 
+          const progress = lesson.lessonProgress;
+          if (progress && progress.length > 0) {
+            progress.forEach((p) => {
+              const pDate = p.completedAt;
+              if (pDate && pDate > lastAccessedAt) {
+                lastAccessedAt = pDate;
+              }
+            });
+          }
+
+          const passedExam = lesson.exam?.attempts;
+          if (passedExam && passedExam.length > 0) {
+            passedExam.forEach((a) => {
+              const aDate = (a as any).updatedAt || (a as any).completedAt || (a as any).createdAt;
+              if (aDate && aDate > lastAccessedAt) {
+                lastAccessedAt = aDate;
+              }
+            });
+          }
+
           if (lesson.isMandatory !== false) {
             totalLessons++;
-            const progress = lesson.lessonProgress;
-            const passedExam = lesson.exam?.attempts;
             if (
               (progress && progress.length > 0 && progress[0].isCompleted) ||
               (passedExam && passedExam.length > 0)
@@ -162,8 +179,18 @@ export class CoursesService {
         completedLessons,
         progressPercentage,
         lastContentAddedAt,
+        lastAccessedAt,
       };
     });
+
+    // الترتيب الذكي: بناءً على أحدث دخول / نشاط للطالب (أو آخر تعديل على الاشتراك) تنازلياً
+    const sortedCourses = courses.sort((a, b) => {
+      const timeA = a.lastAccessedAt ? new Date(a.lastAccessedAt).getTime() : 0;
+      const timeB = b.lastAccessedAt ? new Date(b.lastAccessedAt).getTime() : 0;
+      return timeB - timeA;
+    });
+
+    return limit ? sortedCourses.slice(0, limit) : sortedCourses;
   }
 
 
