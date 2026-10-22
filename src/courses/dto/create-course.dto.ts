@@ -25,14 +25,14 @@ export class CreateCourseDto {
     @Type(() => Boolean)
     isPaid?: boolean;
 
-    @ApiProperty({ example: 49.99, description: 'Original price of the course (General fallback)', required: false })
+    @ApiProperty({ example: 49.99, description: 'السعر الأساسي بالدولار الأمريكي (USD) - حقل ضروري وإلزامي للكورسات المدفوعة', required: false })
     @IsOptional()
     @IsNumber()
     @Min(0)
     @Type(() => Number)
     price?: number;
 
-    @ApiProperty({ example: 29.99, description: 'Discounted price if on offer (General fallback)', required: false })
+    @ApiProperty({ example: 29.99, description: 'سعر الخصم بالدولار الأمريكي (USD)', required: false })
     @IsOptional()
     @IsNumber()
     @Min(0)
