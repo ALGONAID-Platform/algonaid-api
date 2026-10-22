@@ -197,8 +197,8 @@ export function SwaggerSearchCourses() {
     return applyDecorators(
         ApiBearerAuth(),
         ApiOperation({
-            summary: 'البحث عن الكورسات',
-            description: 'يتيح للمستخدم البحث عن طريق اسم الكورس أو اسم الوحدة أو اسم الدرس'
+            summary: 'البحث عن الكورسات والدروس المجانية',
+            description: 'يتيح للمستخدم البحث عن طريق اسم الكورس أو اسم الوحدة أو اسم الدرس (الكورسات والدروس المجانية فقط)'
         }),
         ApiResponse({
             status: 200,

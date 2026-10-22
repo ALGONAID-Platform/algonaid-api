@@ -317,6 +317,7 @@ export class CoursesService {
 
     const coursesData = await this.prisma.course.findMany({
       where: {
+        isPaid: false,
         OR: [
           { title: { contains: query, mode: 'insensitive' } },
           {
@@ -367,7 +368,12 @@ export class CoursesService {
     });
 
     const modulesData = await this.prisma.module.findMany({
-      where: { title: { contains: query, mode: 'insensitive' } },
+      where: {
+        title: { contains: query, mode: 'insensitive' },
+        course: {
+          isPaid: false,
+        },
+      },
       select: {
         id: true,
         title: true,
@@ -388,7 +394,14 @@ export class CoursesService {
     }));
 
     const lessonsData = await this.prisma.lesson.findMany({
-      where: { title: { contains: query, mode: 'insensitive' } },
+      where: {
+        title: { contains: query, mode: 'insensitive' },
+        module: {
+          course: {
+            isPaid: false,
+          },
+        },
+      },
       select: {
         id: true,
         title: true,
@@ -409,7 +422,12 @@ export class CoursesService {
     }));
 
     const practiceExamsData = await this.prisma.practiceExam.findMany({
-      where: { title: { contains: query, mode: 'insensitive' } },
+      where: {
+        title: { contains: query, mode: 'insensitive' },
+        course: {
+          isPaid: false,
+        },
+      },
       select: {
         id: true,
         title: true,
