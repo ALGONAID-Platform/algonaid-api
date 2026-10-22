@@ -1292,16 +1292,6 @@ export class ExamsService {
 
     await this.prisma.userAnswer.createMany({ data: userAnswersData });
 
-    if (status === ExamStatus.PASSED && attempt.exam.lessonId) {
-      await this.prisma.lessonProgress.upsert({
-        where: {
-          studentId_lessonId: { studentId: student.id, lessonId: attempt.exam.lessonId },
-        },
-        update: { isCompleted: true, completedAt: now },
-        create: { studentId: student.id, lessonId: attempt.exam.lessonId, isCompleted: true, completedAt: now },
-      });
-    }
-
     // Auto-grade assignment submission if this exam is linked to an assignment
     if (student) {
       const assignment = await this.prisma.assignment.findFirst({

@@ -788,27 +788,6 @@ export class AssignmentsService {
       },
     });
 
-    // إذا كانت الدرجة ناجحة (أكبر من أو تساوي 50% من درجة التكليف)، يتم تحديث تقدم الدرس
-    const passingThreshold = Math.ceil(submission.assignment.maxScore * 0.5);
-    if (dto.score >= passingThreshold) {
-      const now = new Date();
-      await this.prisma.lessonProgress.upsert({
-        where: {
-          studentId_lessonId: {
-            studentId: submission.studentId,
-            lessonId: submission.assignment.lessonId,
-          },
-        },
-        update: { isCompleted: true, completedAt: now },
-        create: {
-          studentId: submission.studentId,
-          lessonId: submission.assignment.lessonId,
-          isCompleted: true,
-          completedAt: now,
-        },
-      });
-    }
-
     // إرسال إشعار للطالب في قسم الردود برد وتصحيح المعلم
     if (gradedSubmission.student?.user?.id) {
       const teacherName = gradedSubmission.gradedBy?.name || 'المعلم';
