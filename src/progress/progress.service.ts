@@ -195,7 +195,26 @@ export class ProgressService {
     }
 
     const lastProgress = await this.prisma.lessonProgress.findFirst({
-      where: { studentId: student.id },
+      where: {
+        studentId: student.id,
+        lesson: {
+          module: {
+            course: {
+              OR: [
+                { isPaid: false },
+                {
+                  enrollments: {
+                    some: {
+                      studentId: student.id,
+                      status: 'ACTIVE',
+                    },
+                  },
+                },
+              ],
+            },
+          },
+        },
+      },
       orderBy: { id: 'desc' },
       include: {
         lesson: {
@@ -249,7 +268,26 @@ export class ProgressService {
     }
 
     const lastProgress = await this.prisma.lessonProgress.findFirst({
-      where: { studentId: student.id },
+      where: {
+        studentId: student.id,
+        lesson: {
+          module: {
+            course: {
+              OR: [
+                { isPaid: false },
+                {
+                  enrollments: {
+                    some: {
+                      studentId: student.id,
+                      status: 'ACTIVE',
+                    },
+                  },
+                },
+              ],
+            },
+          },
+        },
+      },
       orderBy: { id: 'desc' },
       include: {
         lesson: {
@@ -309,6 +347,8 @@ export class ProgressService {
 
     return {
       moduleId: module.id,
+      courseId: module.course.id,
+      isPaid: Boolean(module.course.isPaid),
       courseName: module.course.title,
       courseImage: module.course.thumbnail,
       thumbnail: module.course.thumbnail,
