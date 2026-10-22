@@ -331,6 +331,44 @@ export class LessonsService {
       const isFreePreview = Boolean(lesson.isFreePreview);
       const shouldMask = (isUnenrolledPaid && !isFreePreview) || (!isStaff && isScheduledFuture);
 
+      if (shouldMask) {
+        return {
+          id: lesson.id,
+          title: lesson.title,
+          objectives: lesson.objectives || [],
+          moduleId: lesson.moduleId,
+          order: lesson.order,
+          description: null,
+          content: null,
+          videoUrl: null,
+          recordingVideoUrl: null,
+          liveMeetingUrl: null,
+          pdfUrl: null,
+          pdfFiles: [],
+          imageUrl: null,
+          isReading: null,
+          scheduledAt: null,
+          durationMinutes: null,
+          liveStatus: null,
+          dayNumber: null,
+          isMandatory: null,
+          assignment: null,
+          exam: null,
+          hasTest: false,
+          hasExam: false,
+          hasAssignment: false,
+          status: null,
+          isLocked: true,
+          isScheduledFuture: !!isScheduledFuture,
+          isPaidCourse: Boolean(isPaidCourse),
+          isFreePreview: false,
+          commentsCount: 0,
+          lessonProgress: [],
+          createdAt: null,
+          updatedAt: null,
+        };
+      }
+
       const rawPdfFiles = pdfFiles || [];
       const primaryPdf = rawPdfFiles.length > 0 ? rawPdfFiles[0].url : lesson.pdfUrl;
       const formattedPdfFiles = rawPdfFiles.length > 0
@@ -339,25 +377,25 @@ export class LessonsService {
 
       return {
         ...rest,
-        description: shouldMask ? null : lesson.description,
-        content: shouldMask ? null : lesson.content,
-        liveMeetingUrl: shouldMask ? null : lesson.liveMeetingUrl,
-        videoUrl: shouldMask ? null : lesson.videoUrl,
-        recordingVideoUrl: shouldMask ? null : lesson.recordingVideoUrl,
-        pdfUrl: shouldMask ? null : primaryPdf,
-        pdfFiles: shouldMask ? [] : formattedPdfFiles,
-        assignment: shouldMask ? null : (assignment || null),
-        exam: shouldMask ? null : exam,
-        hasTest: shouldMask ? false : !!exam,
-        hasExam: shouldMask ? false : !!exam,
-        hasAssignment: shouldMask ? false : !!assignment,
-        status: shouldMask ? null : lesson.status,
-        liveStatus: shouldMask ? null : lesson.liveStatus,
-        isLocked: shouldMask,
-        isScheduledFuture: !!isScheduledFuture,
+        description: lesson.description,
+        content: lesson.content,
+        liveMeetingUrl: lesson.liveMeetingUrl,
+        videoUrl: lesson.videoUrl,
+        recordingVideoUrl: lesson.recordingVideoUrl,
+        pdfUrl: primaryPdf,
+        pdfFiles: formattedPdfFiles,
+        assignment: assignment || null,
+        exam: exam,
+        hasTest: !!exam,
+        hasExam: !!exam,
+        hasAssignment: !!assignment,
+        status: lesson.status,
+        liveStatus: lesson.liveStatus,
+        isLocked: false,
+        isScheduledFuture: false,
         isPaidCourse,
         isFreePreview: Boolean(lesson.isFreePreview),
-        commentsCount: shouldMask ? 0 : _count.comments,
+        commentsCount: _count.comments,
       };
     });
   }
@@ -458,6 +496,44 @@ export class LessonsService {
       const isFreePreview = Boolean(lesson.isFreePreview);
       const shouldMask = (isUnenrolledPaid && !isFreePreview) || (!isStaff && isScheduledFuture);
 
+      if (shouldMask) {
+        return {
+          id: lesson.id,
+          title: lesson.title,
+          objectives: lesson.objectives || [],
+          moduleId: lesson.moduleId,
+          order: lesson.order,
+          description: null,
+          content: null,
+          videoUrl: null,
+          recordingVideoUrl: null,
+          liveMeetingUrl: null,
+          pdfUrl: null,
+          pdfFiles: [],
+          imageUrl: null,
+          isReading: null,
+          scheduledAt: null,
+          durationMinutes: null,
+          liveStatus: null,
+          dayNumber: null,
+          isMandatory: null,
+          assignment: null,
+          exam: null,
+          hasTest: false,
+          hasExam: false,
+          hasAssignment: false,
+          status: null,
+          isLocked: true,
+          isScheduledFuture: !!isScheduledFuture,
+          isPaidCourse: Boolean(isPaidCourse),
+          isFreePreview: false,
+          commentsCount: 0,
+          lessonProgress: [],
+          createdAt: null,
+          updatedAt: null,
+        };
+      }
+
       const rawPdfFiles = pdfFiles || [];
       const primaryPdf = rawPdfFiles.length > 0 ? rawPdfFiles[0].url : lesson.pdfUrl;
       const formattedPdfFiles = rawPdfFiles.length > 0
@@ -466,25 +542,25 @@ export class LessonsService {
 
       return {
         ...rest,
-        description: shouldMask ? null : lesson.description,
-        content: shouldMask ? null : lesson.content,
-        liveMeetingUrl: shouldMask ? null : lesson.liveMeetingUrl,
-        videoUrl: shouldMask ? null : lesson.videoUrl,
-        recordingVideoUrl: shouldMask ? null : lesson.recordingVideoUrl,
-        pdfUrl: shouldMask ? null : primaryPdf,
-        pdfFiles: shouldMask ? [] : formattedPdfFiles,
-        assignment: shouldMask ? null : (assignment || null),
-        exam: shouldMask ? null : exam,
-        hasTest: shouldMask ? false : !!exam,
-        hasExam: shouldMask ? false : !!exam,
-        hasAssignment: shouldMask ? false : !!assignment,
-        status: shouldMask ? null : lesson.status,
-        liveStatus: shouldMask ? null : lesson.liveStatus,
-        isLocked: shouldMask,
-        isScheduledFuture: !!isScheduledFuture,
+        description: lesson.description,
+        content: lesson.content,
+        liveMeetingUrl: lesson.liveMeetingUrl,
+        videoUrl: lesson.videoUrl,
+        recordingVideoUrl: lesson.recordingVideoUrl,
+        pdfUrl: primaryPdf,
+        pdfFiles: formattedPdfFiles,
+        assignment: assignment || null,
+        exam: exam,
+        hasTest: !!exam,
+        hasExam: !!exam,
+        hasAssignment: !!assignment,
+        status: lesson.status,
+        liveStatus: lesson.liveStatus,
+        isLocked: false,
+        isScheduledFuture: false,
         isPaidCourse,
         isFreePreview: Boolean(lesson.isFreePreview),
-        commentsCount: shouldMask ? 0 : _count.comments,
+        commentsCount: _count.comments,
       };
     });
 
