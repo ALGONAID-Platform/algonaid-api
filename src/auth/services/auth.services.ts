@@ -22,6 +22,7 @@ import { MailService } from 'src/utils/mail.service';
 import { ResendVerificationDto } from '../dtos/resend-verification.dto';
 import { createClient } from '@supabase/supabase-js';
 import { LoginAttemptService } from './login-attempt.service';
+import { NotificationsService } from 'src/notifications/notifications.service';
 
 @Injectable()
 export class AuthService {
@@ -31,6 +32,7 @@ export class AuthService {
     private readonly mailService: MailService,
     private readonly configService: ConfigService,
     private readonly loginAttemptService: LoginAttemptService,
+    private readonly notificationsService: NotificationsService,
   ) {}
 
   // ==================== Forgot Password ====================
@@ -777,8 +779,8 @@ try {
   }
 
   /**
-   * التحقق من جلسة الطالب والتأكد من عدم وجود جلسة نشطة على جهاز آخر
-   * يمنع تسجيل الدخول المتزامن من أكثر من هاتف لحماية الكورسات المدفوعة
+   * إدارة جلسة الطالب الفردية وضمان عدم عمل الحساب على أكثر من جهاز في نفس اللحظة
+   * عند تسجيل الدخول من جهاز جديد، يتم طرد الجهاز السابق تلقائياً وإرسال إشعار توضيحي للحساب
    */
   private async validateAndAssignSession(userId: number, role: Role): Promise<string> {
     const user = await this.prisma.user.findUnique({
@@ -790,29 +792,52 @@ try {
       throw new UnauthorizedException('المستخدم غير موجود');
     }
 
-    // تطبيق القيد الصارم على حسابات الطلاب (STUDENT)
+    // فحص الجلسة السابقة (خاصة لحسابات الطلاب)
     if (role === Role.STUDENT && user.currentSessionToken) {
-      // 1. التحقق هل التوكن القديم موجود في القائمة السوداء (تم تسجيل الخروج منه مسبقاً)
+      // 1. التحقق هل التوكن القديم موجود مسبقاً في القائمة السوداء
       const isBlacklisted = await this.prisma.tokenBlacklist.findUnique({
         where: { token: user.currentSessionToken },
       });
 
       if (!isBlacklisted) {
+        let isStillValid = false;
+        let expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+
         try {
-          // 2. التحقق هل التوكن القديم ما زال سارياً وصالحاً
-          await this.jwtService.verifyAsync(user.currentSessionToken, {
+          const decoded = (await this.jwtService.verifyAsync(user.currentSessionToken, {
             secret: this.configService.getOrThrow<string>('JWT_SECRET'),
+          })) as any;
+          isStillValid = true;
+          if (decoded?.exp) {
+            expiresAt = new Date(decoded.exp * 1000);
+          }
+        } catch (_) {
+          // التوكن القديم منتهي الصلاحية طبيعياً
+        }
+
+        // إذا كان التوكن السابق لا يزال سارياً ونشطاً، نقوم بطرد الهاتف السابق وإرسال إشعار
+        if (isStillValid) {
+          // إضافة التوكن القديم للقائمة السوداء ليتم طرد الجهاز السابق تلقائياً فور أول طلب يرسله
+          await this.prisma.tokenBlacklist.upsert({
+            where: { token: user.currentSessionToken },
+            update: { expiresAt },
+            create: {
+              token: user.currentSessionToken,
+              expiresAt,
+            },
           });
 
-          // التوكن ساري وغير محظور -> توجد جلسة نشطة بالفعل على هاتف آخر!
-          throw new UnauthorizedException(
-            'هذا الحساب مسجل دخول بالفعل على جهاز آخر نشط. يرجى تسجيل الخروج أولاً من جهازك، أو التواصل مع الإدارة إذا فقدت جهازك.',
-          );
-        } catch (err: any) {
-          if (err instanceof UnauthorizedException) {
-            throw err;
+          // إرسال إشعار رسمي للطالب في حسابه يوضح له ما حدث لمنع أي ارتباك
+          try {
+            await this.notificationsService.sendNotification({
+              recipientUserId: userId,
+              message:
+                '🔐 تنبيه أمان: تم تسجيل الدخول إلى حسابك من جهاز جديد، وتم تسجيل خروجك تلقائياً من جهازك السابق حفاظاً على أمان حسابك.',
+              type: 'SYSTEM',
+            });
+          } catch (notifErr) {
+            console.error('Failed to send session switch notification:', notifErr);
           }
-          // إذا انتهت صلاحية التوكن (JWT expired)، تعتبر الجلسة القديمة منتهية ونسمح بالدخول
         }
       }
     }
