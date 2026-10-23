@@ -268,10 +268,15 @@ export class CommentsService {
       throw new NotFoundException('Exam not found');
     }
 
+    // Fetch top-level comments with their nested replies
+    // استبعاد إشعارات نتائج الطلاب الفردية من قسم التعليقات العام للاختبار حتى لا تتشوه التعليقات
     return this.prisma.comment.findMany({
       where: {
         examId,
         parentId: null,
+        NOT: {
+          text: { contains: 'نتيجة الاختبار' },
+        },
       },
       include: {
         user: {

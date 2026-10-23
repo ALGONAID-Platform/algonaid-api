@@ -1364,15 +1364,23 @@ export class ExamsService {
         const myRankIndex = sorted.findIndex((a) => a.id === attempt.id || a.student.id === student!.id);
         const rank = myRankIndex >= 0 ? myRankIndex + 1 : 1;
 
-        await this.notificationsService.notifyExamResult(
+        // فحص ما إذا كان الطالب قد استلم إشعار النتيجة مسبقاً لمنع تكرار الإشعارات عند إعادة المحاولات
+        const alreadyNotified = await this.notificationsService.hasExamNotification(
           studentUserId,
           attempt.examId,
-          attempt.exam.title,
-          rank,
-          score,
-          totalPoints,
-          Math.round(percentage),
         );
+
+        if (!alreadyNotified) {
+          await this.notificationsService.notifyExamResult(
+            studentUserId,
+            attempt.examId,
+            attempt.exam.title,
+            rank,
+            score,
+            totalPoints,
+            Math.round(percentage),
+          );
+        }
       } catch (err) {
         // عدم تعطيل تسليم الاختبار في حال حدوث خطأ في الإشعار
       }
