@@ -1,0 +1,131 @@
+{
+  "info": {
+    "_postman_id": "a9c1b2d3-e4f5-4a6b-8c7d-9e0f1a2b3c4d",
+    "name": "Algonaid - Notifications & Sessions Management",
+    "description": "مجموعة طلبات Postman الخاصة بإرسال الإشعارات الجماعية للطلاب وإدارة جلسات الأجهزة وفك قفل الجلسة بواسطة المشرف (Dashboard).",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "https://api.exchangesmangement.online",
+      "type": "string"
+    },
+    {
+      "key": "token",
+      "value": "YOUR_ADMIN_JWT_TOKEN",
+      "type": "string"
+    }
+  ],
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{token}}",
+        "type": "string"
+      }
+    ]
+  },
+  "item": [
+    {
+      "name": "Notifications (الإشعارات)",
+      "item": [
+        {
+          "name": "Broadcast to All My Enrolled Students (إرسال للكل في كافة الكورسات)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"message\": \"📢 تنبيه عام لجميع الطلاب: نود إعلامكم بتحديث جدول المراجعة، ونتمنى لكم دوام التوفيق والتميز!\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/notifications/broadcast-my-students",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "notifications",
+                "broadcast-my-students"
+              ]
+            },
+            "description": "إرسال إشعار عام غير مرتبط بدرس أو اختبار لجميع الطلاب المشتركين في كافة الكورسات الخاصة بالمعلم."
+          },
+          "response": []
+        },
+        {
+          "name": "Broadcast to Specific Course Students (إرسال لطلاب كورس محدد)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"message\": \"📢 تنبيه خاص بمشتركي الدورة: تم إضافة ملخص شامل للوحدة التعليمية، يرجى الاطلاع عليه.\",\n  \"courseId\": 5\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/notifications/broadcast-my-students",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "notifications",
+                "broadcast-my-students"
+              ]
+            },
+            "description": "إرسال إشعار مخصص فقط لطلاب كورس معين مسجل لدى المعلم."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Sessions & Device Lock (إدارة جلسات الأجهزة)",
+      "item": [
+        {
+          "name": "Reset Student Session (إلغاء قفل الجلسة وفك الارتباط بالجهاز القديم)",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/users/:id/reset-session",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "users",
+                ":id",
+                "reset-session"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "15",
+                  "description": "معرّف الطالب (User ID)"
+                }
+              ]
+            },
+            "description": "يستخدم عند فقدان الطالب لهاتفه أو تغييره، لفك قفل الحساب فوراً وإدراج التوكن القديم في القائمة السوداء."
+          },
+          "response": []
+        }
+      ]
+    }
+  ]
+}
