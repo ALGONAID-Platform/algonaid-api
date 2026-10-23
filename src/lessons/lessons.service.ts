@@ -422,6 +422,232 @@ export class LessonsService {
     };
   }
 
+  async search(
+    params: {
+      q?: string;
+      courseId?: number;
+      moduleId?: number;
+      status?: LessonStatus;
+      page?: number;
+      limit?: number;
+    },
+    userId?: number,
+  ) {
+    const page = Math.max(1, +(params.page || 1));
+    const limit = Math.max(1, +(params.limit || 10));
+    const skip = (page - 1) * limit;
+
+    let isStaff = false;
+    let studentId: number | undefined;
+    let enrolledCourseIds: number[] = [];
+
+    if (userId) {
+      const user = await this.prisma.user.findUnique({
+        where: { id: userId },
+        include: { studentProfile: true, teacherProfile: true },
+      });
+      if (user) {
+        if (user.role === Role.OWNER || user.role === Role.ADMIN) {
+          isStaff = true;
+        }
+        if (user.studentProfile) {
+          studentId = user.studentProfile.id;
+          const enrollments = await this.prisma.enrollment.findMany({
+            where: { studentId: user.studentProfile.id, status: 'ACTIVE' },
+            select: { courseId: true },
+          });
+          enrolledCourseIds = enrollments.map((e) => e.courseId);
+        }
+      }
+    }
+
+    const where: any = {};
+
+    if (params.q && params.q.trim()) {
+      const term = params.q.trim();
+      where.OR = [
+        { title: { contains: term, mode: 'insensitive' } },
+        { description: { contains: term, mode: 'insensitive' } },
+      ];
+    }
+
+    if (params.courseId) {
+      where.module = {
+        ...where.module,
+        courseId: params.courseId,
+      };
+    }
+
+    if (params.moduleId) {
+      where.moduleId = params.moduleId;
+    }
+
+    if (params.status && isStaff) {
+      where.status = params.status;
+    } else if (!isStaff) {
+      where.status = LessonStatus.PUBLISHED;
+    }
+
+    const [lessons, total] = await Promise.all([
+      this.prisma.lesson.findMany({
+        where,
+        include: {
+          module: {
+            select: {
+              id: true,
+              title: true,
+              course: {
+                select: {
+                  id: true,
+                  title: true,
+                  isPaid: true,
+                  instructorId: true,
+                },
+              },
+            },
+          },
+          exam: {
+            select: { id: true },
+          },
+          assignment: {
+            select: {
+              id: true,
+              title: true,
+              type: true,
+              maxScore: true,
+              dueDate: true,
+            },
+          },
+          pdfFiles: {
+            orderBy: { order: 'asc' },
+          },
+          lessonProgress: studentId
+            ? {
+                where: { studentId },
+              }
+            : false,
+          _count: {
+            select: { comments: true },
+          },
+        },
+        orderBy: [
+          { createdAt: 'desc' },
+          { id: 'desc' },
+        ],
+        skip,
+        take: limit,
+      }),
+      this.prisma.lesson.count({ where }),
+    ]);
+
+    const now = new Date();
+
+    const mappedLessons = lessons.map((lesson) => {
+      const { exam, assignment, _count, pdfFiles, module, ...rest } = lesson;
+      const isPaidCourse = module?.course?.isPaid ?? false;
+      const isEnrolled = enrolledCourseIds.includes(module?.course?.id);
+
+      const isScheduledFuture =
+        !isStaff &&
+        lesson.scheduledAt &&
+        new Date(lesson.scheduledAt) > now &&
+        lesson.liveStatus !== 'LIVE_NOW' &&
+        lesson.liveStatus !== 'COMPLETED';
+
+      const isUnenrolledPaid = isPaidCourse && !isEnrolled;
+      const isFreePreview = Boolean(lesson.isFreePreview);
+      const shouldMask = (isUnenrolledPaid && !isFreePreview) || (!isStaff && isScheduledFuture);
+
+      const moduleInfo = module
+        ? {
+            id: module.id,
+            title: module.title,
+            courseId: module.course.id,
+            courseTitle: module.course.title,
+          }
+        : null;
+
+      if (shouldMask) {
+        return {
+          id: lesson.id,
+          title: lesson.title,
+          objectives: lesson.objectives || [],
+          moduleId: lesson.moduleId,
+          order: lesson.order,
+          description: null,
+          content: null,
+          videoUrl: null,
+          recordingVideoUrl: null,
+          liveMeetingUrl: null,
+          pdfUrl: null,
+          pdfFiles: [],
+          imageUrl: null,
+          isReading: null,
+          scheduledAt: null,
+          durationMinutes: null,
+          liveStatus: null,
+          dayNumber: null,
+          isMandatory: null,
+          assignment: null,
+          exam: null,
+          hasTest: false,
+          hasExam: false,
+          hasAssignment: false,
+          status: null,
+          isLocked: true,
+          isScheduledFuture: !!isScheduledFuture,
+          isPaidCourse: Boolean(isPaidCourse),
+          isFreePreview: false,
+          commentsCount: 0,
+          lessonProgress: [],
+          module: moduleInfo,
+          createdAt: null,
+          updatedAt: null,
+        };
+      }
+
+      const rawPdfFiles = pdfFiles || [];
+      const primaryPdf = rawPdfFiles.length > 0 ? rawPdfFiles[0].url : lesson.pdfUrl;
+      const formattedPdfFiles = rawPdfFiles.length > 0
+        ? rawPdfFiles.map((f: any) => ({ id: f.id, title: f.title, url: f.url, order: f.order }))
+        : (lesson.pdfUrl ? [{ id: 0, title: 'ملف الدرس الأساسي', url: lesson.pdfUrl, order: 0 }] : []);
+
+      return {
+        ...rest,
+        description: lesson.description,
+        content: lesson.content,
+        liveMeetingUrl: lesson.liveMeetingUrl,
+        videoUrl: lesson.videoUrl,
+        recordingVideoUrl: lesson.recordingVideoUrl,
+        pdfUrl: primaryPdf,
+        pdfFiles: formattedPdfFiles,
+        assignment: assignment || null,
+        exam: exam,
+        hasTest: !!exam,
+        hasExam: !!exam,
+        hasAssignment: !!assignment,
+        status: lesson.status,
+        liveStatus: lesson.liveStatus,
+        isLocked: false,
+        isScheduledFuture: false,
+        isPaidCourse,
+        isFreePreview: Boolean(lesson.isFreePreview),
+        commentsCount: _count.comments,
+        module: moduleInfo,
+      };
+    });
+
+    return {
+      data: mappedLessons,
+      meta: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit) || 1,
+      },
+    };
+  }
+
   async findAllByModule(moduleId: number, page: number = 1, limit: number = 8, userId?: number) {
     const module = await this.prisma.module.findUnique({
       where: { id: moduleId },

@@ -1,10 +1,10 @@
 import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, ParseIntPipe, UseInterceptors, UploadedFile, BadRequestException, ParseFilePipe, MaxFileSizeValidator, FileTypeValidator, Query } from '@nestjs/common';
 import { SkipThrottle } from '@nestjs/throttler';
 import { LessonsService } from './lessons.service';
-import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiOperation, ApiTags, ApiQuery } from '@nestjs/swagger';
 import { AuthRollGuard } from 'src/auth/guards/auth-roll.guard';
 import { userRoles } from 'src/auth/decorators/user_roll.decorator';
-import { Role } from '@prisma/client';
+import { Role, LessonStatus } from '@prisma/client';
 import { CurrentUser } from 'src/auth/decorators/current-user.decorator';
 import { CreateLessonDto } from './dto/create-lesson.dto';
 import { UpdateLessonDto } from './dto/update-lesson.dto';
@@ -113,6 +113,40 @@ export class LessonsController {
   @userRoles(Role.STUDENT, Role.ADMIN, Role.OWNER)
   findLatestEnrolledLessons(@CurrentUser() user: types.JwtPayloadType) {
     return this.lessonsService.findLatestEnrolledLessons(user.id);
+  }
+
+  @Get('search')
+  @SkipThrottle()
+  @UseGuards(AuthRollGuard)
+  @userRoles(Role.STUDENT, Role.ADMIN, Role.OWNER)
+  @ApiOperation({ summary: 'البحث في الدروس للوحة التحكم والتطبيق' })
+  @ApiQuery({ name: 'q', required: true, type: String, description: 'كلمة البحث في عنوان أو وصف الدرس' })
+  @ApiQuery({ name: 'courseId', required: false, type: Number, description: 'فلترة البحث داخل كورس معين' })
+  @ApiQuery({ name: 'moduleId', required: false, type: Number, description: 'فلترة البحث داخل موديول معين' })
+  @ApiQuery({ name: 'status', required: false, enum: LessonStatus, description: 'فلترة حسب حالة النشر (خاص بالإدارة)' })
+  @ApiQuery({ name: 'page', required: false, type: Number, description: 'رقم الصفحة (الافتراضي 1)' })
+  @ApiQuery({ name: 'limit', required: false, type: Number, description: 'عدد النتائج في الصفحة (الافتراضي 10)' })
+  search(
+    @Query('q') q: string,
+    @Query('courseId') courseId?: string,
+    @Query('moduleId') moduleId?: string,
+    @Query('status') status?: LessonStatus,
+    @Query('page') page: string = '1',
+    @Query('limit') limit: string = '10',
+    @CurrentUser() user?: types.JwtPayloadType,
+  ) {
+    const safeQuery = (q || '').slice(0, 100).trim();
+    return this.lessonsService.search(
+      {
+        q: safeQuery,
+        courseId: courseId ? +courseId : undefined,
+        moduleId: moduleId ? +moduleId : undefined,
+        status,
+        page: +page || 1,
+        limit: +limit || 10,
+      },
+      user?.id,
+    );
   }
 
   @Get(':id')
