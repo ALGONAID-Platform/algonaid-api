@@ -74,6 +74,11 @@ model User {
   verificationTokenExpiry DateTime?
   // ===========================================================
 
+  // ==================== Single Device Session ====================
+  currentSessionToken String?   @db.Text
+  sessionUpdatedAt    DateTime?
+  // ===============================================================
+
   studentProfile   Student?
   teacherProfile   Teacher?
   comments         Comment[]

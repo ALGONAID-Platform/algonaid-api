@@ -1,5 +1,6 @@
 import { Controller, Get, Patch, Body, UseGuards, UseInterceptors, UploadedFiles, Param, ParseIntPipe, BadRequestException } from '@nestjs/common';
 import { UsersService } from './users.service';
+import { AuthService } from 'src/auth/services/auth.services';
 import { UpdateProfileDto } from './dtos/update-profile.dto';
 import { AuthGuard } from 'src/auth/guards/auth.guard';
 import { AuthRollGuard } from 'src/auth/guards/auth-roll.guard';
@@ -18,7 +19,18 @@ export class UsersController {
   constructor(
     private readonly usersService: UsersService,
     private readonly uploadcareStorageService: UploadcareStorageService,
+    private readonly authService: AuthService,
   ) {}
+
+  @ApiOperation({ summary: 'إلغاء قفل الجلسة للمستخدم والسماح له بالدخول من هاتف جديد (للأدمن والمالك فقط)' })
+  @ApiParam({ name: 'id', description: 'معرّف المستخدم (User ID)' })
+  @ApiResponse({ status: 200, description: 'تم إلغاء قفل الجلسة بنجاح.' })
+  @Patch(':id/reset-session')
+  @UseGuards(AuthRollGuard)
+  @userRoles(Role.ADMIN, Role.OWNER)
+  async resetUserSession(@Param('id', ParseIntPipe) id: number) {
+    return this.authService.resetUserSession(id);
+  }
 
   @ApiOperation({ summary: 'توثيق حساب مستخدم (صلاحية الأدمن والمالك فقط)' })
   @ApiParam({ name: 'id', description: 'معرّف المستخدم (User ID)' })

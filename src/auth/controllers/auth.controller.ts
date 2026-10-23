@@ -38,6 +38,9 @@ import {
 } from '@nestjs/swagger';
 import { AuthGuard } from '@nestjs/passport';
 import { AuthGuard as JwtAuthGuard } from '../guards/auth.guard';
+import { AuthRollGuard } from '../guards/auth-roll.guard';
+import { userRoles } from '../decorators/user_roll.decorator';
+import { Role } from '@prisma/client';
 import { CurrentUser } from '../decorators/current-user.decorator';
 import { JwtPayloadType } from 'src/utils/types';
 import { ForbiddenException } from '@nestjs/common';
@@ -375,5 +378,18 @@ export class AuthController {
       return await this.authService.logout(token);
     }
     return { message: 'Already logged out' };
+  }
+
+  // ==================== Admin Session Reset ====================
+  @Post('admin/reset-session/:userId')
+  @UseGuards(AuthRollGuard)
+  @userRoles(Role.ADMIN, Role.OWNER)
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({
+    summary: 'إلغاء قفل الجلسة للمستخدم والسماح له بالدخول من هاتف جديد (للأدمن والمالك فقط)',
+  })
+  @ApiResponse({ status: 200, description: 'تم إلغاء قفل الجلسة بنجاح.' })
+  async resetUserSession(@Param('userId', ParseIntPipe) userId: number) {
+    return await this.authService.resetUserSession(userId);
   }
 }

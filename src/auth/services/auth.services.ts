@@ -91,12 +91,28 @@ export class AuthService {
 
     const hashedPassword = await bcrypt.hash(newPassword, 10);
 
+    // إلغاء الجلسات السابقة عند تغيير كلمة المرور
+    if (user.currentSessionToken) {
+      let expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+      try {
+        const decoded = this.jwtService.decode(user.currentSessionToken) as any;
+        if (decoded?.exp) expiresAt = new Date(decoded.exp * 1000);
+      } catch (_) {}
+
+      await this.prisma.tokenBlacklist.upsert({
+        where: { token: user.currentSessionToken },
+        update: { expiresAt },
+        create: { token: user.currentSessionToken, expiresAt },
+      });
+    }
+
     await this.prisma.user.update({
       where: { id: user.id },
       data: {
         password: hashedPassword,
         resetPasswordToken: null,
         resetPasswordExpires: null,
+        currentSessionToken: null,
       },
     });
 
@@ -259,7 +275,7 @@ try {
         } catch (_) {}
       }
 
-      const token = await this.generateToken(user.id, user.email, user.role);
+      const token = await this.validateAndAssignSession(user.id, user.role);
 
       return {
         message: MESSAGES.AUTH.LOGGED_IN,
@@ -305,7 +321,7 @@ try {
           console.error('❌ Verification email failed:', err);
         });
 
-        const token = await this.generateToken(newUser.id, newUser.email, newUser.role);
+        const token = await this.validateAndAssignSession(newUser.id, newUser.role);
 
         return {
           message: MESSAGES.AUTH.USER_REGISTERED,
@@ -336,7 +352,7 @@ try {
               throw new UnauthorizedException(MESSAGES.AUTH.INVALID_CREDENTIALS);
             }
 
-            const token = await this.generateToken(existingUser.id, existingUser.email, existingUser.role);
+            const token = await this.validateAndAssignSession(existingUser.id, existingUser.role);
 
             return {
               message: MESSAGES.AUTH.LOGGED_IN,
@@ -409,7 +425,7 @@ try {
     // Clear failure counter on successful login
     this.loginAttemptService.recordSuccess(email);
 
-    const token = await this.generateToken(user.id, user.email, user.role);
+    const token = await this.validateAndAssignSession(user.id, user.role);
 
     return {
       message: MESSAGES.AUTH.LOGGED_IN,
@@ -568,7 +584,7 @@ try {
       });
     }
 
-    const token = await this.generateToken(user.id, user.email, user.role);
+    const token = await this.validateAndAssignSession(user.id, user.role);
 
     return {
       message: 'Google login successful',
@@ -634,15 +650,35 @@ try {
   }
 
   async logout(token: string) {
-    const decoded = this.jwtService.decode(token) as any;
-    const expiresAt = new Date(decoded.exp * 1000);
+    let userId: number | null = null;
+    let expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
 
-    await this.prisma.tokenBlacklist.create({
-      data: {
+    try {
+      const decoded = this.jwtService.decode(token) as any;
+      if (decoded?.exp) {
+        expiresAt = new Date(decoded.exp * 1000);
+      }
+      if (decoded?.id) {
+        userId = decoded.id;
+      }
+    } catch (_) {}
+
+    await this.prisma.tokenBlacklist.upsert({
+      where: { token },
+      update: { expiresAt },
+      create: {
         token,
         expiresAt,
       },
     });
+
+    // إلغاء الجلسة للمستخدم ليتمكن من الدخول من أي هاتف آخر
+    if (userId) {
+      await this.prisma.user.updateMany({
+        where: { id: userId },
+        data: { currentSessionToken: null },
+      });
+    }
 
     return { message: 'Logged out successfully' };
   }
@@ -737,6 +773,108 @@ try {
             experience: user.teacherProfile.experience,
           }
         : {}),
+    };
+  }
+
+  /**
+   * التحقق من جلسة الطالب والتأكد من عدم وجود جلسة نشطة على جهاز آخر
+   * يمنع تسجيل الدخول المتزامن من أكثر من هاتف لحماية الكورسات المدفوعة
+   */
+  private async validateAndAssignSession(userId: number, role: Role): Promise<string> {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { email: true, currentSessionToken: true, role: true },
+    });
+
+    if (!user) {
+      throw new UnauthorizedException('المستخدم غير موجود');
+    }
+
+    // تطبيق القيد الصارم على حسابات الطلاب (STUDENT)
+    if (role === Role.STUDENT && user.currentSessionToken) {
+      // 1. التحقق هل التوكن القديم موجود في القائمة السوداء (تم تسجيل الخروج منه مسبقاً)
+      const isBlacklisted = await this.prisma.tokenBlacklist.findUnique({
+        where: { token: user.currentSessionToken },
+      });
+
+      if (!isBlacklisted) {
+        try {
+          // 2. التحقق هل التوكن القديم ما زال سارياً وصالحاً
+          await this.jwtService.verifyAsync(user.currentSessionToken, {
+            secret: this.configService.getOrThrow<string>('JWT_SECRET'),
+          });
+
+          // التوكن ساري وغير محظور -> توجد جلسة نشطة بالفعل على هاتف آخر!
+          throw new UnauthorizedException(
+            'هذا الحساب مسجل دخول بالفعل على جهاز آخر نشط. يرجى تسجيل الخروج أولاً من جهازك، أو التواصل مع الإدارة إذا فقدت جهازك.',
+          );
+        } catch (err: any) {
+          if (err instanceof UnauthorizedException) {
+            throw err;
+          }
+          // إذا انتهت صلاحية التوكن (JWT expired)، تعتبر الجلسة القديمة منتهية ونسمح بالدخول
+        }
+      }
+    }
+
+    // توليد التوكن الجديد
+    const token = await this.generateToken(userId, user.email, role);
+
+    // تحديث الجلسة النشطة الحالية
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: {
+        currentSessionToken: token,
+        sessionUpdatedAt: new Date(),
+      },
+    });
+
+    return token;
+  }
+
+  /**
+   * إلغاء قفل الجلسة للمستخدم بواسطة الأدمن في حال فقدان الهاتف أو تغييره
+   */
+  async resetUserSession(userId: number) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { id: true, name: true, email: true, currentSessionToken: true },
+    });
+
+    if (!user) {
+      throw new NotFoundException('المستخدم غير موجود');
+    }
+
+    if (user.currentSessionToken) {
+      let expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+      try {
+        const decoded = this.jwtService.decode(user.currentSessionToken) as any;
+        if (decoded?.exp) {
+          expiresAt = new Date(decoded.exp * 1000);
+        }
+      } catch (_) {}
+
+      await this.prisma.tokenBlacklist.upsert({
+        where: { token: user.currentSessionToken },
+        update: { expiresAt },
+        create: {
+          token: user.currentSessionToken,
+          expiresAt,
+        },
+      });
+    }
+
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: {
+        currentSessionToken: null,
+        sessionUpdatedAt: new Date(),
+      },
+    });
+
+    return {
+      success: true,
+      message: `تم إلغاء قفل الجلسة بنجاح للمستخدم (${user.name}). يمكنه الآن تسجيل الدخول من جهازه الجديد.`,
     };
   }
 }
