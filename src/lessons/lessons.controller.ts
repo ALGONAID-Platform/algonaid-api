@@ -64,16 +64,22 @@ export class LessonsController {
   @ApiOperation({ summary: 'Get all lessons for a specific course' })
   findAllByCourse(
     @Param('courseId', ParseIntPipe) courseId: number,
+    @Query('page') page: string = '1',
+    @Query('limit') limit: string = '10',
     @CurrentUser() user: types.JwtPayloadType,
   ) {
-    return this.lessonsService.findAllByCourse(courseId, user.id);
+    return this.lessonsService.findAllByCourse(courseId, +page, +limit, user.id);
   }
 
   @Get('course/:courseId/guest')
   @SkipThrottle()
   @ApiOperation({ summary: 'Get all lessons for a specific course for guest' })
-  findAllByCourseGuest(@Param('courseId', ParseIntPipe) courseId: number) {
-    return this.lessonsService.findAllByCourse(courseId);
+  findAllByCourseGuest(
+    @Param('courseId', ParseIntPipe) courseId: number,
+    @Query('page') page: string = '1',
+    @Query('limit') limit: string = '10',
+  ) {
+    return this.lessonsService.findAllByCourse(courseId, +page, +limit);
   }
 
   @Get('module/:moduleId')

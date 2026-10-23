@@ -266,7 +266,7 @@ export class LessonsService {
     return lesson;
   }
 
-  async findAllByCourse(courseId: number, userId?: number) {
+  async findAllByCourse(courseId: number, page: number = 1, limit: number = 10, userId?: number) {
     const course = await this.prisma.course.findUnique({
       where: { id: courseId },
       select: { id: true, isPaid: true, instructorId: true },
@@ -286,40 +286,52 @@ export class LessonsService {
     const isUnenrolledPaid = isPaidCourse && !isEnrolled;
     const now = new Date();
 
-    const lessons = await this.prisma.lesson.findMany({
-      where: {
-        module: { courseId },
-        status: LessonStatus.PUBLISHED,
-      },
-      include: {
-        exam: {
-          select: { id: true },
+    const skip = (page - 1) * limit;
+
+    const [lessons, total] = await Promise.all([
+      this.prisma.lesson.findMany({
+        where: {
+          module: { courseId },
+          status: LessonStatus.PUBLISHED,
         },
-        assignment: {
-          select: {
-            id: true,
-            title: true,
-            type: true,
-            maxScore: true,
-            dueDate: true,
+        include: {
+          exam: {
+            select: { id: true },
+          },
+          assignment: {
+            select: {
+              id: true,
+              title: true,
+              type: true,
+              maxScore: true,
+              dueDate: true,
+            },
+          },
+          pdfFiles: {
+            orderBy: { order: 'asc' },
+          },
+          _count: {
+            select: { comments: true },
           },
         },
-        pdfFiles: {
-          orderBy: { order: 'asc' },
+        orderBy: [
+          { dayNumber: 'asc' },
+          { order: 'asc' },
+          { createdAt: 'asc' },
+          { id: 'asc' },
+        ],
+        skip,
+        take: limit,
+      }),
+      this.prisma.lesson.count({
+        where: {
+          module: { courseId },
+          status: LessonStatus.PUBLISHED,
         },
-        _count: {
-          select: { comments: true },
-        },
-      },
-      orderBy: [
-        { dayNumber: 'asc' },
-        { order: 'asc' },
-        { createdAt: 'asc' },
-        { id: 'asc' },
-      ],
-    });
+      }),
+    ]);
 
-    return lessons.map(lesson => {
+    const mappedLessons = lessons.map(lesson => {
       const { exam, assignment, _count, pdfFiles, ...rest } = lesson;
       const isScheduledFuture =
         !isStaff &&
@@ -398,6 +410,16 @@ export class LessonsService {
         commentsCount: _count.comments,
       };
     });
+
+    return {
+      data: mappedLessons,
+      meta: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit) || 1,
+      },
+    };
   }
 
   async findAllByModule(moduleId: number, page: number = 1, limit: number = 8, userId?: number) {
