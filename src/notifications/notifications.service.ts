@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { Role, ExamType } from '@prisma/client';
 
@@ -608,6 +608,117 @@ export class NotificationsService {
       },
     });
     return !!existing;
+  }
+
+  /**
+   * إرسال إشعار عام لجميع الطلاب المشتركين في كورسات المعلم/الناشر (بدون ربطه بدرس أو اختبار)
+   * يظهر في التطبيق كتعليق/إشعار عام وإذا ضغط عليه الطالب لا يحصل شيء
+   */
+  async notifyEnrolledStudentsOfMyCourses(
+    userId: number,
+    message: string,
+    courseId?: number,
+  ) {
+    try {
+      // 1. جلب بيانات المستخدم لمعرفة ملف المعلم وصلاحياته
+      const user = await this.prisma.user.findUnique({
+        where: { id: userId },
+        include: { teacherProfile: true },
+      });
+
+      if (!user) {
+        throw new NotFoundException('المستخدم غير موجود');
+      }
+
+      const teacherId = user.teacherProfile?.id;
+      const isOwner = user.role === Role.OWNER;
+
+      // 2. تحديد فلتر الكورسات
+      let courseWhere: any = {};
+      if (courseId) {
+        courseWhere.id = courseId;
+        // إذا لم يكن المالك العام، نتحقق أن الكورس يخص هذا المعلم
+        if (!isOwner) {
+          if (!teacherId) {
+            throw new ForbiddenException('ليس لديك ملف معلم لإرسال إشعارات لهذا الكورس');
+          }
+          courseWhere.instructorId = teacherId;
+        }
+      } else {
+        if (teacherId) {
+          courseWhere.instructorId = teacherId;
+        } else if (!isOwner) {
+          throw new ForbiddenException('ليس لديك كورسات خاصة بك لإرسال إشعار لطلابها');
+        }
+      }
+
+      // 3. جلب جميع الطلاب النشطين المشتركين في هذه الكورسات
+      const enrollments = await this.prisma.enrollment.findMany({
+        where: {
+          course: courseWhere,
+          status: 'ACTIVE',
+        },
+        select: {
+          student: {
+            select: { userId: true },
+          },
+        },
+      });
+
+      // استخراج معرفات المستخدمين المستهدفين فريدة واستبعاد المعلم نفسه
+      const recipientUserIds = Array.from(
+        new Set(
+          enrollments
+            .map((e) => e.student?.userId)
+            .filter((uid): uid is number => !!uid && uid !== userId),
+        ),
+      );
+
+      if (recipientUserIds.length === 0) {
+        return {
+          success: true,
+          message: 'لا يوجد طلاب مسجلين حالياً في هذه الكورسات',
+          recipientsCount: 0,
+        };
+      }
+
+      // 4. إنشاء التعليق العام (بدون lessonId وبدون examId)
+      const comment = await this.prisma.comment.create({
+        data: {
+          userId,
+          text: message,
+          lessonId: null,
+          examId: null,
+          parentId: null,
+        },
+      });
+
+      // 5. إنشاء إشارات (Mentions) لجميع الطلاب دفعة واحدة (Bulk insert) لأقصى كفاءة وأداء
+      await this.prisma.mention.createMany({
+        data: recipientUserIds.map((targetUserId) => ({
+          commentId: comment.id,
+          mentionedUserId: targetUserId,
+          isRead: false,
+        })),
+      });
+
+      this.logger.log(
+        `Broadcast notification sent by user ${userId} to ${recipientUserIds.length} enrolled students.`,
+      );
+
+      return {
+        success: true,
+        message: `تم إرسال الإشعار بنجاح إلى ${recipientUserIds.length} طالب`,
+        recipientsCount: recipientUserIds.length,
+        commentId: comment.id,
+      };
+    } catch (error) {
+      this.logger.error(
+        `Failed to broadcast notification to enrolled students: ${error.message}`,
+        error.stack,
+      );
+      throw error;
+    }
   }
 }
 
