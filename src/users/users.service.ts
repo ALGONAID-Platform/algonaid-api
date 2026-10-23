@@ -8,6 +8,20 @@ export class UsersService {
   constructor(private prisma: PrismaService) {}
 
   async getProfile(userId: number) {
+    if (userId === 0) {
+      const baseUrl = process.env.APP_BASE_URL || process.env.APP_URL || 'https://api.exchangesmangement.online';
+      return {
+        id: 0,
+        name: 'إدارة النظام',
+        avatar: `${baseUrl}/system-logo.png`,
+        avatarUrl: `${baseUrl}/system-logo.png`,
+        bio: 'الحساب الرسمي المعتمد لإدارة المنصة والإشعارات والتنبيهات الأمنية.',
+        role: 'OWNER',
+        createdAt: new Date('2025-01-01'),
+        updatedAt: new Date(),
+      };
+    }
+
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
       include: { studentProfile: true, teacherProfile: true }

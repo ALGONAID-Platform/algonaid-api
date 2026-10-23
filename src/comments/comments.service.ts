@@ -472,7 +472,26 @@ export class CommentsService {
         let type: string = isReply ? 'REPLY' : 'MENTION';
         const text = mention.comment.text || '';
 
-        if (
+        let commentUser = mention.comment.user;
+
+        // إخفاء اسم وصورة المعلم/الأدمن في إشعارات النظام والأمان وتنسيقها لتظهر من "إدارة النظام"
+        const isSystemSecurityNotice =
+          text.includes('تم تسجيل الدخول إلى حسابك من جهاز جديد') ||
+          text.includes('تم تسجيل خروجك تلقائياً') ||
+          text.includes('تنبيه أمان') ||
+          text.includes('إشعار أمني') ||
+          text.includes('إشعار النظام') ||
+          text.includes('إشعار إداري');
+
+        if (isSystemSecurityNotice) {
+          type = 'SYSTEM';
+          const baseUrl = process.env.APP_BASE_URL || process.env.APP_URL || 'https://api.exchangesmangement.online';
+          commentUser = {
+            id: 0,
+            name: 'إدارة النظام',
+            avatar: `${baseUrl}/system-logo.png`,
+          };
+        } else if (
           text.includes('تمت الموافقة على اشتراكك') ||
           text.includes('تم قبول اشتراكك') ||
           text.includes('تفعيل دورتك بنجاح') ||
@@ -504,6 +523,10 @@ export class CommentsService {
         return {
           ...mention,
           type,
+          comment: {
+            ...mention.comment,
+            user: commentUser,
+          },
         };
       }
 
