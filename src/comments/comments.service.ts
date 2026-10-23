@@ -518,6 +518,11 @@ export class CommentsService {
           type = 'ASSIGNMENT_SUBMISSION';
         } else if (text.includes('بإضافة درس جديد') || text.includes('درس جديد بعنوان')) {
           type = 'NEW_LESSON';
+        } else if (!mention.comment.lessonId && !mention.comment.examId && !mention.comment.parentId) {
+          // أي رسالة جماعية أو إشعار عام من المعلم/الأدمن غير مرتبط بدرس أو اختبار
+          // يتم تصنيف نوعه كـ SYSTEM حتى يخفي تطبيق الهاتف زر الرد تلقائياً وبدون تعديل التطبيق
+          // مع الإبقاء الكامل على اسم وصورة المعلم الشخصية
+          type = 'SYSTEM';
         }
 
         return {
