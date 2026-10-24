@@ -558,6 +558,9 @@ export class ExamsService {
 
     return this.prisma.$transaction(async (tx) => {
       if (questions) {
+        await tx.userAnswer.deleteMany({
+          where: { question: { examId } },
+        });
         await tx.question.deleteMany({ where: { examId } });
         await tx.exam.update({
           where: { id: examId },
@@ -607,6 +610,73 @@ export class ExamsService {
     });
   }
 
+  async addQuestion(userId: number, role: Role, examId: number, dto: CreateQuestionDto) {
+    await this.checkExamPermission(userId, role, examId);
+    return this.prisma.question.create({
+      data: {
+        text: dto.text,
+        type: dto.type,
+        points: dto.points,
+        imageUrl: dto.imageUrl,
+        examId,
+        options: {
+          create: dto.options.map((o) => ({
+            text: o.text,
+            isCorrect: o.isCorrect,
+          })),
+        },
+      },
+      include: { options: true },
+    });
+  }
+
+  async updateQuestion(userId: number, role: Role, questionId: number, dto: CreateQuestionDto) {
+    const question = await this.prisma.question.findUnique({
+      where: { id: questionId },
+      include: { exam: true },
+    });
+    if (!question) throw new NotFoundException('السؤال غير موجود');
+    await this.checkExamPermission(userId, role, question.examId);
+
+    return this.prisma.$transaction(async (tx) => {
+      await tx.userAnswer.deleteMany({ where: { questionId } });
+      await tx.option.deleteMany({ where: { questionId } });
+
+      return tx.question.update({
+        where: { id: questionId },
+        data: {
+          text: dto.text,
+          type: dto.type,
+          points: dto.points,
+          imageUrl: dto.imageUrl,
+          options: {
+            create: dto.options.map((o) => ({
+              text: o.text,
+              isCorrect: o.isCorrect,
+            })),
+          },
+        },
+        include: { options: true },
+      });
+    });
+  }
+
+  async deleteQuestion(userId: number, role: Role, questionId: number) {
+    const question = await this.prisma.question.findUnique({
+      where: { id: questionId },
+      include: { exam: true },
+    });
+    if (!question) throw new NotFoundException('السؤال غير موجود');
+    await this.checkExamPermission(userId, role, question.examId);
+
+    await this.prisma.$transaction(async (tx) => {
+      await tx.userAnswer.deleteMany({ where: { questionId } });
+      await tx.question.delete({ where: { id: questionId } });
+    });
+
+    return { message: 'تم حذف السؤال بنجاح' };
+  }
+
   async deleteExam(userId: number, role: Role, examId: number) {
     await this.checkExamPermission(userId, role, examId);
     await this.prisma.exam.delete({ where: { id: examId } });
@@ -614,15 +684,24 @@ export class ExamsService {
   }
 
   async getExam(examId: number, userId?: number) {
+    const user = userId
+      ? await this.prisma.user.findUnique({
+          where: { id: userId },
+          include: { studentProfile: true },
+        })
+      : null;
+    const isStaff = user?.role === Role.OWNER || user?.role === Role.ADMIN;
+
     const exam = await this.prisma.exam.findUnique({
       where: { id: examId },
       include: {
         lesson: { include: { module: { include: { course: true } } } },
         course: true,
         questions: {
-          select: {
-            points: true,
+          include: {
+            options: true,
           },
+          orderBy: { id: 'asc' },
         },
         _count: { select: { attempts: true, comments: true } },
         comments: {
@@ -647,23 +726,16 @@ export class ExamsService {
     if (!exam) throw new NotFoundException('Exam not found');
 
     if (exam.lesson?.status === LessonStatus.DRAFT) {
-      if (!userId) throw new NotFoundException('Exam not found');
-      const user = await this.prisma.user.findUnique({ where: { id: userId } });
-      if (user?.role !== Role.OWNER && user?.role !== Role.ADMIN)
-        throw new NotFoundException('Exam not found');
+      if (!isStaff) throw new NotFoundException('Exam not found');
     }
 
     let isUnlocked = true;
     let lockReason: string | null = null;
     let remainingAttempts = exam.maxAttempts;
 
-    if (userId) {
+    if (userId && !isStaff) {
       let student = await this.prisma.student.findUnique({ where: { userId } });
       if (!student) {
-        const user = await this.prisma.user.findUnique({
-          where: { id: userId },
-          include: { studentProfile: true },
-        });
         student = user?.studentProfile ?? null;
       }
 
@@ -677,13 +749,9 @@ export class ExamsService {
         });
         remainingAttempts = Math.max(0, exam.maxAttempts - completedAttemptsCount);
 
-        const user = await this.prisma.user.findUnique({ where: { id: userId } });
-        const isStaff = user?.role === Role.OWNER || user?.role === Role.ADMIN;
-        if (!isStaff) {
-          const check = await this.checkExamPrerequisites(student.id, exam);
-          isUnlocked = check.isUnlocked;
-          lockReason = check.lockedReason;
-        }
+        const check = await this.checkExamPrerequisites(student.id, exam);
+        isUnlocked = check.isUnlocked;
+        lockReason = check.lockedReason;
       }
     }
 
@@ -724,6 +792,7 @@ export class ExamsService {
       commentsCount: exam._count.comments,
       totalComments: exam._count.comments,
       latestComment: this.formatLatestComment(comments),
+      ...(isStaff ? { questions } : {}),
     };
   }
 

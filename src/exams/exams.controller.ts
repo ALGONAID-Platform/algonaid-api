@@ -5,6 +5,7 @@ import {
   Param,
   Get,
   Patch,
+  Put,
   Delete,
   UseGuards,
   ParseIntPipe,
@@ -29,7 +30,7 @@ import { Role } from '@prisma/client';
 
 import { ExamsService } from './exams.service';
 import { LeaderboardService } from './leaderboard.service';
-import { CreateExamDto } from './dto/create-exam.dto';
+import { CreateExamDto, CreateQuestionDto } from './dto/create-exam.dto';
 import { UpdateExamDto } from './dto/update-exam.dto';
 import { SubmitExamDto } from './dto/exam-submission.dto';
 import { AuthRollGuard } from 'src/auth/guards/auth-roll.guard';
@@ -127,7 +128,44 @@ export class ExamsController {
     return this.examsService.getExam(id, user.id);
   }
 
+  @Post(':examId/questions')
+  @userRoles(Role.ADMIN, Role.OWNER)
+  @ApiOperation({ summary: 'إضافة سؤال جديد للاختبار (الأدمن/المالك فقط)' })
+  @ApiParam({ name: 'examId', description: 'معرّف الاختبار' })
+  addQuestion(
+    @Param('examId', ParseIntPipe) examId: number,
+    @Body() dto: CreateQuestionDto,
+    @CurrentUser() user: types.JwtPayloadType,
+  ) {
+    return this.examsService.addQuestion(user.id, user.role, examId, dto);
+  }
+
+  @Patch('questions/:questionId')
+  @Put('questions/:questionId')
+  @userRoles(Role.ADMIN, Role.OWNER)
+  @ApiOperation({ summary: 'تعديل سؤال وخياراته (الأدمن/المالك فقط)' })
+  @ApiParam({ name: 'questionId', description: 'معرّف السؤال' })
+  updateQuestion(
+    @Param('questionId', ParseIntPipe) questionId: number,
+    @Body() dto: CreateQuestionDto,
+    @CurrentUser() user: types.JwtPayloadType,
+  ) {
+    return this.examsService.updateQuestion(user.id, user.role, questionId, dto);
+  }
+
+  @Delete('questions/:questionId')
+  @userRoles(Role.ADMIN, Role.OWNER)
+  @ApiOperation({ summary: 'حذف سؤال من الاختبار (الأدمن/المالك فقط)' })
+  @ApiParam({ name: 'questionId', description: 'معرّف السؤال' })
+  deleteQuestion(
+    @Param('questionId', ParseIntPipe) questionId: number,
+    @CurrentUser() user: types.JwtPayloadType,
+  ) {
+    return this.examsService.deleteQuestion(user.id, user.role, questionId);
+  }
+
   @Patch(':id')
+  @Put(':id')
   @userRoles(Role.ADMIN, Role.OWNER)
   @ApiOperation({ summary: 'تحديث اختبار (الأدمن/المالك فقط)' })
   @ApiParam({ name: 'id', description: 'معرّف الاختبار' })
