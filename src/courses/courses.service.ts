@@ -317,6 +317,82 @@ export class CoursesService {
     });
   }
 
+  async findPaidCoursesForAdmin(page?: number, limit?: number) {
+    const isPaginated = page !== undefined || limit !== undefined;
+    const finalPage = Math.max(1, +(page || 1));
+    const finalLimit = Math.max(1, +(limit || 10));
+    const skip = (finalPage - 1) * finalLimit;
+
+    const [courses, total] = await Promise.all([
+      this.prisma.course.findMany({
+        where: {
+          isPaid: true,
+        },
+        include: {
+          teacher: {
+            include: {
+              user: { select: { id: true, name: true, email: true, avatar: true } },
+            },
+          },
+          _count: {
+            select: {
+              enrollments: { where: { status: 'ACTIVE' } },
+              modules: true,
+              practiceExams: true,
+              exams: true,
+            },
+          },
+        },
+        orderBy: { createdAt: 'desc' },
+        ...(isPaginated ? { skip, take: finalLimit } : {}),
+      }),
+      isPaginated
+        ? this.prisma.course.count({
+            where: {
+              isPaid: true,
+            },
+          })
+        : Promise.resolve(0),
+    ]);
+
+    const mappedCourses = courses.map((course) => {
+      const { _count, teacher, ...rest } = course;
+      const teacherName = teacher?.user?.name || 'المهندس/ نذير الجنيد';
+      const enrollmentsCount = _count.enrollments || 0;
+      const isFull = course.maxStudents != null ? enrollmentsCount >= course.maxStudents : false;
+      const remainingSeats = course.maxStudents != null ? Math.max(0, course.maxStudents - enrollmentsCount) : null;
+
+      return {
+        ...rest,
+        teacher: {
+          id: teacher?.id,
+          name: teacherName,
+          user: teacher?.user || { name: teacherName },
+        },
+        enrollmentsCount,
+        modulesCount: _count.modules,
+        practiceExamsCount: _count.practiceExams,
+        examsCount: _count.exams,
+        isFull,
+        remainingSeats,
+      };
+    });
+
+    if (isPaginated) {
+      return {
+        data: mappedCourses,
+        meta: {
+          total,
+          page: finalPage,
+          limit: finalLimit,
+          totalPages: Math.ceil(total / finalLimit) || 1,
+        },
+      };
+    }
+
+    return mappedCourses;
+  }
+
   async findPaidCoursesForKartty() {
     const courses = await this.prisma.course.findMany({
       where: {

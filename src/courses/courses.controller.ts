@@ -8,7 +8,7 @@ import { userRoles } from 'src/auth/decorators/user_roll.decorator';
 import { Role } from '@prisma/client';
 import { CurrentUser } from 'src/auth/decorators/current-user.decorator';
 import * as types from 'src/utils/types';
-import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiOperation, ApiTags, ApiQuery } from '@nestjs/swagger';
 import { SwaggerCreateCourse, SwaggerDeleteCourse, SwaggerGetCourse, SwaggerUpdateCourse, SwaggerGetAllCourses, SwaggerSearchCourses, SwaggerGetKarttyCourses } from './decorators/swagger.decorator';
 import { UpdateCourseDto } from './dto/update-course.dto';
 import { ConvertToRecordedDto } from './dto/convert-to-recorded.dto';
@@ -74,6 +74,23 @@ export class CoursesController {
   @UseGuards(OptionalAuthGuard)
   findPaidCourses(@CurrentUser() user?: types.JwtPayloadType) {
     return this.coursesService.findPaidCourses(user?.id);
+  }
+
+  @Get(['admin/paid', 'paid/admin'])
+  @SkipThrottle()
+  @UseGuards(AuthRollGuard)
+  @userRoles(Role.ADMIN, Role.OWNER)
+  @ApiOperation({ summary: 'Get all paid courses for admin (without enrollment exclusion)' })
+  @ApiQuery({ name: 'page', required: false, type: Number })
+  @ApiQuery({ name: 'limit', required: false, type: Number })
+  findPaidCoursesForAdmin(
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+  ) {
+    return this.coursesService.findPaidCoursesForAdmin(
+      page ? +page : undefined,
+      limit ? +limit : undefined,
+    );
   }
 
   @Get(['kartty', 'external/kartty'])
