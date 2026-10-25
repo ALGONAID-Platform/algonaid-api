@@ -302,15 +302,18 @@ export class AppService {
   private renderRedirectPage(config: RedirectPageConfig): string {
     const safeId = this.escapeForJS(config.id);
     const safePath = this.escapeForJS(config.path);
+    const webUrl = `https://algonaida.vercel.app/${safePath}/${safeId}`;
     const rawUrl = `https://api.exchangesmangement.online/${safePath}/${safeId}`;
     const playStoreUrl = 'https://play.google.com/store/apps/details?id=com.algonaid.app';
-    const appIntentUrl = `intent://api.exchangesmangement.online/${safePath}/${safeId}#Intent;scheme=https;package=com.algonaid.app;S.browser_fallback_url=https%3A%2F%2Fplay.google.com%2Fstore%2Fapps%2Fdetails%3Fid%3Dcom.algonaid.app;end`;
+    const encodedWebUrl = encodeURIComponent(webUrl);
+    const appIntentUrl = `intent://algonaida.vercel.app/${safePath}/${safeId}#Intent;scheme=https;package=com.algonaid.app;S.browser_fallback_url=${encodedWebUrl};end`;
 
     const escapedPageTitle = this.escapeHtml(config.pageTitle);
     const escapedRawTitle = this.escapeHtml(config.rawTitle);
     const escapedDesc = this.escapeHtml(config.description);
     const escapedImg = this.escapeHtml(config.imageUrl);
     const escapedRawUrl = this.escapeHtml(rawUrl);
+    const escapedWebUrl = this.escapeHtml(webUrl);
     const escapedIntentUrl = this.escapeHtml(appIntentUrl);
     const escapedSubHeader = this.escapeHtml(config.subHeader);
     const escapedBadgeText = this.escapeHtml(config.badgeText || 'منصة الجنيد');
@@ -353,7 +356,7 @@ export class AppService {
     <meta property="al:android:url" content="${escapedIntentUrl}">
     <meta property="al:android:package" content="com.algonaid.app">
     <meta property="al:android:app_name" content="منصة الجنيد">
-    <meta property="al:web:url" content="${escapedRawUrl}">
+    <meta property="al:web:url" content="${escapedWebUrl}">
 
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&display=swap" rel="stylesheet">
     <style>
@@ -745,37 +748,45 @@ export class AppService {
 
         <p class="content-desc">${escapedDesc}</p>
 
-        <!-- كارد التوجيه لمتجر التطبيقات للمستخدمين الجدد أو الذين لا يملكون التطبيق -->
+        <!-- كارد التوجيه لمنصة الويب والمتاجر -->
         <div class="install-hero-card">
             <div class="install-header">
-                <div class="install-icon-badge">📲</div>
+                <div class="install-icon-badge">🌐</div>
                 <div class="install-header-text">
-                    <h3>تطبيق منصة الجنيد مطلوب</h3>
-                    <p>للوصول الكامل والتفاعل مع المحتوى</p>
+                    <h3>منصة الجنيد التعليمية</h3>
+                    <p>المحتوى متاح مباشرة عبر الويب والتطبيق</p>
                 </div>
             </div>
 
             <p class="install-notice-text">
-                هذا المحتوى التفاعلي متاح عبر <strong>تطبيق منصة الجنيد التعليمية</strong>. حمّل التطبيق الآن مجاناً لمتابعة الدروس، حل الاختبارات والتكاليف، والمنافسة مع زملائك.
+                هذا المحتوى التعليمي التفاعلي متاح عبر <strong>منصة الجنيد</strong>. يمكنك المتابعة مباشرة عبر موقع الويب أو عبر تطبيق الهاتف.
             </p>
 
-            <a href="${playStoreUrl}" class="btn-store-main" target="_blank" rel="noopener noreferrer" id="playstore-link">
-                <svg class="store-icon" viewBox="0 0 24 24">
-                    <path d="M3,5.27V18.73L16.55,12L3,5.27M17.87,11.33L19.42,12.1L17.87,12.87L16.55,12L17.87,11.33M3,3.41L17.3,10.56L14,12.21L3,3.41M3,20.59L14,11.79L17.3,13.44L3,20.59Z"/>
+            <a href="${escapedWebUrl}" class="btn-store-main" id="web-link">
+                <svg class="store-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <line x1="2" y1="12" x2="22" y2="12"></line>
+                    <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
                 </svg>
                 <div class="btn-store-text">
-                    <span class="btn-store-sub">تثبيت فوري ومجاني من</span>
-                    <span class="btn-store-title">Google Play</span>
+                    <span class="btn-store-sub">متابعة التصفح فوراً عبر</span>
+                    <span class="btn-store-title">الموقع الإلكتروني (الويب)</span>
                 </div>
-                <span class="badge-free">مجاناً</span>
+                <span class="badge-free">دخول</span>
             </a>
 
             <div class="store-secondary-grid">
+                <a href="${playStoreUrl}" class="btn-store-secondary" target="_blank" rel="noopener noreferrer">
+                    <svg viewBox="0 0 24 24">
+                        <path d="M3,5.27V18.73L16.55,12L3,5.27M17.87,11.33L19.42,12.1L17.87,12.87L16.55,12L17.87,11.33M3,3.41L17.3,10.56L14,12.21L3,3.41M3,20.59L14,11.79L17.3,13.44L3,20.59Z"/>
+                    </svg>
+                    <span>Google Play</span>
+                </a>
                 <a href="https://apps.apple.com/app/id-demo" class="btn-store-secondary" target="_blank" rel="noopener noreferrer">
                     <svg viewBox="0 0 24 24">
                         <path d="M18.71,19.5C17.88,20.74 17,21.95 15.66,21.97C14.32,22 13.89,21.18 12.37,21.18C10.84,21.18 10.37,21.95 9.1,22C7.79,22.05 6.8,20.68 5.96,19.47C4.25,17 2.94,12.45 4.7,9.39C5.57,7.87 7.13,6.91 8.82,6.88C10.1,6.86 11.32,7.75 12.11,7.75C12.89,7.75 14.37,6.68 15.92,6.84C16.57,6.87 18.39,7.1 19.56,8.82C19.47,8.88 17.39,10.1 17.41,12.63C17.44,15.65 20.06,16.66 20.1,16.67C20.08,16.74 19.67,18.11 18.71,19.5M15.97,4.17C16.63,3.37 17.07,2.28 16.95,1C16,1.04 14.9,1.6 14.24,2.38C13.68,3.04 13.19,4.14 13.34,5.39C14.39,5.47 15.4,4.88 15.97,4.17Z"/>
                     </svg>
-                    <span>متوفر على App Store</span>
+                    <span>App Store</span>
                 </a>
             </div>
         </div>
@@ -796,17 +807,19 @@ export class AppService {
 
     <script>
         const appIntentUrl = '${this.escapeForJS(appIntentUrl)}';
-        const rawUrl = '${this.escapeForJS(rawUrl)}';
+        const webUrl = '${this.escapeForJS(webUrl)}';
         
-        // محاولة الفتح التلقائي على أندرويد إذا كان التطبيق مثبتًا
-        // في حال لم يكن التطبيق مثبتًا، يتكفل رابط Intent بتحويله للمتجر أو يبقى المستخدم في صفحة الهبوط
+        // التحويل المباشر: إذا كان أندرويد يحاول فتح التطبيق، وإذا لم يكن التطبيق مثبتاً يحول مباشرة إلى الويب
+        // على الأنظمة الأخرى (iOS والكمبيوتر) يتم التحويل مباشرة إلى منصة الويب
         function attemptRedirect() {
             if (/Android/i.test(navigator.userAgent)) {
-                window.location.href = appIntentUrl;
+                window.location.replace(appIntentUrl);
+            } else {
+                window.location.replace(webUrl);
             }
         }
 
-        setTimeout(attemptRedirect, 1000);
+        setTimeout(attemptRedirect, 50);
     </script>
 </body>
 </html>`;
