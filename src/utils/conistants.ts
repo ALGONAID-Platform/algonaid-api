@@ -1,6 +1,6 @@
 export const CURRENT_USER_KEY= 'user'
 
-export const pdfFileSizeLimit = 10 * 1024 * 1024; // 10MB
+export const pdfFileSizeLimit = 100 * 1024 * 1024; // 100MB
 
 export const allowedFileTypes = ['application/pdf'];
 

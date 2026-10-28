@@ -20,7 +20,7 @@ import { UploadcareStorageService } from 'src/utils/uploadcare-storage.service';
           }
           callback(null, true);
         },
-        limits: { fileSize: pdfFileSizeLimit }, // Limit file size to 10MB
+        limits: { fileSize: pdfFileSizeLimit }, // Limit file size to 100MB
       }
     ),
     PrismaModule,
