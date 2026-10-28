@@ -1,15 +1,19 @@
-import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
+import { Injectable, NotFoundException, ForbiddenException, Logger } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
+import { Role } from '@prisma/client';
 import { CreatePostDto } from './dto/create-post.dto';
 import { UpdatePostDto } from './dto/update-post.dto';
 
 @Injectable()
 export class PostsService {
+  private readonly logger = new Logger(PostsService.name);
+
   constructor(private readonly prisma: PrismaService) {}
 
   async create(createPostDto: CreatePostDto, authorId: number) {
     const { pollOptions, ...postData } = createPostDto;
 
+    // 1. استخراج أي مستخدمين تمت الإشارة إليهم صراحة في محتوى المنشور عبر المنشن markdown
     let mentionedUserIds: number[] = [];
     if (postData.content) {
       const mentionRegex = /@\[([^\]]+)\]\(([^)]+)\)/g;
@@ -34,23 +38,73 @@ export class PostsService {
       });
       mentionedUserIds = validUsers.map(u => u.id);
     }
-    
-    return (this.prisma.post.create as any)({
+
+    // 2. إذا كان الناشر معلماً أو مالكاً/أدمن، يتم جلب جميع الطلاب النشطين المسجلين في دوراته لإرسال إشعار لهم
+    try {
+      const author = await this.prisma.user.findUnique({
+        where: { id: authorId },
+        select: { id: true, role: true, teacherProfile: { select: { id: true } } },
+      });
+
+      let courseWhere: any = null;
+      if (author?.teacherProfile?.id) {
+        courseWhere = { instructorId: author.teacherProfile.id };
+      } else if (author?.role === Role.OWNER || author?.role === Role.ADMIN) {
+        courseWhere = {};
+      }
+
+      if (courseWhere !== null) {
+        const enrollments = await this.prisma.enrollment.findMany({
+          where: {
+            course: courseWhere,
+            status: 'ACTIVE',
+          },
+          select: {
+            student: {
+              select: { userId: true },
+            },
+          },
+        });
+
+        for (const e of enrollments) {
+          const studentUserId = e.student?.userId;
+          if (studentUserId && studentUserId !== authorId && !mentionedUserIds.includes(studentUserId)) {
+            mentionedUserIds.push(studentUserId);
+          }
+        }
+      }
+    } catch (err: any) {
+      this.logger.error(`Failed to resolve enrolled students for post notification: ${err?.message}`);
+    }
+
+    // 3. إنشاء المنشور
+    const post = await (this.prisma.post.create as any)({
       data: {
         ...postData,
         authorId,
         pollOptions: postData.isPoll && pollOptions ? {
           create: pollOptions.map(text => ({ text }))
         } : undefined,
-        ...(mentionedUserIds.length > 0 && {
-          mentions: {
-            create: mentionedUserIds.map(uid => ({
-              mentionedUserId: uid,
-            })),
-          },
-        }),
       },
     });
+
+    // 4. إنشاء سجلات الإشارة (Mentions) لجميع الطلاب دفعة واحدة (Bulk insert) لأقصى كفاءة وسرعة
+    if (mentionedUserIds.length > 0) {
+      try {
+        await this.prisma.mention.createMany({
+          data: mentionedUserIds.map(uid => ({
+            postId: post.id,
+            mentionedUserId: uid,
+            isRead: false,
+          })),
+        });
+        this.logger.log(`Created mentions for post ${post.id} to ${mentionedUserIds.length} users.`);
+      } catch (err: any) {
+        this.logger.error(`Failed to create mentions for post ${post.id}: ${err?.message}`);
+      }
+    }
+
+    return post;
   }
 
   async findAll(userId: number, cursor?: number, limit: number = 10) {
