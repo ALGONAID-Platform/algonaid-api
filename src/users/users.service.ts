@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { UpdateProfileDto } from './dtos/update-profile.dto';
 import { UserRole } from 'src/auth/enums/userRole';
@@ -530,14 +530,24 @@ export class UsersService {
     ];
   }
 
-  async verifyUser(id: number, verified: boolean = true) {
-    const user = await this.prisma.user.findUnique({ where: { id } });
+  async verifyUserByAdmin(params: { id?: number; email?: string; verified?: boolean }) {
+    const verified = params.verified !== undefined ? Boolean(params.verified) : true;
+    let user;
+
+    if (params.id) {
+      user = await this.prisma.user.findUnique({ where: { id: params.id } });
+    } else if (params.email) {
+      user = await this.prisma.user.findUnique({ where: { email: params.email.trim().toLowerCase() } });
+    } else {
+      throw new BadRequestException('يجب توفير معرّف المستخدم (userId) أو البريد الإلكتروني (email)');
+    }
+
     if (!user) {
-      throw new NotFoundException(`المستخدم ذو المعرف (${id}) غير موجود`);
+      throw new NotFoundException('المستخدم غير موجود في النظام');
     }
 
     const updatedUser = await this.prisma.user.update({
-      where: { id },
+      where: { id: user.id },
       data: {
         emailVerified: verified,
         ...(verified && {
@@ -558,8 +568,63 @@ export class UsersService {
 
     return {
       success: true,
-      message: verified ? 'تم توثيق حساب المستخدم بنجاح.' : 'تم إلغاء توثيق حساب المستخدم.',
+      message: verified ? 'تم توثيق وتأكيد حساب المستخدم بنجاح.' : 'تم إلغاء توثيق حساب المستخدم.',
       data: updatedUser,
+    };
+  }
+
+  async verifyUser(id: number, verified: boolean = true) {
+    return this.verifyUserByAdmin({ id, verified });
+  }
+
+  async getUnverifiedUsers(page: number = 1, limit: number = 20, search?: string) {
+    const skip = (page - 1) * limit;
+    const where: any = {
+      emailVerified: false,
+    };
+
+    if (search && search.trim().length > 0) {
+      const q = search.trim();
+      where.OR = [
+        { name: { contains: q, mode: 'insensitive' } },
+        { email: { contains: q, mode: 'insensitive' } },
+      ];
+    }
+
+    const [data, total] = await Promise.all([
+      this.prisma.user.findMany({
+        where,
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take: limit,
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          role: true,
+          emailVerified: true,
+          createdAt: true,
+          updatedAt: true,
+          studentProfile: {
+            select: {
+              academicId: true,
+              grade: true,
+            },
+          },
+        },
+      }),
+      this.prisma.user.count({ where }),
+    ]);
+
+    return {
+      success: true,
+      data,
+      meta: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
+      },
     };
   }
 }

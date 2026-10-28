@@ -1,7 +1,8 @@
-import { Controller, Get, Patch, Body, UseGuards, UseInterceptors, UploadedFiles, Param, ParseIntPipe, BadRequestException } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Body, UseGuards, UseInterceptors, UploadedFiles, Param, ParseIntPipe, BadRequestException, Query } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { AuthService } from 'src/auth/services/auth.services';
 import { UpdateProfileDto } from './dtos/update-profile.dto';
+import { VerifyUserDto } from './dtos/verify-user.dto';
 import { AuthGuard } from 'src/auth/guards/auth.guard';
 import { AuthRollGuard } from 'src/auth/guards/auth-roll.guard';
 import { userRoles } from 'src/auth/decorators/user_roll.decorator';
@@ -32,7 +33,46 @@ export class UsersController {
     return this.authService.resetUserSession(id);
   }
 
-  @ApiOperation({ summary: 'توثيق حساب مستخدم (صلاحية الأدمن والمالك فقط)' })
+  @ApiOperation({ summary: 'جلب قائمة الحسابات غير المؤكدة للوحة التحكم (للأدمن والمالك فقط)' })
+  @ApiResponse({ status: 200, description: 'قائمة المستخدمين غير المؤكدين مع إمكانية البحث والصفحات.' })
+  @Get('unverified')
+  @UseGuards(AuthRollGuard)
+  @userRoles(Role.ADMIN, Role.OWNER)
+  async getUnverifiedUsers(
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+    @Query('search') search?: string,
+  ) {
+    const pageNum = page ? parseInt(page, 10) : 1;
+    const limitNum = limit ? parseInt(limit, 10) : 20;
+    return this.usersService.getUnverifiedUsers(pageNum, limitNum, search);
+  }
+
+  @ApiOperation({ summary: 'توثيق وتأكيد حساب مستخدم بواسطة المعرف أو البريد الإلكتروني (للأدمن والمالك فقط)' })
+  @ApiResponse({ status: 200, description: 'تم توثيق الحساب بنجاح.' })
+  @Post('verify')
+  @UseGuards(AuthRollGuard)
+  @userRoles(Role.ADMIN, Role.OWNER)
+  async verifyUserByBody(@Body() dto: VerifyUserDto) {
+    return this.usersService.verifyUserByAdmin({
+      id: dto.userId,
+      email: dto.email,
+      verified: dto.verified,
+    });
+  }
+
+  @Patch('verify')
+  @UseGuards(AuthRollGuard)
+  @userRoles(Role.ADMIN, Role.OWNER)
+  async verifyUserByBodyPatch(@Body() dto: VerifyUserDto) {
+    return this.usersService.verifyUserByAdmin({
+      id: dto.userId,
+      email: dto.email,
+      verified: dto.verified,
+    });
+  }
+
+  @ApiOperation({ summary: 'توثيق حساب مستخدم بواسطة معرّف ID (صلاحية الأدمن والمالك فقط)' })
   @ApiParam({ name: 'id', description: 'معرّف المستخدم (User ID)' })
   @ApiBody({
     required: false,
@@ -48,6 +88,17 @@ export class UsersController {
   @UseGuards(AuthRollGuard)
   @userRoles(Role.ADMIN, Role.OWNER)
   async verifyUser(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() body?: { verified?: boolean },
+  ) {
+    const verified = body?.verified !== undefined ? Boolean(body.verified) : true;
+    return this.usersService.verifyUser(id, verified);
+  }
+
+  @Post(':id/verify')
+  @UseGuards(AuthRollGuard)
+  @userRoles(Role.ADMIN, Role.OWNER)
+  async verifyUserPost(
     @Param('id', ParseIntPipe) id: number,
     @Body() body?: { verified?: boolean },
   ) {
