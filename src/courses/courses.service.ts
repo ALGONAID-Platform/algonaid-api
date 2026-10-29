@@ -197,20 +197,28 @@ export class CoursesService {
   async findAll(userId?: number, role?: string) {
     const student = userId ? await this.prisma.student.findUnique({ where: { userId } }) : null;
     const studentId = student?.id;
-    const isPrivileged = role === 'OWNER' || role === 'ADMIN';
+    let isPrivileged = role === 'OWNER' || role === 'ADMIN';
+    if (!isPrivileged && userId) {
+      const dbUser = await this.prisma.user.findUnique({ where: { id: userId }, select: { role: true } });
+      if (dbUser?.role === 'OWNER' || dbUser?.role === 'ADMIN') {
+        isPrivileged = true;
+      }
+    }
 
     const courses = await this.prisma.course.findMany({
       where: {
         isPaid: false,
-        modules: {
-          some: {
-            lessons: {
-              some: {
-                status: LessonStatus.PUBLISHED,
+        ...(!isPrivileged && {
+          modules: {
+            some: {
+              lessons: {
+                some: {
+                  status: LessonStatus.PUBLISHED,
+                },
               },
             },
           },
-        },
+        }),
         ...((studentId && !isPrivileged) ? {
           NOT: {
             enrollments: {
@@ -254,24 +262,33 @@ export class CoursesService {
     });
   }
 
-  async findPaidCourses(userId?: number) {
+  async findPaidCourses(userId?: number, role?: string) {
     const student = userId ? await this.prisma.student.findUnique({ where: { userId } }) : null;
     const studentId = student?.id;
+    let isPrivileged = role === 'OWNER' || role === 'ADMIN';
+    if (!isPrivileged && userId) {
+      const dbUser = await this.prisma.user.findUnique({ where: { id: userId }, select: { role: true } });
+      if (dbUser?.role === 'OWNER' || dbUser?.role === 'ADMIN') {
+        isPrivileged = true;
+      }
+    }
 
     const courses = await this.prisma.course.findMany({
       where: {
         isPaid: true,
-        modules: {
-          some: {
-            lessons: {
-              some: {
-                status: LessonStatus.PUBLISHED,
+        ...(!isPrivileged && {
+          modules: {
+            some: {
+              lessons: {
+                some: {
+                  status: LessonStatus.PUBLISHED,
+                },
               },
             },
           },
-        },
-        // استبعد الكورسات التي اشترك فيها الطالب بالفعل
-        ...(studentId && {
+        }),
+        // استبعد الكورسات التي اشترك فيها الطالب بالفعل (للطلاب فقط، مع إبقائها للأدمن)
+        ...(studentId && !isPrivileged && {
           NOT: {
             enrollments: {
               some: {
@@ -437,26 +454,35 @@ export class CoursesService {
     });
   }
 
-  async search(query: string, userId?: number) {
+  async search(query: string, userId?: number, role?: string) {
     if (!query) {
       return { courses: [], modules: [], lessons: [], practiceExams: [] };
     }
 
     const student = userId ? await this.prisma.student.findUnique({ where: { userId } }) : null;
     const studentId = student?.id;
+    let isPrivileged = role === 'OWNER' || role === 'ADMIN';
+    if (!isPrivileged && userId) {
+      const dbUser = await this.prisma.user.findUnique({ where: { id: userId }, select: { role: true } });
+      if (dbUser?.role === 'OWNER' || dbUser?.role === 'ADMIN') {
+        isPrivileged = true;
+      }
+    }
 
     const coursesData = await this.prisma.course.findMany({
       where: {
         isPaid: false,
-        modules: {
-          some: {
-            lessons: {
-              some: {
-                status: LessonStatus.PUBLISHED,
+        ...(!isPrivileged && {
+          modules: {
+            some: {
+              lessons: {
+                some: {
+                  status: LessonStatus.PUBLISHED,
+                },
               },
             },
           },
-        },
+        }),
         OR: [
           { title: { contains: query, mode: 'insensitive' } },
           {

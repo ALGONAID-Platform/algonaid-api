@@ -65,7 +65,7 @@ export class CoursesController {
   search(@Query('q') query: string, @CurrentUser() user?: types.JwtPayloadType) {
     // Limit query length to prevent ReDoS and DB overload
     const safeQuery = (query || '').slice(0, 100).trim();
-    return this.coursesService.search(safeQuery, user?.id);
+    return this.coursesService.search(safeQuery, user?.id, user?.role);
   }
 
   @Get('paid')
@@ -73,7 +73,7 @@ export class CoursesController {
   @ApiOperation({ summary: 'Get all paid courses (excludes already-enrolled courses for authenticated users)' })
   @UseGuards(OptionalAuthGuard)
   findPaidCourses(@CurrentUser() user?: types.JwtPayloadType) {
-    return this.coursesService.findPaidCourses(user?.id);
+    return this.coursesService.findPaidCourses(user?.id, user?.role);
   }
 
   @Get(['admin/paid', 'paid/admin'])
