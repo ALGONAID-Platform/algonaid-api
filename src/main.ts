@@ -59,6 +59,7 @@ async function bootstrap() {
       },
     },
     crossOriginEmbedderPolicy: false, // مطلوب لتشغيل الـ uploads بشكل صحيح
+    crossOriginResourcePolicy: { policy: 'cross-origin' }, // السماح بتحميل الصور من نطاقات أخرى
     referrerPolicy: { policy: 'strict-origin-when-cross-origin' },
     hsts: {
       maxAge: 31536000,         // سنة كاملة
