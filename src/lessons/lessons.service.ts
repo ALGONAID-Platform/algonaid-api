@@ -996,7 +996,7 @@ export class LessonsService {
     const isPaidCourse = lesson.module.course.isPaid;
     const isFreePreview = Boolean(lesson.isFreePreview);
     const isUnenrolledPaid = isPaidCourse && !isEnrolled;
-    const shouldMask = (isUnenrolledPaid && !isFreePreview) || (!isStaff && isScheduledFuture);
+    const shouldMask = !isStaff && ((isUnenrolledPaid && !isFreePreview) || isScheduledFuture);
 
     let formattedExam: any = null;
     if (lesson.exam) {
