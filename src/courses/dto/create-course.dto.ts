@@ -1,6 +1,6 @@
 import { IsArray, IsBoolean, IsDate, IsEnum, IsInt, IsNotEmpty, IsNumber, IsOptional, IsString, Max, Min } from "class-validator";
 import { ApiProperty } from "@nestjs/swagger";
-import { CourseType } from "@prisma/client";
+import { CourseType, LessonOrderMode } from "@prisma/client";
 import { Type } from "class-transformer";
 
 export class CreateCourseDto {
@@ -144,6 +144,11 @@ export class CreateCourseDto {
     @Max(100)
     @Type(() => Number)
     certificateMinAttendance?: number;
+
+    @ApiProperty({ example: 'BY_DATE', enum: LessonOrderMode, description: 'طريقة ترتيب الدروس: BY_DATE (حسب تاريخ الإنشاء) أو BY_ORDER (ترتيب مخصص يدوي)', required: false, default: 'BY_DATE' })
+    @IsOptional()
+    @IsEnum(LessonOrderMode)
+    lessonOrderMode?: LessonOrderMode;
 }
 
 

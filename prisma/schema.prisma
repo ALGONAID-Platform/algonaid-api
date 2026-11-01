@@ -23,6 +23,11 @@ enum CourseType {
   LIVE // دورة تفاعلية مباشرة
 }
 
+enum LessonOrderMode {
+  BY_DATE // الترتيب الافتراضي حسب تاريخ الإنشاء
+  BY_ORDER // الترتيب المخصص حسب حقل الترتيب order
+}
+
 enum LiveStatus {
   SCHEDULED // مجدول لم يبدأ بعد
   LIVE_NOW // بث مباشر الآن
@@ -185,6 +190,7 @@ model Course {
   discountedPriceSar    Decimal?   @db.Decimal(10, 2)
 
   courseType        CourseType     @default(RECORDED)
+  lessonOrderMode   LessonOrderMode @default(BY_DATE) // خيار طريقة ترتيب الدروس (تاريخ الإنشاء أو الترتيب المخصص)
   scheduleDaysText  String? // أيام وتوقيت المحاضرات للبث المباشر
   maxStudents       Int?    // الحد الأقصى للطلاب المسجلين في الكورس (null = غير محدود)
   payments          Payment[]

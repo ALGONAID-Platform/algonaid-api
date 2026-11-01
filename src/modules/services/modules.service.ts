@@ -72,7 +72,7 @@ export class ModulesService {
     const modules = await this.prisma.module.findMany({
       include: {
         course: {
-          select: { id: true, isPaid: true, instructorId: true },
+          select: { id: true, isPaid: true, instructorId: true, lessonOrderMode: true },
         },
         lessons: {
           where: {
@@ -120,12 +120,25 @@ export class ModulesService {
     return modules.map((mod) => {
       const { lessons, course, _count, ...rest } = mod;
 
+      const isOrderByOrder = (course as any)?.lessonOrderMode === 'BY_ORDER';
+      const sortedLessons = [...lessons].sort((a, b) => {
+        if (a.dayNumber && b.dayNumber && a.dayNumber !== b.dayNumber) {
+          return a.dayNumber - b.dayNumber;
+        }
+        if (isOrderByOrder) {
+          if (a.order !== b.order) return a.order - b.order;
+        }
+        const diff = new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+        if (diff !== 0) return diff;
+        return a.id - b.id;
+      });
+
       const isExempt = activeEnrollmentCourseIds.includes(mod.courseId);
       const isUnenrolledPaid = Boolean(course?.isPaid && !isExempt);
 
       const now = new Date();
 
-      const mappedLessons = lessons.map(lesson => {
+      const mappedLessons = sortedLessons.map(lesson => {
         // @ts-ignore
         const { _count: lessonCount, assignment, exam, pdfFiles, ...lessonRest } = lesson;
         const isAssignmentQuiz = Boolean(
@@ -143,6 +156,7 @@ export class ModulesService {
 
         const isFreePreview = Boolean(lesson.isFreePreview);
         const shouldMask = (isUnenrolledPaid && !isFreePreview) || isScheduledFuture;
+        const effectiveOrder = (!isOwner && !isOrderByOrder) ? 0 : lesson.order;
 
         const rawPdfFiles = (pdfFiles as any[]) || [];
         const primaryPdf = rawPdfFiles.length > 0 ? rawPdfFiles[0].url : lesson.pdfUrl;
@@ -152,6 +166,7 @@ export class ModulesService {
 
         return {
           ...lessonRest,
+          order: effectiveOrder,
           // حجب المحتوى الحساس للكورسات المدفوعة لغير المشتركين
           description: shouldMask ? null : lesson.description,
           content: shouldMask ? null : lesson.content,

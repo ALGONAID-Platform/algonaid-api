@@ -511,6 +511,7 @@ export class CoursesService {
         title: true,
         description: true,
         thumbnail: true,
+        lessonOrderMode: true,
         teacher: {
           select: {
             user: {

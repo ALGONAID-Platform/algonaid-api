@@ -10,6 +10,7 @@ import { CreateLessonDto } from './dto/create-lesson.dto';
 import { UpdateLessonDto } from './dto/update-lesson.dto';
 import { UpdateLiveStatusDto } from './dto/update-live-status.dto';
 import { CreateLessonPdfDto } from './dto/create-lesson-pdf.dto';
+import { ReorderLessonsDto } from './dto/reorder-lessons.dto';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { pdfFileSizeLimit } from 'src/utils/conistants';
 import { SwaggerCreateLesson, SwaggerGetAllLessonsByModule, SwaggerGetLesson, SwaggerUpdateLesson, SwaggerDeleteLesson } from './decorators/swagger.decorator';
@@ -166,6 +167,29 @@ export class LessonsController {
   @ApiOperation({ summary: 'Get lesson details for guest (masked if paid/locked)' })
   findOneGuest(@Param('id', ParseIntPipe) id: number) {
     return this.lessonsService.findOne(id);
+  }
+
+  @Patch('course/:courseId/reorder')
+  @ApiOperation({ summary: 'Reorder lessons in a course' })
+  @UseGuards(AuthRollGuard)
+  @userRoles(Role.ADMIN, Role.OWNER)
+  reorderLessonsByCourse(
+    @Param('courseId', ParseIntPipe) courseId: number,
+    @Body() dto: ReorderLessonsDto,
+    @CurrentUser() user: types.JwtPayloadType,
+  ) {
+    return this.lessonsService.reorderLessons(dto.lessonIds, user.id, courseId);
+  }
+
+  @Patch('reorder')
+  @ApiOperation({ summary: 'Reorder lessons' })
+  @UseGuards(AuthRollGuard)
+  @userRoles(Role.ADMIN, Role.OWNER)
+  reorderLessons(
+    @Body() dto: ReorderLessonsDto,
+    @CurrentUser() user: types.JwtPayloadType,
+  ) {
+    return this.lessonsService.reorderLessons(dto.lessonIds, user.id);
   }
 
   @Patch(':id/live-status')

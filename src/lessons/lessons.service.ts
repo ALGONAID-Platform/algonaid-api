@@ -5,7 +5,7 @@ import { UpdateLessonDto } from './dto/update-lesson.dto';
 import { UpdateLiveStatusDto } from './dto/update-live-status.dto';
 import { CreateLessonPdfDto } from './dto/create-lesson-pdf.dto';
 import { MESSAGES } from 'src/utils/messages';
-import { LessonStatus, LiveStatus, Role } from '@prisma/client';
+import { LessonOrderMode, LessonStatus, LiveStatus, Role } from '@prisma/client';
 import { NotificationsService } from 'src/notifications/notifications.service';
 
 @Injectable()
@@ -184,6 +184,28 @@ export class LessonsService {
       lessonData.pdfUrl = pdfFilesToCreate[0].url;
     }
 
+    // تعيين الترتيب التلقائي للدرس أو إزاحة الدروس التالية في حال تحديد ترتيب مخصص
+    if (lessonData.order !== undefined && lessonData.order !== null && Number(lessonData.order) > 0) {
+      const targetOrder = Number(lessonData.order);
+      await this.prisma.lesson.updateMany({
+        where: {
+          moduleId: finalModuleId,
+          order: { gte: targetOrder },
+        },
+        data: {
+          order: { increment: 1 },
+        },
+      });
+      lessonData.order = targetOrder;
+    } else {
+      const maxLesson = await this.prisma.lesson.findFirst({
+        where: { moduleId: finalModuleId },
+        orderBy: { order: 'desc' },
+        select: { order: true },
+      });
+      lessonData.order = (maxLesson?.order ?? 0) + 1;
+    }
+
     const lesson = await this.prisma.lesson.create({
       data: {
         ...lessonData,
@@ -269,7 +291,7 @@ export class LessonsService {
   async findAllByCourse(courseId: number, page: number = 1, limit: number = 10, userId?: number) {
     const course = await this.prisma.course.findUnique({
       where: { id: courseId },
-      select: { id: true, isPaid: true, instructorId: true },
+      select: { id: true, isPaid: true, instructorId: true, lessonOrderMode: true },
     });
 
     if (!course) {
@@ -285,6 +307,20 @@ export class LessonsService {
     const isPaidCourse = course.isPaid;
     const isUnenrolledPaid = isPaidCourse && !isEnrolled;
     const now = new Date();
+
+    const isOrderByOrder = course.lessonOrderMode === LessonOrderMode.BY_ORDER;
+    const courseOrderBy = isOrderByOrder
+      ? [
+          { dayNumber: 'asc' as const },
+          { order: 'asc' as const },
+          { createdAt: 'asc' as const },
+          { id: 'asc' as const },
+        ]
+      : [
+          { dayNumber: 'asc' as const },
+          { createdAt: 'asc' as const },
+          { id: 'asc' as const },
+        ];
 
     const skip = (page - 1) * limit;
 
@@ -314,12 +350,7 @@ export class LessonsService {
             select: { comments: true },
           },
         },
-        orderBy: [
-          { dayNumber: 'asc' },
-          { order: 'asc' },
-          { createdAt: 'asc' },
-          { id: 'asc' },
-        ],
+        orderBy: courseOrderBy,
         skip,
         take: limit,
       }),
@@ -342,6 +373,7 @@ export class LessonsService {
 
       const isFreePreview = Boolean(lesson.isFreePreview);
       const shouldMask = (isUnenrolledPaid && !isFreePreview) || (!isStaff && isScheduledFuture);
+      const effectiveOrder = (!isStaff && !isOrderByOrder) ? 0 : lesson.order;
 
       if (shouldMask) {
         return {
@@ -349,7 +381,7 @@ export class LessonsService {
           title: lesson.title,
           objectives: lesson.objectives || [],
           moduleId: lesson.moduleId,
-          order: lesson.order,
+          order: effectiveOrder,
           description: null,
           content: null,
           videoUrl: null,
@@ -389,6 +421,7 @@ export class LessonsService {
 
       return {
         ...rest,
+        order: effectiveOrder,
         description: lesson.description,
         content: lesson.content,
         liveMeetingUrl: lesson.liveMeetingUrl,
@@ -488,6 +521,31 @@ export class LessonsService {
       where.status = LessonStatus.PUBLISHED;
     }
 
+    let queryOrderBy: any[] = [
+      { createdAt: 'desc' },
+      { id: 'desc' },
+    ];
+    if (params.courseId) {
+      const targetCourse = await this.prisma.course.findUnique({
+        where: { id: params.courseId },
+        select: { lessonOrderMode: true },
+      });
+      if (targetCourse?.lessonOrderMode === LessonOrderMode.BY_ORDER) {
+        queryOrderBy = [
+          { dayNumber: 'asc' },
+          { order: 'asc' },
+          { createdAt: 'asc' },
+          { id: 'asc' },
+        ];
+      } else {
+        queryOrderBy = [
+          { dayNumber: 'asc' },
+          { createdAt: 'asc' },
+          { id: 'asc' },
+        ];
+      }
+    }
+
     const [lessons, total] = await Promise.all([
       this.prisma.lesson.findMany({
         where,
@@ -502,6 +560,7 @@ export class LessonsService {
                   title: true,
                   isPaid: true,
                   instructorId: true,
+                  lessonOrderMode: true,
                 },
               },
             },
@@ -530,10 +589,7 @@ export class LessonsService {
             select: { comments: true },
           },
         },
-        orderBy: [
-          { createdAt: 'desc' },
-          { id: 'desc' },
-        ],
+        orderBy: queryOrderBy,
         skip,
         take: limit,
       }),
@@ -557,6 +613,8 @@ export class LessonsService {
       const isUnenrolledPaid = isPaidCourse && !isEnrolled;
       const isFreePreview = Boolean(lesson.isFreePreview);
       const shouldMask = (isUnenrolledPaid && !isFreePreview) || (!isStaff && isScheduledFuture);
+      const isCourseOrderByOrder = module?.course?.lessonOrderMode === LessonOrderMode.BY_ORDER;
+      const effectiveOrder = (!isStaff && !isCourseOrderByOrder) ? 0 : lesson.order;
 
       const moduleInfo = module
         ? {
@@ -573,7 +631,7 @@ export class LessonsService {
           title: lesson.title,
           objectives: lesson.objectives || [],
           moduleId: lesson.moduleId,
-          order: lesson.order,
+          order: effectiveOrder,
           description: null,
           content: null,
           videoUrl: null,
@@ -614,6 +672,7 @@ export class LessonsService {
 
       return {
         ...rest,
+        order: effectiveOrder,
         description: lesson.description,
         content: lesson.content,
         liveMeetingUrl: lesson.liveMeetingUrl,
@@ -653,7 +712,7 @@ export class LessonsService {
       where: { id: moduleId },
       include: {
         course: {
-          select: { id: true, isPaid: true, instructorId: true },
+          select: { id: true, isPaid: true, instructorId: true, lessonOrderMode: true },
         },
       },
     });
@@ -680,6 +739,20 @@ export class LessonsService {
     );
     const isPaidCourse = module.course.isPaid;
     const now = new Date();
+
+    const isOrderByOrder = module.course.lessonOrderMode === LessonOrderMode.BY_ORDER;
+    const moduleOrderBy = isOrderByOrder
+      ? [
+          { dayNumber: 'asc' as const },
+          { order: 'asc' as const },
+          { createdAt: 'asc' as const },
+          { id: 'asc' as const },
+        ]
+      : [
+          { dayNumber: 'asc' as const },
+          { createdAt: 'asc' as const },
+          { id: 'asc' as const },
+        ];
 
     const skip = (page - 1) * limit;
 
@@ -712,12 +785,7 @@ export class LessonsService {
             select: { comments: true }
           }
         },
-        orderBy: [
-          { dayNumber: 'asc' },
-          { order: 'asc' },
-          { createdAt: 'asc' },
-          { id: 'asc' },
-        ],
+        orderBy: moduleOrderBy,
         skip,
         take: limit,
       }),
@@ -743,6 +811,7 @@ export class LessonsService {
       const isUnenrolledPaid = isPaidCourse && !isEnrolled;
       const isFreePreview = Boolean(lesson.isFreePreview);
       const shouldMask = (isUnenrolledPaid && !isFreePreview) || (!isStaff && isScheduledFuture);
+      const effectiveOrder = (!isStaff && !isOrderByOrder) ? 0 : lesson.order;
 
       if (shouldMask) {
         return {
@@ -750,7 +819,7 @@ export class LessonsService {
           title: lesson.title,
           objectives: lesson.objectives || [],
           moduleId: lesson.moduleId,
-          order: lesson.order,
+          order: effectiveOrder,
           description: null,
           content: null,
           videoUrl: null,
@@ -790,6 +859,7 @@ export class LessonsService {
 
       return {
         ...rest,
+        order: effectiveOrder,
         description: lesson.description,
         content: lesson.content,
         liveMeetingUrl: lesson.liveMeetingUrl,
@@ -1441,5 +1511,60 @@ export class LessonsService {
   async getPdfs(lessonId: number, userId?: number) {
     const lesson = await this.findOne(lessonId, userId);
     return lesson.pdfFiles || [];
+  }
+
+  async reorderLessons(lessonIds: number[], userId: number, courseId?: number) {
+    if (!lessonIds || !Array.isArray(lessonIds) || lessonIds.length === 0) {
+      throw new BadRequestException('يجب تزويد قائمة بمعرفات الدروس المراد إعادة ترتيبها');
+    }
+
+    const lessons = await this.prisma.lesson.findMany({
+      where: { id: { in: lessonIds } },
+      include: {
+        module: {
+          include: {
+            course: {
+              select: { id: true, instructorId: true },
+            },
+          },
+        },
+      },
+    });
+
+    if (lessons.length === 0) {
+      throw new NotFoundException('لم يتم العثور على أي دروس مطابقة');
+    }
+
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      include: { teacherProfile: true },
+    });
+
+    const isOwnerOrAdmin = user?.role === Role.OWNER || user?.role === Role.ADMIN;
+    if (!isOwnerOrAdmin) {
+      const teacherId = user?.teacherProfile?.id;
+      const unauthorized = lessons.some(
+        (l) => l.module?.course?.instructorId !== teacherId,
+      );
+      if (unauthorized) {
+        throw new ForbiddenException('غير مصرح لك بإعادة ترتيب دروس هذا المقرر');
+      }
+    }
+
+    // تحديث ترتيب الدروس بشكل ذري متتابع
+    await this.prisma.$transaction(
+      lessonIds.map((id, index) =>
+        this.prisma.lesson.update({
+          where: { id },
+          data: { order: index + 1 },
+        }),
+      ),
+    );
+
+    return {
+      success: true,
+      message: 'تم إعادة ترتيب الدروس بنجاح',
+      count: lessonIds.length,
+    };
   }
 }
