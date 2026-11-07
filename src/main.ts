@@ -132,8 +132,8 @@ async function bootstrap() {
       res.set('X-Content-Type-Options', 'nosniff');
     }
   });
-  app.use(json({ limit: '5mb' }));
-  app.use(urlencoded({ extended: true, limit: '5mb' }));
+  app.use(json({ limit: '100mb' }));
+  app.use(urlencoded({ extended: true, limit: '100mb' }));
 
   // Only expose Swagger documentation in non-production environments.
   if (process.env.NODE_ENV !== 'production') {
@@ -145,6 +145,10 @@ async function bootstrap() {
   app.useGlobalFilters(new GlobalExceptionFilter());
 
   const port = process.env.PORT || 3000;
-  await app.listen(port, '0.0.0.0');
+  const server = await app.listen(port, '0.0.0.0');
+  // رفع مهلة اتصال السيرفر لـ 10 دقائق لضمان اكتمال رفع الفيديوهات الكبيرة
+  server.setTimeout(600000);
+  server.keepAliveTimeout = 65000;
+  server.headersTimeout = 66000;
 }
 bootstrap();

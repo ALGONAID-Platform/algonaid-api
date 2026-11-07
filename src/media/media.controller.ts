@@ -107,8 +107,8 @@ const videoFileFilter = (req: any, file: any, cb: any) => {
   );
 };
 
-// الحد الأقصى لحجم الفيديو: 1 جيجابايت
-const ONE_GIGABYTE = 1024 * 1024 * 1024;
+// الحد الأقصى لحجم الفيديو: 2 جيجابايت
+const MAX_VIDEO_SIZE = 2 * 1024 * 1024 * 1024;
 
 @ApiTags('Media & Uploads')
 @Controller('media')
@@ -229,7 +229,7 @@ export class MediaController {
       {
         storage: videoDiskStorage,
         fileFilter: videoFileFilter,
-        limits: { fileSize: ONE_GIGABYTE },
+        limits: { fileSize: MAX_VIDEO_SIZE },
       },
     ),
   )
@@ -265,7 +265,7 @@ export class MediaController {
       {
         storage: videoDiskStorage,
         fileFilter: videoFileFilter,
-        limits: { fileSize: ONE_GIGABYTE },
+        limits: { fileSize: MAX_VIDEO_SIZE },
       },
     ),
   )
