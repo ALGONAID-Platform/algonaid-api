@@ -48,6 +48,19 @@ export class UsersController {
     return this.usersService.getUnverifiedUsers(pageNum, limitNum, search);
   }
 
+  @ApiOperation({ summary: 'Admin/Owner: البحث في كل مستخدمي المنصة بالاسم أو الإيميل أو الرقم الأكاديمي' })
+  @ApiResponse({ status: 200, description: 'نتائج البحث عن المستخدمين.' })
+  @Get('search')
+  @UseGuards(AuthRollGuard)
+  @userRoles(Role.ADMIN, Role.OWNER)
+  async searchUsers(
+    @Query('q') query?: string,
+    @Query('limit') limit?: string,
+  ) {
+    const limitNum = limit ? parseInt(limit, 10) : 20;
+    return this.usersService.searchUsers(query, limitNum);
+  }
+
   @ApiOperation({ summary: 'توثيق وتأكيد حساب مستخدم بواسطة المعرف أو البريد الإلكتروني (للأدمن والمالك فقط)' })
   @ApiResponse({ status: 200, description: 'تم توثيق الحساب بنجاح.' })
   @Post('verify')

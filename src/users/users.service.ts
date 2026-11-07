@@ -627,4 +627,47 @@ export class UsersService {
       },
     };
   }
+
+  async searchUsers(query: string = '', limit: number = 20) {
+    const q = (query || '').trim();
+    if (!q) {
+      return { success: true, data: [] };
+    }
+
+    const isNumeric = /^\d+$/.test(q);
+
+    const users = await this.prisma.user.findMany({
+      where: {
+        OR: [
+          { name: { contains: q, mode: 'insensitive' } },
+          { email: { contains: q, mode: 'insensitive' } },
+          { studentProfile: { academicId: { contains: q, mode: 'insensitive' } } },
+          ...(isNumeric ? [{ id: parseInt(q, 10) }] : []),
+        ],
+      },
+      take: Math.min(limit, 50),
+      orderBy: { createdAt: 'desc' },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        role: true,
+        avatar: true,
+        emailVerified: true,
+        createdAt: true,
+        studentProfile: {
+          select: {
+            id: true,
+            academicId: true,
+            grade: true,
+          },
+        },
+      },
+    });
+
+    return {
+      success: true,
+      data: users,
+    };
+  }
 }
