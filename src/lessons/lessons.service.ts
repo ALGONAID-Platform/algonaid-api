@@ -311,13 +311,11 @@ export class LessonsService {
     const isOrderByOrder = course.lessonOrderMode === LessonOrderMode.BY_ORDER;
     const courseOrderBy = isOrderByOrder
       ? [
-          { dayNumber: 'asc' as const },
           { order: 'asc' as const },
           { createdAt: 'asc' as const },
           { id: 'asc' as const },
         ]
       : [
-          { dayNumber: 'asc' as const },
           { createdAt: 'asc' as const },
           { id: 'asc' as const },
         ];
@@ -362,6 +360,18 @@ export class LessonsService {
       }),
     ]);
 
+    lessons.sort((a, b) => {
+      if (isOrderByOrder) {
+        const orderA = a.order ?? 0;
+        const orderB = b.order ?? 0;
+        if (orderA !== orderB) return orderA - orderB;
+      }
+      const timeA = new Date(a.createdAt).getTime();
+      const timeB = new Date(b.createdAt).getTime();
+      if (timeA !== timeB) return timeA - timeB;
+      return a.id - b.id;
+    });
+
     const mappedLessons = lessons.map(lesson => {
       const { exam, assignment, _count, pdfFiles, ...rest } = lesson;
       const isScheduledFuture =
@@ -373,7 +383,7 @@ export class LessonsService {
 
       const isFreePreview = Boolean(lesson.isFreePreview);
       const shouldMask = (isUnenrolledPaid && !isFreePreview) || (!isStaff && isScheduledFuture);
-      const effectiveOrder = (!isStaff && !isOrderByOrder) ? 0 : lesson.order;
+      const effectiveOrder = lesson.order ?? 0;
 
       if (shouldMask) {
         return {
@@ -532,14 +542,12 @@ export class LessonsService {
       });
       if (targetCourse?.lessonOrderMode === LessonOrderMode.BY_ORDER) {
         queryOrderBy = [
-          { dayNumber: 'asc' },
           { order: 'asc' },
           { createdAt: 'asc' },
           { id: 'asc' },
         ];
       } else {
         queryOrderBy = [
-          { dayNumber: 'asc' },
           { createdAt: 'asc' },
           { id: 'asc' },
         ];
@@ -596,6 +604,21 @@ export class LessonsService {
       this.prisma.lesson.count({ where }),
     ]);
 
+    if (params.courseId) {
+      const isCourseOrderByOrder = lessons[0]?.module?.course?.lessonOrderMode === LessonOrderMode.BY_ORDER;
+      lessons.sort((a, b) => {
+        if (isCourseOrderByOrder) {
+          const orderA = a.order ?? 0;
+          const orderB = b.order ?? 0;
+          if (orderA !== orderB) return orderA - orderB;
+        }
+        const timeA = new Date(a.createdAt).getTime();
+        const timeB = new Date(b.createdAt).getTime();
+        if (timeA !== timeB) return timeA - timeB;
+        return a.id - b.id;
+      });
+    }
+
     const now = new Date();
 
     const mappedLessons = lessons.map((lesson) => {
@@ -613,8 +636,7 @@ export class LessonsService {
       const isUnenrolledPaid = isPaidCourse && !isEnrolled;
       const isFreePreview = Boolean(lesson.isFreePreview);
       const shouldMask = (isUnenrolledPaid && !isFreePreview) || (!isStaff && isScheduledFuture);
-      const isCourseOrderByOrder = module?.course?.lessonOrderMode === LessonOrderMode.BY_ORDER;
-      const effectiveOrder = (!isStaff && !isCourseOrderByOrder) ? 0 : lesson.order;
+      const effectiveOrder = lesson.order ?? 0;
 
       const moduleInfo = module
         ? {
@@ -743,13 +765,11 @@ export class LessonsService {
     const isOrderByOrder = module.course.lessonOrderMode === LessonOrderMode.BY_ORDER;
     const moduleOrderBy = isOrderByOrder
       ? [
-          { dayNumber: 'asc' as const },
           { order: 'asc' as const },
           { createdAt: 'asc' as const },
           { id: 'asc' as const },
         ]
       : [
-          { dayNumber: 'asc' as const },
           { createdAt: 'asc' as const },
           { id: 'asc' as const },
         ];
@@ -797,6 +817,18 @@ export class LessonsService {
       })
     ]);
 
+    lessons.sort((a, b) => {
+      if (isOrderByOrder) {
+        const orderA = a.order ?? 0;
+        const orderB = b.order ?? 0;
+        if (orderA !== orderB) return orderA - orderB;
+      }
+      const timeA = new Date(a.createdAt).getTime();
+      const timeB = new Date(b.createdAt).getTime();
+      if (timeA !== timeB) return timeA - timeB;
+      return a.id - b.id;
+    });
+
     const mappedLessons = lessons.map(lesson => {
       const { exam, assignment, _count, pdfFiles, ...rest } = lesson;
 
@@ -811,7 +843,7 @@ export class LessonsService {
       const isUnenrolledPaid = isPaidCourse && !isEnrolled;
       const isFreePreview = Boolean(lesson.isFreePreview);
       const shouldMask = (isUnenrolledPaid && !isFreePreview) || (!isStaff && isScheduledFuture);
-      const effectiveOrder = (!isStaff && !isOrderByOrder) ? 0 : lesson.order;
+      const effectiveOrder = lesson.order ?? 0;
 
       if (shouldMask) {
         return {

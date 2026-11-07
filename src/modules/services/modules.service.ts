@@ -122,11 +122,10 @@ export class ModulesService {
 
       const isOrderByOrder = (course as any)?.lessonOrderMode === 'BY_ORDER';
       const sortedLessons = [...lessons].sort((a, b) => {
-        if (a.dayNumber && b.dayNumber && a.dayNumber !== b.dayNumber) {
-          return a.dayNumber - b.dayNumber;
-        }
         if (isOrderByOrder) {
-          if (a.order !== b.order) return a.order - b.order;
+          const orderA = a.order ?? 0;
+          const orderB = b.order ?? 0;
+          if (orderA !== orderB) return orderA - orderB;
         }
         const diff = new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
         if (diff !== 0) return diff;
@@ -156,7 +155,7 @@ export class ModulesService {
 
         const isFreePreview = Boolean(lesson.isFreePreview);
         const shouldMask = (isUnenrolledPaid && !isFreePreview) || isScheduledFuture;
-        const effectiveOrder = (!isOwner && !isOrderByOrder) ? 0 : lesson.order;
+        const effectiveOrder = lesson.order ?? 0;
 
         const rawPdfFiles = (pdfFiles as any[]) || [];
         const primaryPdf = rawPdfFiles.length > 0 ? rawPdfFiles[0].url : lesson.pdfUrl;
@@ -310,6 +309,20 @@ export class ModulesService {
 
     if (!module) {
       throw new NotFoundException(MESSAGES.MODULES.MODULE_NOT_FOUND(id));
+    }
+
+    const isOrderByOrder = (module.course as any)?.lessonOrderMode === 'BY_ORDER';
+    if (module.lessons && module.lessons.length > 0) {
+      module.lessons.sort((a, b) => {
+        if (isOrderByOrder) {
+          const orderA = a.order ?? 0;
+          const orderB = b.order ?? 0;
+          if (orderA !== orderB) return orderA - orderB;
+        }
+        const diff = new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+        if (diff !== 0) return diff;
+        return a.id - b.id;
+      });
     }
 
     return module;
