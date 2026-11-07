@@ -212,4 +212,46 @@ export class PaymentsController {
   confirmExternalPayment(@Body() dto: ConfirmExternalPaymentDto) {
     return this.paymentsService.confirmExternalPayment(dto);
   }
+
+  // ==========================================
+  // ADMIN: إضافة مشترك يدوياً
+  // ==========================================
+
+  @ApiOperation({ summary: 'Admin/Owner: تسجيل مستخدم في كورس يدوياً مع إنشاء دفعة معتمدة تلقائياً للكورسات المدفوعة' })
+  @Post('admin/enroll')
+  @UseGuards(AuthRollGuard)
+  @userRoles(Role.ADMIN, Role.OWNER)
+  adminEnrollUser(
+    @CurrentUser() admin: types.JwtPayloadType,
+    @Body() dto: { userId: number; courseId: number; createPayment?: boolean; amount?: number; currency?: string; notes?: string },
+  ) {
+    return this.paymentsService.adminEnrollUser(admin.id, dto);
+  }
+
+  @ApiOperation({ summary: 'Admin/Owner: جلب قائمة المشتركين في كورس معين' })
+  @ApiQuery({ name: 'page', required: false, type: Number })
+  @ApiQuery({ name: 'limit', required: false, type: Number })
+  @ApiQuery({ name: 'search', required: false, type: String })
+  @Get('admin/enrollments/:courseId')
+  @UseGuards(AuthRollGuard)
+  @userRoles(Role.ADMIN, Role.OWNER)
+  getCourseEnrollments(
+    @Param('courseId', ParseIntPipe) courseId: number,
+    @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
+    @Query('limit', new DefaultValuePipe(20), ParseIntPipe) limit: number,
+    @Query('search') search?: string,
+  ) {
+    return this.paymentsService.getCourseEnrollments(courseId, page, limit, search);
+  }
+
+  @ApiOperation({ summary: 'Admin/Owner: إلغاء تسجيل مستخدم من كورس' })
+  @Delete('admin/enrollments/:courseId/users/:userId')
+  @UseGuards(AuthRollGuard)
+  @userRoles(Role.ADMIN, Role.OWNER)
+  async adminUnenrollUser(
+    @Param('courseId', ParseIntPipe) courseId: number,
+    @Param('userId', ParseIntPipe) userId: number,
+  ) {
+    return this.paymentsService.adminUnenrollUser(courseId, userId);
+  }
 }

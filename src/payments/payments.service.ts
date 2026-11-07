@@ -1037,4 +1037,279 @@ export class PaymentsService {
       },
     };
   }
+
+  // ==========================================
+  // ADMIN: إضافة مشترك يدوياً في كورس
+  // ==========================================
+
+  /**
+   * Admin: تسجيل مستخدم في كورس بشكل مباشر مع إنشاء دفعة معتمدة تلقائياً للكورسات المدفوعة
+   */
+  async adminEnrollUser(
+    adminUserId: number,
+    dto: { userId: number; courseId: number; createPayment?: boolean; amount?: number; currency?: string; notes?: string },
+  ) {
+    // 1. التحقق من وجود المستخدم المراد تسجيله
+    const targetUser = await this.prisma.user.findUnique({
+      where: { id: dto.userId },
+      include: { studentProfile: true },
+    });
+
+    if (!targetUser) {
+      throw new NotFoundException('المستخدم المراد تسجيله غير موجود');
+    }
+
+    // 2. التحقق من وجود الكورس
+    const course = await this.prisma.course.findUnique({
+      where: { id: dto.courseId },
+      select: {
+        id: true,
+        title: true,
+        isPaid: true,
+        price: true,
+        discountedPrice: true,
+        priceYerOld: true,
+        discountedPriceYerOld: true,
+        priceYerNew: true,
+        discountedPriceYerNew: true,
+        priceSar: true,
+        discountedPriceSar: true,
+        maxStudents: true,
+      },
+    });
+
+    if (!course) {
+      throw new NotFoundException('الكورس المحدد غير موجود');
+    }
+
+    // 3. الحصول على حساب الطالب أو إنشاؤه تلقائياً
+    const student = await this.getOrCreateStudent(dto.userId);
+
+    // 4. التحقق من التسجيل المسبق
+    const existingEnrollment = await this.prisma.enrollment.findUnique({
+      where: {
+        studentId_courseId: {
+          studentId: student.id,
+          courseId: dto.courseId,
+        },
+      },
+    });
+
+    if (existingEnrollment && existingEnrollment.status === 'ACTIVE') {
+      throw new ConflictException('هذا المستخدم مسجل ومفعّل في هذا الكورس بالفعل');
+    }
+
+    // 5. التحقق من الطاقة الاستيعابية
+    if (course.maxStudents != null) {
+      const activeCount = await this.prisma.enrollment.count({
+        where: { courseId: course.id, status: 'ACTIVE' },
+      });
+      if (activeCount >= course.maxStudents) {
+        throw new BadRequestException(
+          `اكتمل الحد الأقصى للطلاب في هذا الكورس (${course.maxStudents} طالب)`,
+        );
+      }
+    }
+
+    // 6. تحديد المبلغ
+    const generalPrice = Number(course.discountedPrice || course.price || 0);
+    const currency = (dto.currency as Currency) || Currency.YER_OLD;
+    const prices: Record<Currency, number> = {
+      YER_OLD: Number(course.discountedPriceYerOld || course.priceYerOld || generalPrice),
+      YER_NEW: Number(course.discountedPriceYerNew || course.priceYerNew || generalPrice),
+      SAR: Number(course.discountedPriceSar || course.priceSar || 0),
+      USD: generalPrice,
+    };
+    const finalAmount = dto.amount ?? prices[currency] ?? generalPrice;
+
+    // 7. تسجيل المشترك (وإنشاء الدفعة إن طُلب)
+    const shouldCreatePayment = course.isPaid && dto.createPayment !== false;
+
+    let enrollment: { id: number; status: string; studentId: number; courseId: number };
+    let payment: { id: number; amount: unknown; currency: unknown; createdAt: Date } | null = null;
+
+    if (shouldCreatePayment) {
+      const [newPayment, newEnrollment] = await this.prisma.$transaction([
+        this.prisma.payment.create({
+          data: {
+            studentId: student.id,
+            courseId: dto.courseId,
+            amount: finalAmount,
+            currency,
+            transactionNumber: `ADMIN-${Date.now()}-${adminUserId}`,
+            receiptUrl: 'ADMIN_MANUAL_ENROLLMENT',
+            status: PaymentStatus.APPROVED,
+            notes: dto.notes || `تسجيل يدوي من لوحة التحكم بواسطة المشرف (userId: ${adminUserId})`,
+            reviewedById: adminUserId,
+            reviewedAt: new Date(),
+          },
+        }),
+        this.prisma.enrollment.upsert({
+          where: { studentId_courseId: { studentId: student.id, courseId: dto.courseId } },
+          create: { studentId: student.id, courseId: dto.courseId, status: 'ACTIVE' },
+          update: { status: 'ACTIVE' },
+        }),
+      ]);
+      payment = newPayment;
+      enrollment = newEnrollment;
+    } else {
+      enrollment = await this.prisma.enrollment.upsert({
+        where: { studentId_courseId: { studentId: student.id, courseId: dto.courseId } },
+        create: { studentId: student.id, courseId: dto.courseId, status: 'ACTIVE' },
+        update: { status: 'ACTIVE' },
+      });
+    }
+
+    // 8. إرسال إشعار للطالب
+    try {
+      const firstLesson = await this.prisma.lesson.findFirst({
+        where: { module: { courseId: dto.courseId } },
+        orderBy: { order: 'asc' },
+        select: { id: true },
+      });
+
+      await this.notificationsService.notifyCourseEnrollmentApproved(
+        targetUser.id,
+        course.title,
+        adminUserId,
+        firstLesson?.id,
+      );
+    } catch {
+      // لا نوقف العملية بسبب فشل الإشعار
+    }
+
+    return {
+      message: `تم تسجيل المستخدم "${targetUser.name}" في كورس "${course.title}" بنجاح.`,
+      enrollment: {
+        id: enrollment.id,
+        status: enrollment.status,
+        student: {
+          id: targetUser.id,
+          name: targetUser.name,
+          email: targetUser.email,
+          academicId: student.academicId,
+        },
+        course: { id: course.id, title: course.title },
+        payment: payment
+          ? {
+              id: payment.id,
+              amount: Number(payment.amount),
+              currency: payment.currency,
+              status: 'APPROVED',
+              createdAt: payment.createdAt,
+            }
+          : null,
+      },
+    };
+  }
+
+  /**
+   * Admin: جلب قائمة المشتركين في كورس معين
+   */
+  async getCourseEnrollments(
+    courseId: number,
+    page = 1,
+    limit = 20,
+    search?: string,
+  ) {
+    const skip = (page - 1) * limit;
+
+    const course = await this.prisma.course.findUnique({
+      where: { id: courseId },
+      select: { id: true, title: true, isPaid: true },
+    });
+
+    if (!course) {
+      throw new NotFoundException('الكورس غير موجود');
+    }
+
+    const where: {
+      courseId: number;
+      student?: {
+        user?: {
+          OR?: Array<{ name?: { contains: string; mode: 'insensitive' }; email?: { contains: string; mode: 'insensitive' } }>;
+        };
+      };
+    } = { courseId };
+    if (search) {
+      where.student = {
+        user: {
+          OR: [
+            { name: { contains: search, mode: 'insensitive' } },
+            { email: { contains: search, mode: 'insensitive' } },
+          ],
+        },
+      };
+    }
+
+    const [enrollments, total] = await Promise.all([
+      this.prisma.enrollment.findMany({
+        where,
+        include: {
+          student: {
+            include: {
+              user: { select: { id: true, name: true, email: true, avatar: true, createdAt: true } },
+              payments: {
+                where: { courseId },
+                orderBy: { createdAt: 'desc' },
+                take: 1,
+                select: { id: true, amount: true, currency: true, status: true, createdAt: true },
+              },
+            },
+          },
+        },
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take: limit,
+      }),
+      this.prisma.enrollment.count({ where }),
+    ]);
+
+    return {
+      course,
+      enrollments: enrollments.map((e) => ({
+        enrollmentId: e.id,
+        enrolledAt: e.createdAt,
+        status: e.status,
+        student: {
+          id: e.student.user.id,
+          name: e.student.user.name,
+          email: e.student.user.email,
+          avatar: e.student.user.avatar,
+          academicId: e.student.academicId,
+          joinedAt: e.student.user.createdAt,
+        },
+        payment: e.student.payments[0] ?? null,
+      })),
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit),
+    };
+  }
+
+  /**
+   * Admin: إلغاء تسجيل مستخدم من كورس
+   */
+  async adminUnenrollUser(courseId: number, userId: number) {
+    const student = await this.prisma.student.findUnique({ where: { userId } });
+    if (!student) {
+      throw new NotFoundException('لم يتم العثور على حساب طالب لهذا المستخدم');
+    }
+
+    const enrollment = await this.prisma.enrollment.findUnique({
+      where: { studentId_courseId: { studentId: student.id, courseId } },
+    });
+
+    if (!enrollment) {
+      throw new NotFoundException('هذا المستخدم غير مسجل في هذا الكورس');
+    }
+
+    await this.prisma.enrollment.update({
+      where: { studentId_courseId: { studentId: student.id, courseId } },
+      data: { status: 'CANCELLED' },
+    });
+
+    return { message: 'تم إلغاء تسجيل الطالب من الكورس بنجاح.' };
+  }
 }
