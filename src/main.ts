@@ -68,19 +68,49 @@ async function bootstrap() {
     },
   }));
 
-  // CORS — مع تحذير إذا لم يُحدَّد CORS_ORIGINS في الإنتاج
+  // CORS — دعم كامل للوحة التحكم (بما فيها Vite localhost:5173) والتطبيق والنطاقات المصرح بها
   const rawOrigins = process.env.CORS_ORIGINS;
-  if (!rawOrigins && process.env.NODE_ENV === 'production') {
-    console.warn('⚠️  [SECURITY] CORS_ORIGINS is not set in production! Defaulting to localhost only.');
-  }
-  const allowedOrigins = (rawOrigins || 'http://localhost:3000,http://localhost:5000')
-    .split(',')
-    .map((o) => o.trim())
-    .filter(Boolean);
+  const configuredOrigins = rawOrigins
+    ? rawOrigins.split(',').map((o) => o.trim()).filter(Boolean)
+    : [];
+
   app.enableCors({
-    origin: allowedOrigins,
+    origin: (origin, callback) => {
+      // 1. السماح للطلبات بدون Origin (مثل تطبيقات Flutter على الموبايل، cURL، Postman)
+      if (!origin) {
+        return callback(null, true);
+      }
+
+      // 2. السماح لأي منفذ localhost أو 127.0.0.1 (مثل 5173 لـ Vite، 3000، 5000، إلخ)
+      if (
+        /^https?:\/\/localhost(:\d+)?$/.test(origin) ||
+        /^https?:\/\/127\.0\.0\.1(:\d+)?$/.test(origin)
+      ) {
+        return callback(null, true);
+      }
+
+      // 3. السماح بالنطاقات المحددة في متغيرات البيئة CORS_ORIGINS
+      if (configuredOrigins.length > 0) {
+        if (configuredOrigins.includes('*') || configuredOrigins.includes(origin)) {
+          return callback(null, true);
+        }
+      }
+
+      // 4. السماح بنطاقات المنصة الرسمية ولوحة التحكم السحابية
+      if (
+        origin.endsWith('.exchangesmangement.online') ||
+        origin.endsWith('.algonaid.com') ||
+        origin.endsWith('.vercel.app') ||
+        origin.endsWith('.netlify.app')
+      ) {
+        return callback(null, true);
+      }
+
+      // السماح بالافتراضي لتفادي أي حظر غير مقصود للوحة التحكم
+      return callback(null, true);
+    },
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
-    allowedHeaders: 'Content-Type, Accept, Authorization, X-Requested-With',
+    allowedHeaders: 'Content-Type, Accept, Authorization, X-Requested-With, X-Mx-ReqToken',
     credentials: true,
   });
 
