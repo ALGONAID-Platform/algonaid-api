@@ -805,5 +805,112 @@ export class AssignmentsService {
 
     return gradedSubmission;
   }
+
+  /**
+   * [لوحة التحكم] جلب جميع التكليفات مع التسليمات في استعلام واحد سريع جداً
+   */
+  async getAdminOverview(params: {
+    courseId?: number;
+    lessonId?: number;
+    status?: SubmissionStatus;
+  }) {
+    const where: any = {};
+    if (params.lessonId) {
+      where.lessonId = params.lessonId;
+    }
+    if (params.courseId) {
+      where.lesson = { module: { courseId: params.courseId } };
+    }
+
+    const assignments = await this.prisma.assignment.findMany({
+      where,
+      include: {
+        lesson: {
+          select: {
+            id: true,
+            title: true,
+            module: {
+              select: {
+                id: true,
+                title: true,
+                courseId: true,
+                course: {
+                  select: {
+                    id: true,
+                    title: true,
+                  },
+                },
+              },
+            },
+          },
+        },
+        submissions: {
+          where: params.status ? { status: params.status } : {},
+          include: {
+            student: {
+              select: {
+                id: true,
+                user: {
+                  select: {
+                    id: true,
+                    name: true,
+                    email: true,
+                    avatar: true,
+                  },
+                },
+              },
+            },
+            gradedBy: {
+              select: {
+                id: true,
+                name: true,
+              },
+            },
+          },
+          orderBy: { submittedAt: 'desc' },
+        },
+        _count: {
+          select: { submissions: true },
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    return assignments.map((assignment) => {
+      const course = assignment.lesson?.module?.course;
+      const lessonTitle = assignment.lesson?.title || `الدرس #${assignment.lessonId}`;
+      const courseTitle = course?.title || 'مقرر مجهول';
+      const courseId = course?.id ? String(course.id) : '';
+
+      return {
+        assignment: {
+          id: assignment.id,
+          lessonId: assignment.lessonId,
+          title: assignment.title,
+          description: assignment.description,
+          type: assignment.type,
+          maxScore: assignment.maxScore,
+          dueDate: assignment.dueDate,
+          attachmentUrl: assignment.attachmentUrl,
+          createdAt: assignment.createdAt,
+          _count: assignment._count,
+        },
+        lessonTitle,
+        courseTitle,
+        courseId,
+        submissions: assignment.submissions.map((sub) => ({
+          id: sub.id,
+          content: sub.content,
+          fileUrl: sub.fileUrl,
+          submittedAt: sub.submittedAt,
+          status: sub.status,
+          score: sub.score,
+          feedback: sub.feedback,
+          feedbackImageUrl: sub.feedbackImageUrl,
+          student: sub.student?.user ? { user: sub.student.user } : sub.student,
+        })),
+      };
+    });
+  }
 }
 

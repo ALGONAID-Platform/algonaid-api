@@ -81,6 +81,24 @@ export class AssignmentsController {
     return this.assignmentsService.delete(user.id, user.role, id);
   }
 
+  @Get('admin/overview')
+  @userRoles(Role.ADMIN, Role.OWNER)
+  @ApiOperation({ summary: '[لوحة التحكم] جلب جميع التكليفات والتسليمات بنقرة واحدة سريعة' })
+  @ApiQuery({ name: 'courseId', required: false, type: Number, description: 'فلترة حسب المقرر' })
+  @ApiQuery({ name: 'lessonId', required: false, type: Number, description: 'فلترة حسب الدرس' })
+  @ApiQuery({ name: 'status', enum: SubmissionStatus, required: false, description: 'فلترة حسب حالة التسليم' })
+  getAdminOverview(
+    @Query('courseId') courseId?: string,
+    @Query('lessonId') lessonId?: string,
+    @Query('status') status?: SubmissionStatus,
+  ) {
+    return this.assignmentsService.getAdminOverview({
+      courseId: courseId ? +courseId : undefined,
+      lessonId: lessonId ? +lessonId : undefined,
+      status,
+    });
+  }
+
   @Get('lesson/:lessonId')
   @userRoles(Role.STUDENT, Role.ADMIN, Role.OWNER)
   @ApiOperation({ summary: 'جلب التكليف المرتبط بدرس معين مع حالة تسليم الطالب إن وجدت' })
