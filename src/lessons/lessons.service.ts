@@ -101,7 +101,7 @@ export class LessonsService {
       include: { teacherProfile: true }
     });
 
-    const isOwner = user?.role === Role.OWNER;
+    const isOwner = user?.role === Role.OWNER || user?.role === Role.ADMIN;
     let finalModuleId: number;
 
     if (!moduleId) {
@@ -1158,7 +1158,7 @@ export class LessonsService {
         include: { teacherProfile: true }
       });
       const isInstructor = user?.teacherProfile && lesson.module.course.instructorId === user.teacherProfile.id;
-      const isOwner = user?.role === Role.OWNER;
+      const isOwner = user?.role === Role.OWNER || user?.role === Role.ADMIN;
 
       if (!isInstructor && !isOwner) {
         throw new ForbiddenException(MESSAGES.LESSONS.LESSON_NOT_FOUND(id));
@@ -1318,7 +1318,7 @@ export class LessonsService {
     });
 
     const isInstructor = user?.teacherProfile && lesson.module.course.instructorId === user.teacherProfile.id;
-    const isOwner = user?.role === Role.OWNER;
+    const isOwner = user?.role === Role.OWNER || user?.role === Role.ADMIN;
 
     if (!isInstructor && !isOwner) {
       throw new ForbiddenException(MESSAGES.LESSONS.UNAUTHORIZED_UPDATE);
@@ -1469,7 +1469,7 @@ export class LessonsService {
     });
 
     const isInstructor = user?.teacherProfile && lesson.module.course.instructorId === user.teacherProfile.id;
-    const isOwner = user?.role === Role.OWNER;
+    const isOwner = user?.role === Role.OWNER || user?.role === Role.ADMIN;
 
     if (!isInstructor && !isOwner) {
       throw new ForbiddenException(MESSAGES.LESSONS.UNAUTHORIZED_DELETE);
@@ -1515,7 +1515,7 @@ export class LessonsService {
     });
 
     const isInstructor = user?.teacherProfile && lesson.module.course.instructorId === user.teacherProfile.id;
-    const isOwner = user?.role === Role.OWNER;
+    const isOwner = user?.role === Role.OWNER || user?.role === Role.ADMIN;
 
     if (!isInstructor && !isOwner) {
       throw new ForbiddenException(MESSAGES.LESSONS.UNAUTHORIZED_UPDATE);
