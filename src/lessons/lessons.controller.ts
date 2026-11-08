@@ -116,6 +116,39 @@ export class LessonsController {
     return this.lessonsService.findLatestEnrolledLessons(user.id);
   }
 
+  /**
+   * [DASHBOARD ONLY] جلب دروس مقرر معين للوحة التحكم — مع pagination.
+   *
+   * هذه الـ endpoint مخصصة حصراً للوحة التحكم (ADMIN / OWNER).
+   *
+   * الفرق عن GET /lessons/course/:courseId (تطبيق الموبايل):
+   * - تُرجع جميع الدروس بغض النظر عن الحالة (PUBLISHED + DRAFT معاً)
+   * - لا تقوم بإخفاء (masking) أي محتوى حتى في المقررات المدفوعة
+   * - لا تُرجع description و content لتسريع الاستجابة (لوحة التحكم لا تعرضها في القائمة)
+   * - تُرجع حقول الإدارة: status, scheduledAt, durationMinutes, dayNumber, liveStatus, liveMeetingUrl إلخ
+   *
+   * @param courseId - معرّف المقرر
+   * @param page - رقم الصفحة (الافتراضي 1)
+   * @param limit - عدد النتائج لكل صفحة (الافتراضي 10)
+   */
+  @Get('admin/course/:courseId')
+  @SkipThrottle()
+  @UseGuards(AuthRollGuard)
+  @userRoles(Role.ADMIN, Role.OWNER)
+  @ApiOperation({
+    summary: '[لوحة التحكم] جلب دروس مقرر مع pagination',
+    description: 'مخصصة للوحة التحكم فقط. تُرجع جميع الدروس (DRAFT + PUBLISHED) بدون وصف أو محتوى لسرعة الاستجابة.',
+  })
+  @ApiQuery({ name: 'page', required: false, type: Number, description: 'رقم الصفحة (الافتراضي 1)' })
+  @ApiQuery({ name: 'limit', required: false, type: Number, description: 'عدد النتائج في الصفحة (الافتراضي 10)' })
+  findAllByCourseAdmin(
+    @Param('courseId', ParseIntPipe) courseId: number,
+    @Query('page') page: string = '1',
+    @Query('limit') limit: string = '10',
+  ) {
+    return this.lessonsService.findAllByCourseAdmin(courseId, +page, +limit);
+  }
+
   @Get('search')
   @SkipThrottle()
   @UseGuards(AuthRollGuard)

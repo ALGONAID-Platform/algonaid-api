@@ -288,6 +288,111 @@ export class LessonsService {
     return lesson;
   }
 
+  /**
+   * [DASHBOARD] جلب دروس مقرر معين للوحة التحكم — مع pagination.
+   *
+   * الفرق عن findAllByCourse (تطبيق الموبايل):
+   * - يُرجع جميع الدروس بغض النظر عن الحالة (PUBLISHED + DRAFT)
+   * - لا يقوم بإخفاء (masking) أي محتوى
+   * - لا يُرجع description و content لتسريع الاستجابة
+   * - يُرجع حقول الإدارة: status, scheduledAt, durationMinutes, dayNumber, liveStatus إلخ
+   * - مقيّد بـ ADMIN و OWNER فقط
+   */
+  async findAllByCourseAdmin(
+    courseId: number,
+    page: number = 1,
+    limit: number = 10,
+  ) {
+    const course = await this.prisma.course.findUnique({
+      where: { id: courseId },
+      select: { id: true, lessonOrderMode: true },
+    });
+
+    if (!course) {
+      throw new NotFoundException('الكورس المحدد غير موجود');
+    }
+
+    const isOrderByOrder = course.lessonOrderMode === LessonOrderMode.BY_ORDER;
+    const orderBy = isOrderByOrder
+      ? [{ order: 'asc' as const }, { createdAt: 'asc' as const }, { id: 'asc' as const }]
+      : [{ createdAt: 'asc' as const }, { id: 'asc' as const }];
+
+    const skip = (page - 1) * limit;
+
+    const [lessons, total] = await Promise.all([
+      this.prisma.lesson.findMany({
+        where: { module: { courseId } },      // جميع الحالات بدون فلتر status
+        select: {
+          id: true,
+          title: true,
+          order: true,
+          moduleId: true,
+          status: true,
+          isReading: true,
+          isMandatory: true,
+          isFreePreview: true,
+          scheduledAt: true,
+          durationMinutes: true,
+          dayNumber: true,
+          liveStatus: true,
+          liveMeetingUrl: true,
+          videoUrl: true,
+          recordingVideoUrl: true,
+          pdfUrl: true,
+          objectives: true,
+          createdAt: true,
+          updatedAt: true,
+          pdfFiles: {
+            select: { id: true, title: true, url: true, order: true },
+            orderBy: { order: 'asc' },
+          },
+          exam: { select: { id: true } },
+          assignment: { select: { id: true } },
+        },
+        orderBy,
+        skip,
+        take: limit,
+      }),
+      this.prisma.lesson.count({ where: { module: { courseId } } }),
+    ]);
+
+    const data = lessons.map((lesson) => ({
+      id: lesson.id,
+      title: lesson.title,
+      order: lesson.order ?? 0,
+      moduleId: lesson.moduleId,
+      status: lesson.status,
+      isPublished: lesson.status === LessonStatus.PUBLISHED,
+      isReading: lesson.isReading ?? null,
+      isMandatory: lesson.isMandatory ?? null,
+      isFreePreview: Boolean(lesson.isFreePreview),
+      scheduledAt: lesson.scheduledAt ?? null,
+      durationMinutes: lesson.durationMinutes ?? null,
+      dayNumber: lesson.dayNumber ?? null,
+      liveStatus: lesson.liveStatus ?? null,
+      liveMeetingUrl: lesson.liveMeetingUrl ?? null,
+      videoUrl: lesson.videoUrl ?? null,
+      recordingVideoUrl: lesson.recordingVideoUrl ?? null,
+      pdfUrl: lesson.pdfFiles.length > 0 ? lesson.pdfFiles[0].url : (lesson.pdfUrl ?? null),
+      pdfFiles: lesson.pdfFiles,
+      hasExam: !!lesson.exam,
+      hasAssignment: !!lesson.assignment,
+      objectives: Array.isArray(lesson.objectives) ? lesson.objectives as string[] : [],
+      createdAt: lesson.createdAt,
+      updatedAt: lesson.updatedAt,
+    }));
+
+    return {
+      data,
+      meta: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit) || 1,
+      },
+    };
+  }
+
   async findAllByCourse(courseId: number, page: number = 1, limit: number = 10, userId?: number) {
     const course = await this.prisma.course.findUnique({
       where: { id: courseId },
