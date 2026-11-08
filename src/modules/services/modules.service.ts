@@ -165,7 +165,7 @@ export class ModulesService {
         return {
           ...lessonRest,
           order: effectiveOrder,
-          dayNumber: lesson.dayNumber,
+          dayNumber: null,
           scheduledAt: lesson.scheduledAt,
           durationMinutes: lesson.durationMinutes,
           createdAt: (lessonRest as any).createdAt,
@@ -329,6 +329,7 @@ export class ModulesService {
       });
       module.lessons.forEach((l, idx) => {
         l.order = idx + 1;
+        (l as any).dayNumber = null;
       });
     }
 
