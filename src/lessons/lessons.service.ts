@@ -64,33 +64,9 @@ export class LessonsService {
     course: { title?: string; startDate?: Date | null; endDate?: Date | null },
   ) {
     if (!scheduledAt) return;
-
     const lessonDate = new Date(scheduledAt);
     if (isNaN(lessonDate.getTime())) return;
-
-    if (course.startDate) {
-      const courseStart = new Date(course.startDate);
-      courseStart.setUTCHours(0, 0, 0, 0);
-      if (lessonDate < courseStart) {
-        const formattedLesson = lessonDate.toISOString().split('T')[0];
-        const formattedStart = new Date(course.startDate).toISOString().split('T')[0];
-        throw new BadRequestException(
-          `تاريخ الدرس (${formattedLesson}) لا يمكن أن يكون قبل تاريخ بدء الدورة (${formattedStart}).`,
-        );
-      }
-    }
-
-    if (course.endDate) {
-      const courseEnd = new Date(course.endDate);
-      courseEnd.setUTCHours(23, 59, 59, 999);
-      if (lessonDate > courseEnd) {
-        const formattedLesson = lessonDate.toISOString().split('T')[0];
-        const formattedEnd = new Date(course.endDate).toISOString().split('T')[0];
-        throw new BadRequestException(
-          `تاريخ الدرس (${formattedLesson}) لا يمكن أن يكون بعد تاريخ انتهاء الدورة (${formattedEnd}).`,
-        );
-      }
-    }
+    // Allow admins full flexibility to schedule lessons without blocking exceptions
   }
 
   async create(createLessonDto: CreateLessonDto, userId: number) {
