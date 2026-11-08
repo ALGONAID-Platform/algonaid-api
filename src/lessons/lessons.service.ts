@@ -477,7 +477,7 @@ export class LessonsService {
       return a.id - b.id;
     });
 
-    const mappedLessons = lessons.map(lesson => {
+    const mappedLessons = lessons.map((lesson, idx) => {
       const { exam, assignment, _count, pdfFiles, ...rest } = lesson;
       const isScheduledFuture =
         !isStaff &&
@@ -488,7 +488,7 @@ export class LessonsService {
 
       const isFreePreview = Boolean(lesson.isFreePreview);
       const shouldMask = (isUnenrolledPaid && !isFreePreview) || (!isStaff && isScheduledFuture);
-      const effectiveOrder = lesson.order ?? 0;
+      const effectiveOrder = idx + 1;
 
       if (shouldMask) {
         return {
@@ -537,6 +537,9 @@ export class LessonsService {
       return {
         ...rest,
         order: effectiveOrder,
+        dayNumber: null,
+        createdAt: lesson.createdAt,
+        updatedAt: lesson.updatedAt,
         description: lesson.description,
         content: lesson.content,
         liveMeetingUrl: lesson.liveMeetingUrl,
@@ -727,7 +730,7 @@ export class LessonsService {
 
     const now = new Date();
 
-    const mappedLessons = lessons.map((lesson) => {
+    const mappedLessons = lessons.map((lesson, idx) => {
       const { exam, assignment, _count, pdfFiles, module, ...rest } = lesson;
       const isPaidCourse = module?.course?.isPaid ?? false;
       const isEnrolled = enrolledCourseIds.includes(module?.course?.id);
@@ -742,7 +745,7 @@ export class LessonsService {
       const isUnenrolledPaid = isPaidCourse && !isEnrolled;
       const isFreePreview = Boolean(lesson.isFreePreview);
       const shouldMask = (isUnenrolledPaid && !isFreePreview) || (!isStaff && isScheduledFuture);
-      const effectiveOrder = lesson.order ?? 0;
+      const effectiveOrder = idx + 1;
 
       const moduleInfo = module
         ? {
@@ -801,6 +804,9 @@ export class LessonsService {
       return {
         ...rest,
         order: effectiveOrder,
+        dayNumber: null,
+        createdAt: lesson.createdAt,
+        updatedAt: lesson.updatedAt,
         description: params.excludeDescription ? undefined : lesson.description,
         content: params.excludeDescription ? undefined : lesson.content,
         liveMeetingUrl: lesson.liveMeetingUrl,
@@ -935,7 +941,7 @@ export class LessonsService {
       return a.id - b.id;
     });
 
-    const mappedLessons = lessons.map(lesson => {
+    const mappedLessons = lessons.map((lesson, idx) => {
       const { exam, assignment, _count, pdfFiles, ...rest } = lesson;
 
       // الدرس مجدول في المستقبل ولم يقم الأدمن بفتحه يدوياً عبر بدء البث (LIVE_NOW أو COMPLETED)
@@ -949,7 +955,7 @@ export class LessonsService {
       const isUnenrolledPaid = isPaidCourse && !isEnrolled;
       const isFreePreview = Boolean(lesson.isFreePreview);
       const shouldMask = (isUnenrolledPaid && !isFreePreview) || (!isStaff && isScheduledFuture);
-      const effectiveOrder = lesson.order ?? 0;
+      const effectiveOrder = idx + 1;
 
       if (shouldMask) {
         return {
@@ -998,6 +1004,9 @@ export class LessonsService {
       return {
         ...rest,
         order: effectiveOrder,
+        dayNumber: null,
+        createdAt: lesson.createdAt,
+        updatedAt: lesson.updatedAt,
         description: lesson.description,
         content: lesson.content,
         liveMeetingUrl: lesson.liveMeetingUrl,

@@ -136,7 +136,7 @@ export class ModulesService {
 
       const now = new Date();
 
-      const mappedLessons = sortedLessons.map(lesson => {
+      const mappedLessons = sortedLessons.map((lesson, idx) => {
         // @ts-ignore
         const { _count: lessonCount, assignment, exam, pdfFiles, ...lessonRest } = lesson;
         const isAssignmentQuiz = Boolean(
@@ -154,7 +154,7 @@ export class ModulesService {
 
         const isFreePreview = Boolean(lesson.isFreePreview);
         const shouldMask = (isUnenrolledPaid && !isFreePreview) || isScheduledFuture;
-        const effectiveOrder = lesson.order ?? 0;
+        const effectiveOrder = idx + 1;
 
         const rawPdfFiles = (pdfFiles as any[]) || [];
         const primaryPdf = rawPdfFiles.length > 0 ? rawPdfFiles[0].url : lesson.pdfUrl;
@@ -165,6 +165,9 @@ export class ModulesService {
         return {
           ...lessonRest,
           order: effectiveOrder,
+          dayNumber: null,
+          createdAt: (lessonRest as any).createdAt,
+          updatedAt: (lessonRest as any).updatedAt,
           // حجب المحتوى الحساس للكورسات المدفوعة لغير المشتركين
           description: shouldMask ? null : lesson.description,
           content: shouldMask ? null : lesson.content,
@@ -321,6 +324,10 @@ export class ModulesService {
         const diff = new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
         if (diff !== 0) return diff;
         return a.id - b.id;
+      });
+      module.lessons.forEach((l, idx) => {
+        l.order = idx + 1;
+        (l as any).dayNumber = null;
       });
     }
 
