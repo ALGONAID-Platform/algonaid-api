@@ -127,6 +127,7 @@ export class LessonsController {
   @ApiQuery({ name: 'status', required: false, enum: LessonStatus, description: 'فلترة حسب حالة النشر (خاص بالإدارة)' })
   @ApiQuery({ name: 'page', required: false, type: Number, description: 'رقم الصفحة (الافتراضي 1)' })
   @ApiQuery({ name: 'limit', required: false, type: Number, description: 'عدد النتائج في الصفحة (الافتراضي 10)' })
+  @ApiQuery({ name: 'excludeDescription', required: false, type: Boolean, description: 'استثناء حقل الوصف والمحتوى من الاستجابة (لتسريع الطلب)' })
   search(
     @Query('q') q: string,
     @Query('courseId') courseId?: string,
@@ -134,6 +135,7 @@ export class LessonsController {
     @Query('status') status?: LessonStatus,
     @Query('page') page: string = '1',
     @Query('limit') limit: string = '10',
+    @Query('excludeDescription') excludeDescription?: string,
     @CurrentUser() user?: types.JwtPayloadType,
   ) {
     const safeQuery = (q || '').slice(0, 100).trim();
@@ -145,8 +147,26 @@ export class LessonsController {
         status,
         page: +page || 1,
         limit: +limit || 10,
+        excludeDescription: excludeDescription === 'true' || excludeDescription === '1',
       },
       user?.id,
+    );
+  }
+
+  @Get('names')
+  @SkipThrottle()
+  @UseGuards(AuthRollGuard)
+  @userRoles(Role.ADMIN, Role.OWNER)
+  @ApiOperation({ summary: 'جلب قائمة خفيفة بأسماء الدروس (id + title) للقوائم المنسدلة' })
+  @ApiQuery({ name: 'courseId', required: false, type: Number, description: 'تصفية حسب المقرر' })
+  @ApiQuery({ name: 'moduleId', required: false, type: Number, description: 'تصفية حسب الوحدة' })
+  findNames(
+    @Query('courseId') courseId?: string,
+    @Query('moduleId') moduleId?: string,
+  ) {
+    return this.lessonsService.findNames(
+      courseId ? +courseId : undefined,
+      moduleId ? +moduleId : undefined,
     );
   }
 

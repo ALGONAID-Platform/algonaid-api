@@ -473,6 +473,7 @@ export class LessonsService {
       status?: LessonStatus;
       page?: number;
       limit?: number;
+      excludeDescription?: boolean;
     },
     userId?: number,
   ) {
@@ -695,8 +696,8 @@ export class LessonsService {
       return {
         ...rest,
         order: effectiveOrder,
-        description: lesson.description,
-        content: lesson.content,
+        description: params.excludeDescription ? undefined : lesson.description,
+        content: params.excludeDescription ? undefined : lesson.content,
         liveMeetingUrl: lesson.liveMeetingUrl,
         videoUrl: lesson.videoUrl,
         recordingVideoUrl: lesson.recordingVideoUrl,
@@ -1598,5 +1599,39 @@ export class LessonsService {
       message: 'تم إعادة ترتيب الدروس بنجاح',
       count: lessonIds.length,
     };
+  }
+
+  /**
+   * Lightweight lesson names list for dropdowns — returns only id + title.
+   * Used by assignment and exam creation forms where only the name is needed.
+   */
+  async findNames(courseId?: number, moduleId?: number): Promise<Array<{ id: number; title: string }>> {
+    const where: any = { status: LessonStatus.PUBLISHED };
+
+    if (courseId) {
+      where.module = { courseId };
+    }
+    if (moduleId) {
+      where.moduleId = moduleId;
+    }
+
+    // For admin use — return all statuses (no published filter)
+    // We omit the status filter so admins can see drafts in dropdowns too
+    const lessons = await this.prisma.lesson.findMany({
+      where: courseId || moduleId ? (courseId ? { module: { courseId } } : { moduleId }) : {},
+      select: {
+        id: true,
+        title: true,
+        order: true,
+        module: {
+          select: {
+            course: { select: { lessonOrderMode: true } },
+          },
+        },
+      },
+      orderBy: [{ order: 'asc' }, { createdAt: 'asc' }, { id: 'asc' }],
+    });
+
+    return lessons.map((l) => ({ id: l.id, title: l.title }));
   }
 }
