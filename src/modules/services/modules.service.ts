@@ -79,7 +79,6 @@ export class ModulesService {
             ...(!isOwner && { status: LessonStatus.PUBLISHED })
           },
           orderBy: [
-            { dayNumber: 'asc' },
             { order: 'asc' },
             { createdAt: 'asc' },
             { id: 'asc' },
