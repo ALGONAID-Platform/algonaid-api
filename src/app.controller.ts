@@ -76,7 +76,7 @@ export class AppController {
     FileInterceptor('file', {
       storage: memoryStorage(),
       limits: {
-        fileSize: 10 * 1024 * 1024, // 10MB max
+        fileSize: 100 * 1024 * 1024, // 100MB max
       },
       fileFilter: (req, file, callback) => {
         const allowedMimeTypes = [
