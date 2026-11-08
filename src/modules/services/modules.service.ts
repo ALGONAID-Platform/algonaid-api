@@ -3,7 +3,7 @@ import { CreateModuleDto } from '../dto/create-module.dto';
 import { UpdateModuleDto } from '../dto/update-module.dto';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { MESSAGES } from 'src/utils/messages';
-import { LessonStatus, Role } from '@prisma/client';
+import { EnrollmentStatus, LessonStatus, Role } from '@prisma/client';
 
 @Injectable()
 export class ModulesService {
@@ -62,7 +62,7 @@ export class ModulesService {
       instructorId = user?.teacherProfile?.id;
       if (studentId) {
         const enrollments = await this.prisma.enrollment.findMany({
-          where: { studentId, status: 'ACTIVE' },
+          where: { studentId, status: { not: EnrollmentStatus.CANCELLED } },
           select: { courseId: true },
         });
         activeEnrollmentCourseIds = enrollments.map((e) => e.courseId);
@@ -76,7 +76,7 @@ export class ModulesService {
         },
         lessons: {
           where: {
-            ...(!isOwner && { status: LessonStatus.PUBLISHED })
+            ...(!isOwner && !isAdmin && { status: LessonStatus.PUBLISHED })
           },
           orderBy: [
             { order: 'asc' },
@@ -131,7 +131,7 @@ export class ModulesService {
         return a.id - b.id;
       });
 
-      const isExempt = activeEnrollmentCourseIds.includes(mod.courseId);
+      const isExempt = isOwner || isAdmin || (instructorId && instructorId === course?.instructorId) || activeEnrollmentCourseIds.includes(mod.courseId);
       const isUnenrolledPaid = Boolean(course?.isPaid && !isExempt);
 
       const now = new Date();
@@ -153,7 +153,7 @@ export class ModulesService {
           lesson.liveStatus !== 'COMPLETED';
 
         const isFreePreview = Boolean(lesson.isFreePreview);
-        const shouldMask = (isUnenrolledPaid && !isFreePreview) || isScheduledFuture;
+        const shouldMask = !isExempt && isUnenrolledPaid && !isFreePreview;
         const effectiveOrder = idx + 1;
 
         const rawPdfFiles = (pdfFiles as any[]) || [];
@@ -165,7 +165,9 @@ export class ModulesService {
         return {
           ...lessonRest,
           order: effectiveOrder,
-          dayNumber: null,
+          dayNumber: lesson.dayNumber,
+          scheduledAt: lesson.scheduledAt,
+          durationMinutes: lesson.durationMinutes,
           createdAt: (lessonRest as any).createdAt,
           updatedAt: (lessonRest as any).updatedAt,
           // حجب المحتوى الحساس للكورسات المدفوعة لغير المشتركين
@@ -182,8 +184,8 @@ export class ModulesService {
           isAssignmentQuiz: shouldMask ? false : isAssignmentQuiz,
           hasAssignment: shouldMask ? false : Boolean(assignment),
           hasTest: shouldMask ? false : Boolean(exam),
-          status: shouldMask ? null : lesson.status,
-          liveStatus: shouldMask ? null : lesson.liveStatus,
+          status: lesson.status,
+          liveStatus: lesson.liveStatus,
           isLocked: shouldMask,
           isScheduledFuture: Boolean(isScheduledFuture),
           isFreePreview,
@@ -286,7 +288,7 @@ export class ModulesService {
       const user = await this.prisma.user.findUnique({
         where: { id: userId },
       });
-      isOwner = user?.role === Role.OWNER || user?.role === Role.STUDENT;
+      isOwner = user?.role === Role.OWNER || user?.role === Role.ADMIN;
       isStudent = user?.role === Role.STUDENT;
     }
 
@@ -327,7 +329,6 @@ export class ModulesService {
       });
       module.lessons.forEach((l, idx) => {
         l.order = idx + 1;
-        (l as any).dayNumber = null;
       });
     }
 

@@ -5,7 +5,7 @@ import { UpdateLessonDto } from './dto/update-lesson.dto';
 import { UpdateLiveStatusDto } from './dto/update-live-status.dto';
 import { CreateLessonPdfDto } from './dto/create-lesson-pdf.dto';
 import { MESSAGES } from 'src/utils/messages';
-import { LessonOrderMode, LessonStatus, LiveStatus, Role } from '@prisma/client';
+import { EnrollmentStatus, LessonOrderMode, LessonStatus, LiveStatus, Role } from '@prisma/client';
 import { NotificationsService } from 'src/notifications/notifications.service';
 
 @Injectable()
@@ -38,9 +38,12 @@ export class LessonsService {
 
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
-      include: { studentProfile: true },
+      include: { studentProfile: true, teacherProfile: true },
     });
     if (!user) return false;
+
+    if (user.role === Role.OWNER || user.role === Role.ADMIN) return true;
+    if (user.teacherProfile && user.teacherProfile.id === instructorId) return true;
 
     if (user.studentProfile) {
       const enrollment = await this.prisma.enrollment.findUnique({
@@ -51,7 +54,7 @@ export class LessonsService {
           },
         },
       });
-      if (enrollment && enrollment.status === 'ACTIVE') return true;
+      if (enrollment && enrollment.status !== EnrollmentStatus.CANCELLED) return true;
     }
     return false;
   }
@@ -463,7 +466,7 @@ export class LessonsService {
         lesson.liveStatus !== 'COMPLETED';
 
       const isFreePreview = Boolean(lesson.isFreePreview);
-      const shouldMask = (isUnenrolledPaid && !isFreePreview) || (!isStaff && isScheduledFuture);
+      const shouldMask = !isStaff && isUnenrolledPaid && !isFreePreview;
       const effectiveOrder = idx + 1;
 
       if (shouldMask) {
@@ -482,25 +485,25 @@ export class LessonsService {
           pdfFiles: [],
           imageUrl: null,
           isReading: null,
-          scheduledAt: null,
-          durationMinutes: null,
-          liveStatus: null,
-          dayNumber: null,
-          isMandatory: null,
+          scheduledAt: lesson.scheduledAt,
+          durationMinutes: lesson.durationMinutes,
+          liveStatus: lesson.liveStatus,
+          dayNumber: lesson.dayNumber,
+          isMandatory: lesson.isMandatory,
           assignment: null,
           exam: null,
           hasTest: false,
           hasExam: false,
           hasAssignment: false,
-          status: null,
+          status: lesson.status,
           isLocked: true,
           isScheduledFuture: !!isScheduledFuture,
           isPaidCourse: Boolean(isPaidCourse),
           isFreePreview: false,
           commentsCount: 0,
           lessonProgress: [],
-          createdAt: null,
-          updatedAt: null,
+          createdAt: lesson.createdAt,
+          updatedAt: lesson.updatedAt,
         };
       }
 
@@ -513,7 +516,9 @@ export class LessonsService {
       return {
         ...rest,
         order: effectiveOrder,
-        dayNumber: null,
+        dayNumber: lesson.dayNumber,
+        scheduledAt: lesson.scheduledAt,
+        durationMinutes: lesson.durationMinutes,
         createdAt: lesson.createdAt,
         updatedAt: lesson.updatedAt,
         description: lesson.description,
@@ -531,7 +536,7 @@ export class LessonsService {
         status: lesson.status,
         liveStatus: lesson.liveStatus,
         isLocked: false,
-        isScheduledFuture: false,
+        isScheduledFuture: !!isScheduledFuture,
         isPaidCourse,
         isFreePreview: Boolean(lesson.isFreePreview),
         commentsCount: _count.comments,
@@ -581,7 +586,7 @@ export class LessonsService {
         if (user.studentProfile) {
           studentId = user.studentProfile.id;
           const enrollments = await this.prisma.enrollment.findMany({
-            where: { studentId: user.studentProfile.id, status: 'ACTIVE' },
+            where: { studentId: user.studentProfile.id, status: { not: EnrollmentStatus.CANCELLED } },
             select: { courseId: true },
           });
           enrolledCourseIds = enrollments.map((e) => e.courseId);
@@ -720,7 +725,7 @@ export class LessonsService {
 
       const isUnenrolledPaid = isPaidCourse && !isEnrolled;
       const isFreePreview = Boolean(lesson.isFreePreview);
-      const shouldMask = (isUnenrolledPaid && !isFreePreview) || (!isStaff && isScheduledFuture);
+      const shouldMask = !isStaff && isUnenrolledPaid && !isFreePreview;
       const effectiveOrder = idx + 1;
 
       const moduleInfo = module
@@ -748,17 +753,17 @@ export class LessonsService {
           pdfFiles: [],
           imageUrl: null,
           isReading: null,
-          scheduledAt: null,
-          durationMinutes: null,
-          liveStatus: null,
-          dayNumber: null,
-          isMandatory: null,
+          scheduledAt: lesson.scheduledAt,
+          durationMinutes: lesson.durationMinutes,
+          liveStatus: lesson.liveStatus,
+          dayNumber: lesson.dayNumber,
+          isMandatory: lesson.isMandatory,
           assignment: null,
           exam: null,
           hasTest: false,
           hasExam: false,
           hasAssignment: false,
-          status: null,
+          status: lesson.status,
           isLocked: true,
           isScheduledFuture: !!isScheduledFuture,
           isPaidCourse: Boolean(isPaidCourse),
@@ -766,8 +771,8 @@ export class LessonsService {
           commentsCount: 0,
           lessonProgress: [],
           module: moduleInfo,
-          createdAt: null,
-          updatedAt: null,
+          createdAt: lesson.createdAt,
+          updatedAt: lesson.updatedAt,
         };
       }
 
@@ -780,7 +785,9 @@ export class LessonsService {
       return {
         ...rest,
         order: effectiveOrder,
-        dayNumber: null,
+        dayNumber: lesson.dayNumber,
+        scheduledAt: lesson.scheduledAt,
+        durationMinutes: lesson.durationMinutes,
         createdAt: lesson.createdAt,
         updatedAt: lesson.updatedAt,
         description: params.excludeDescription ? undefined : lesson.description,
@@ -798,7 +805,7 @@ export class LessonsService {
         status: lesson.status,
         liveStatus: lesson.liveStatus,
         isLocked: false,
-        isScheduledFuture: false,
+        isScheduledFuture: !!isScheduledFuture,
         isPaidCourse,
         isFreePreview: Boolean(lesson.isFreePreview),
         commentsCount: _count.comments,
@@ -930,7 +937,7 @@ export class LessonsService {
 
       const isUnenrolledPaid = isPaidCourse && !isEnrolled;
       const isFreePreview = Boolean(lesson.isFreePreview);
-      const shouldMask = (isUnenrolledPaid && !isFreePreview) || (!isStaff && isScheduledFuture);
+      const shouldMask = !isStaff && isUnenrolledPaid && !isFreePreview;
       const effectiveOrder = idx + 1;
 
       if (shouldMask) {
@@ -949,25 +956,25 @@ export class LessonsService {
           pdfFiles: [],
           imageUrl: null,
           isReading: null,
-          scheduledAt: null,
-          durationMinutes: null,
-          liveStatus: null,
-          dayNumber: null,
-          isMandatory: null,
+          scheduledAt: lesson.scheduledAt,
+          durationMinutes: lesson.durationMinutes,
+          liveStatus: lesson.liveStatus,
+          dayNumber: lesson.dayNumber,
+          isMandatory: lesson.isMandatory,
           assignment: null,
           exam: null,
           hasTest: false,
           hasExam: false,
           hasAssignment: false,
-          status: null,
+          status: lesson.status,
           isLocked: true,
           isScheduledFuture: !!isScheduledFuture,
           isPaidCourse: Boolean(isPaidCourse),
           isFreePreview: false,
           commentsCount: 0,
           lessonProgress: [],
-          createdAt: null,
-          updatedAt: null,
+          createdAt: lesson.createdAt,
+          updatedAt: lesson.updatedAt,
         };
       }
 
@@ -980,7 +987,9 @@ export class LessonsService {
       return {
         ...rest,
         order: effectiveOrder,
-        dayNumber: null,
+        dayNumber: lesson.dayNumber,
+        scheduledAt: lesson.scheduledAt,
+        durationMinutes: lesson.durationMinutes,
         createdAt: lesson.createdAt,
         updatedAt: lesson.updatedAt,
         description: lesson.description,
@@ -998,7 +1007,7 @@ export class LessonsService {
         status: lesson.status,
         liveStatus: lesson.liveStatus,
         isLocked: false,
-        isScheduledFuture: false,
+        isScheduledFuture: !!isScheduledFuture,
         isPaidCourse,
         isFreePreview: Boolean(lesson.isFreePreview),
         commentsCount: _count.comments,
@@ -1189,7 +1198,7 @@ export class LessonsService {
     const isPaidCourse = lesson.module.course.isPaid;
     const isFreePreview = Boolean(lesson.isFreePreview);
     const isUnenrolledPaid = isPaidCourse && !isEnrolled;
-    const shouldMask = !isStaff && ((isUnenrolledPaid && !isFreePreview) || isScheduledFuture);
+    const shouldMask = !isStaff && isUnenrolledPaid && !isFreePreview;
 
     let formattedExam: any = null;
     if (lesson.exam) {
@@ -1228,17 +1237,17 @@ export class LessonsService {
         pdfFiles: [],
         imageUrl: null,
         isReading: null,
-        scheduledAt: null,
-        durationMinutes: null,
-        liveStatus: null,
-        dayNumber: null,
-        isMandatory: null,
+        scheduledAt: lesson.scheduledAt,
+        durationMinutes: lesson.durationMinutes,
+        liveStatus: lesson.liveStatus,
+        dayNumber: lesson.dayNumber,
+        isMandatory: lesson.isMandatory,
         assignment: null,
         exam: null,
         hasTest: false,
         hasExam: false,
         hasAssignment: false,
-        status: null,
+        status: lesson.status,
         isLocked: true,
         isScheduledFuture: !!isScheduledFuture,
         courseId: lesson.module.course.id,
@@ -1247,8 +1256,8 @@ export class LessonsService {
         commentsCount: 0,
         latestComments: [],
         lessonProgress: [],
-        createdAt: null,
-        updatedAt: null,
+        createdAt: lesson.createdAt,
+        updatedAt: lesson.updatedAt,
       };
     }
 
@@ -1261,6 +1270,10 @@ export class LessonsService {
 
     return {
       ...lessonRest,
+      dayNumber: lesson.dayNumber,
+      scheduledAt: lesson.scheduledAt,
+      durationMinutes: lesson.durationMinutes,
+      liveStatus: lesson.liveStatus,
       description: lesson.description,
       content: lesson.content,
       liveMeetingUrl: lesson.liveMeetingUrl,
@@ -1274,9 +1287,8 @@ export class LessonsService {
       hasTest: !!lesson.exam,
       hasAssignment: !!lesson.assignment,
       status: lesson.status,
-      liveStatus: lesson.liveStatus,
       isLocked: false,
-      isScheduledFuture: false,
+      isScheduledFuture: !!isScheduledFuture,
       courseId: lesson.module.course.id,
       isPaidCourse,
       isFreePreview: lesson.isFreePreview,
