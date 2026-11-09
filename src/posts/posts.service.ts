@@ -107,7 +107,7 @@ export class PostsService {
     return post;
   }
 
-  async findAll(userId: number, cursor?: number, limit: number = 10) {
+  async findAll(userId?: number, cursor?: number, limit: number = 10) {
     const safeLimit = Math.min(Math.max(limit, 1), 50); // between 1 and 50
     const args: any = {
       take: safeLimit,
@@ -116,7 +116,7 @@ export class PostsService {
         author: { select: { id: true, name: true, avatar: true, role: true } },
         _count: { select: { comments: true, likes: true } },
         pollOptions: { include: { _count: { select: { votes: true } } } },
-        likes: { where: { userId }, select: { id: true } },
+        likes: userId ? { where: { userId }, select: { id: true } } : false,
       },
     };
     if (cursor) {

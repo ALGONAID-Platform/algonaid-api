@@ -4,6 +4,7 @@ import { CreatePostDto } from './dto/create-post.dto';
 import { UpdatePostDto } from './dto/update-post.dto';
 import { ApiBearerAuth, ApiTags, ApiOperation } from '@nestjs/swagger';
 import { AuthRollGuard } from 'src/auth/guards/auth-roll.guard';
+import { OptionalAuthGuard } from 'src/auth/guards/optional-auth.guard';
 import { userRoles } from 'src/auth/decorators/user_roll.decorator';
 import { Role } from '@prisma/client';
 import { CurrentUser } from 'src/auth/decorators/current-user.decorator';
@@ -37,6 +38,17 @@ export class PostsController {
     @Query('limit', new ParseIntPipe({ optional: true })) limit?: number
   ) {
     return this.postsService.findAll(user.id, cursor, limit);
+  }
+
+  @Get('latest')
+  @ApiBearerAuth('JWT-auth')
+  @UseGuards(OptionalAuthGuard)
+  @ApiOperation({ summary: 'جلب آخر المنشورات (افتراضياً 3 منشورات للصفحة الرئيسية)' })
+  getLatest(
+    @CurrentUser() user?: types.JwtPayloadType,
+    @Query('limit', new ParseIntPipe({ optional: true })) limit?: number
+  ) {
+    return this.postsService.findAll(user?.id, undefined, limit || 3);
   }
 
   @Get(':id')
