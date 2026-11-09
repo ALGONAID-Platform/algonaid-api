@@ -25,7 +25,7 @@ async isUserEnrolled(userId: number, courseId: number) {
       },
     });
 
-    return { isEnrolled: !!enrollment };
+    return { isEnrolled: !!(enrollment && enrollment.status === 'ACTIVE') };
   }
     async craete(userId: number, enrollmentDto: CreateEnrollmentDto) {
         const { courseId } = enrollmentDto;
@@ -82,7 +82,7 @@ async isUserEnrolled(userId: number, courseId: number) {
             },
         });
 
-        if (existingEnrollment) {
+        if (existingEnrollment && existingEnrollment.status === 'ACTIVE') {
             // يمكنك إرجاع رسالة "أنت مسجل بالفعل" بدلاً من إظهار خطأ
             throw new ConflictException("أنت مسجل بالفعل في هذا الكورس");
         }

@@ -239,7 +239,7 @@ export class CoursesService {
           } 
         },
         // ملاحظة: بما أننا استبعدنا المشتركين، الـ enrollments هنا ستكون دائماً فارغة لهذا الطالب
-        enrollments: studentId ? { where: { studentId }, select: { id: true } } : false,
+        enrollments: studentId ? { where: { studentId, status: 'ACTIVE' }, select: { id: true } } : false,
       },
     });
 
@@ -306,7 +306,7 @@ export class CoursesService {
             enrollments: { where: { status: 'ACTIVE' } },
           },
         },
-        enrollments: studentId ? { where: { studentId }, select: { id: true } } : false,
+        enrollments: studentId ? { where: { studentId, status: 'ACTIVE' }, select: { id: true } } : false,
       },
       orderBy: { createdAt: 'desc' },
     });
@@ -521,7 +521,7 @@ export class CoursesService {
             },
           },
         },
-        enrollments: studentId ? { where: { studentId }, select: { id: true } } : false,
+        enrollments: studentId ? { where: { studentId, status: 'ACTIVE' }, select: { id: true } } : false,
       },
     });
 
@@ -689,7 +689,7 @@ export class CoursesService {
           },
           orderBy: { createdAt: 'desc' },
         });
-        paymentStatus = latestPayment ? latestPayment.status : null;
+        paymentStatus = isEnrolled && latestPayment ? latestPayment.status : (latestPayment?.status === 'PENDING' ? 'PENDING' : null);
       }
     }
 

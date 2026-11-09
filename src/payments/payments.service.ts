@@ -12,7 +12,7 @@ import { CreatePaymentAccountDto } from './dto/create-payment-account.dto';
 import { UpdatePaymentAccountDto } from './dto/update-payment-account.dto';
 import { VerifyCheckoutDto } from './dto/verify-checkout.dto';
 import { ConfirmExternalPaymentDto } from './dto/confirm-external-payment.dto';
-import { Currency, PaymentStatus } from '@prisma/client';
+import { Currency, EnrollmentStatus, PaymentStatus } from '@prisma/client';
 import { NotificationsService } from 'src/notifications/notifications.service';
 
 @Injectable()
@@ -211,6 +211,17 @@ export class PaymentsService {
       return { status: null, payment: null };
     }
 
+    const enrollment = await this.prisma.enrollment.findUnique({
+      where: {
+        studentId_courseId: {
+          studentId: student.id,
+          courseId,
+        },
+      },
+    });
+
+    const isEnrollmentActive = Boolean(enrollment && enrollment.status === 'ACTIVE');
+
     const payment = await this.prisma.payment.findFirst({
       where: {
         studentId: student.id,
@@ -220,8 +231,10 @@ export class PaymentsService {
     });
 
     return {
-      status: payment ? payment.status : null,
-      payment,
+      status: isEnrollmentActive
+        ? (payment ? payment.status : 'APPROVED')
+        : (payment?.status === PaymentStatus.PENDING ? PaymentStatus.PENDING : null),
+      payment: isEnrollmentActive ? payment : null,
     };
   }
 
@@ -1225,12 +1238,16 @@ export class PaymentsService {
 
     const where: {
       courseId: number;
+      status?: EnrollmentStatus;
       student?: {
         user?: {
           OR?: Array<{ name?: { contains: string; mode: 'insensitive' }; email?: { contains: string; mode: 'insensitive' } }>;
         };
       };
-    } = { courseId };
+    } = {
+      courseId,
+      status: EnrollmentStatus.ACTIVE,
+    };
     if (search) {
       where.student = {
         user: {
@@ -1289,7 +1306,7 @@ export class PaymentsService {
   }
 
   /**
-   * Admin: إلغاء تسجيل مستخدم من كورس
+   * Admin: إلغاء تسجيل واشتراك مستخدم من كورس نهائياً
    */
   async adminUnenrollUser(courseId: number, userId: number) {
     const student = await this.prisma.student.findUnique({ where: { userId } });
@@ -1301,15 +1318,47 @@ export class PaymentsService {
       where: { studentId_courseId: { studentId: student.id, courseId } },
     });
 
-    if (!enrollment) {
-      throw new NotFoundException('هذا المستخدم غير مسجل في هذا الكورس');
-    }
-
-    await this.prisma.enrollment.update({
-      where: { studentId_courseId: { studentId: student.id, courseId } },
-      data: { status: 'CANCELLED' },
+    const approvedPaymentsCount = await this.prisma.payment.count({
+      where: {
+        studentId: student.id,
+        courseId,
+        status: { in: [PaymentStatus.APPROVED, PaymentStatus.PENDING] },
+      },
     });
 
-    return { message: 'تم إلغاء تسجيل الطالب من الكورس بنجاح.' };
+    if (!enrollment && approvedPaymentsCount === 0) {
+      throw new NotFoundException('هذا المستخدم غير مشترك أو مسجل في هذا الكورس');
+    }
+
+    // 1. حذف التسجيل نهائياً من قاعدة البيانات
+    if (enrollment) {
+      await this.prisma.enrollment.delete({
+        where: { studentId_courseId: { studentId: student.id, courseId } },
+      });
+    }
+
+    // 2. تحديث أي مدفوعات معتمدة أو معلقة لهذا الكورس لتصبح مرفوضة/ملغاة
+    await this.prisma.payment.updateMany({
+      where: {
+        studentId: student.id,
+        courseId,
+        status: { in: [PaymentStatus.APPROVED, PaymentStatus.PENDING] },
+      },
+      data: {
+        status: PaymentStatus.REJECTED,
+        rejectionReason: 'تم إلغاء الاشتراك نهائياً من قبل الإدارة',
+        reviewedAt: new Date(),
+      },
+    });
+
+    // 3. حذف تقدم مشاهدة وإكمال الدروس لهذا الكورس لتصفير حالة الطالب تماماً
+    await this.prisma.lessonProgress.deleteMany({
+      where: {
+        studentId: student.id,
+        lesson: { module: { courseId } },
+      },
+    });
+
+    return { message: 'تم إلغاء اشتراك وتسجيل الطالب من الكورس نهائياً.' };
   }
 }
