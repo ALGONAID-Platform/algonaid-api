@@ -140,8 +140,20 @@ export class CommentsService {
       teacherUserId = examWithTeacher?.course?.teacher?.userId ?? examWithTeacher?.lesson?.module?.course?.teacher?.userId ?? null;
     }
 
+    // 1. إشعار المعلم المسؤول عن الدرس/الاختبار
     if (teacherUserId && teacherUserId !== userId && !finalMentionedUserIds.includes(teacherUserId)) {
       finalMentionedUserIds.push(teacherUserId);
+    }
+
+    // 2. إشعار الإدارة (الأدمن والمالك) بجميع التعليقات والردود والمنشنات كما طلب المستخدم
+    const adminUsers = await this.prisma.user.findMany({
+      where: { role: { in: [Role.OWNER, Role.ADMIN] } },
+      select: { id: true },
+    });
+    for (const admin of adminUsers) {
+      if (admin.id !== userId && !finalMentionedUserIds.includes(admin.id)) {
+        finalMentionedUserIds.push(admin.id);
+      }
     }
 
     const commentData: any = {
@@ -217,7 +229,7 @@ export class CommentsService {
     }
 
     // Fetch top-level comments with their nested replies
-    // استبعاد إشعارات تسليم التكاليف وتصحيحها من قسم التعليقات العام للدرس حتى لا تتلوث التعليقات ولا يراها بقية الطلاب
+    // استبعاد كافة الإشعارات ورسائل النظام وتنبيهات الاشتراكات من قسم التعليقات العام للدرس ليبقى مخصصاً للنقاشات الحقيقية فقط
     return this.prisma.comment.findMany({
       where: {
         lessonId,
@@ -226,6 +238,23 @@ export class CommentsService {
           OR: [
             { text: { contains: 'بتسليم تكليف' } },
             { text: { contains: 'بالرد على تكليفك' } },
+            { text: { contains: 'تمت الموافقة على اشتراكك' } },
+            { text: { contains: 'تم قبول اشتراكك' } },
+            { text: { contains: 'تفعيل دورتك بنجاح' } },
+            { text: { contains: 'طلب اشتراكك' } },
+            { text: { contains: 'تم رفض' } },
+            { text: { contains: 'بإضافة درس جديد' } },
+            { text: { contains: 'بدأ البث المباشر' } },
+            { text: { contains: 'بإضافة اختبار جديد' } },
+            { text: { contains: 'بإضافة كويز' } },
+            { text: { contains: 'بإضافة تحدي' } },
+            { text: { contains: 'بإضافة الاختبار النهائي' } },
+            { text: { contains: 'نتيجة الاختبار' } },
+            { text: { contains: 'تنبيه أمان' } },
+            { text: { contains: 'إشعار أمني' } },
+            { text: { contains: 'إشعار النظام' } },
+            { text: { contains: 'إشعار إداري' } },
+            { text: { contains: '@[الكل](all)' } },
           ],
         },
       },
@@ -269,13 +298,21 @@ export class CommentsService {
     }
 
     // Fetch top-level comments with their nested replies
-    // استبعاد إشعارات نتائج الطلاب الفردية من قسم التعليقات العام للاختبار حتى لا تتشوه التعليقات
+    // استبعاد إشعارات النتائج والإعلانات العامة من قسم التعليقات العام للاختبار
     return this.prisma.comment.findMany({
       where: {
         examId,
         parentId: null,
         NOT: {
-          text: { contains: 'نتيجة الاختبار' },
+          OR: [
+            { text: { contains: 'نتيجة الاختبار' } },
+            { text: { contains: 'بإضافة اختبار جديد' } },
+            { text: { contains: 'بإضافة كويز' } },
+            { text: { contains: 'بإضافة تحدي' } },
+            { text: { contains: 'بإضافة الاختبار النهائي' } },
+            { text: { contains: 'اختبار جديد بعنوان' } },
+            { text: { contains: '@[الكل](all)' } },
+          ],
         },
       },
       include: {

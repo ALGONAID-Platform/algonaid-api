@@ -81,6 +81,11 @@ export class CreateCourseDto {
     @Type(() => Number)
     discountedPriceSar?: number;
 
+    @ApiProperty({ example: 'بنك الكريمي: 12345678 - باسم بشار الجنيد\nمحفظة ون كاش: 777123456', description: 'أرقام الحسابات البنكية ومعلومات التحويل والإيداع اليدوي للكورس', required: false })
+    @IsOptional()
+    @IsString()
+    bankAccounts?: string;
+
     @ApiProperty({ example: 'RECORDED', enum: CourseType, description: 'Course delivery type (RECORDED or LIVE)', required: false, default: CourseType.RECORDED })
     @IsOptional()
     @IsEnum(CourseType)

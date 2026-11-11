@@ -386,17 +386,10 @@ export class PaymentsService {
 
     // إرسال إشعار للمستخدم في قسم الردود بنجاح قبول الاشتراك
     if (updatedPayment.student?.user?.id) {
-      const firstLesson = await this.prisma.lesson.findFirst({
-        where: { module: { courseId: updatedPayment.courseId } },
-        orderBy: { order: 'asc' },
-        select: { id: true },
-      });
-
       await this.notificationsService.notifyCourseEnrollmentApproved(
         updatedPayment.student.user.id,
         updatedPayment.course.title,
         reviewerUserId,
-        firstLesson?.id,
       );
     }
 
@@ -1011,17 +1004,10 @@ export class PaymentsService {
 
     // 5. إرسال إشعار فوري للطالب في تطبيق منصة الجنيد
     if (user.id) {
-      const firstLesson = await this.prisma.lesson.findFirst({
-        where: { module: { courseId: course.id } },
-        orderBy: { order: 'asc' },
-        select: { id: true },
-      });
-
       await this.notificationsService.notifyCourseEnrollmentApproved(
         user.id,
         course.title,
         undefined,
-        firstLesson?.id,
       );
     }
 
@@ -1175,17 +1161,10 @@ export class PaymentsService {
 
     // 8. إرسال إشعار للطالب
     try {
-      const firstLesson = await this.prisma.lesson.findFirst({
-        where: { module: { courseId: dto.courseId } },
-        orderBy: { order: 'asc' },
-        select: { id: true },
-      });
-
       await this.notificationsService.notifyCourseEnrollmentApproved(
         targetUser.id,
         course.title,
         adminUserId,
-        firstLesson?.id,
       );
     } catch {
       // لا نوقف العملية بسبب فشل الإشعار

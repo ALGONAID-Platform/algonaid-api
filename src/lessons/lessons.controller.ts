@@ -3,6 +3,7 @@ import { SkipThrottle } from '@nestjs/throttler';
 import { LessonsService } from './lessons.service';
 import { ApiBearerAuth, ApiOperation, ApiTags, ApiQuery } from '@nestjs/swagger';
 import { AuthRollGuard } from 'src/auth/guards/auth-roll.guard';
+import { OptionalAuthGuard } from 'src/auth/guards/optional-auth.guard';
 import { userRoles } from 'src/auth/decorators/user_roll.decorator';
 import { Role, LessonStatus } from '@prisma/client';
 import { CurrentUser } from 'src/auth/decorators/current-user.decorator';
@@ -83,6 +84,30 @@ export class LessonsController {
     return this.lessonsService.findAllByCourse(courseId, +page, +limit);
   }
 
+  @Get('module/:moduleId/summary')
+  @SkipThrottle()
+  @UseGuards(OptionalAuthGuard)
+  @ApiOperation({ summary: 'جلب دروس موديول معين بصيغة خفيفة وسريعة (بدون وصف ومحتوى)' })
+  findAllByModuleSummary(
+    @Param('moduleId', ParseIntPipe) moduleId: number,
+    @Query('page') page: string = '1',
+    @Query('limit') limit: string = '8',
+    @CurrentUser() user?: types.JwtPayloadType
+  ) {
+    return this.lessonsService.findAllByModule(moduleId, +page, +limit, user?.id, true);
+  }
+
+  @Get('module/:moduleId/guest/summary')
+  @SkipThrottle()
+  @ApiOperation({ summary: 'جلب دروس موديول معين للضيوف بصيغة خفيفة وسريعة (بدون وصف ومحتوى)' })
+  findAllByModuleGuestSummary(
+    @Param('moduleId', ParseIntPipe) moduleId: number,
+    @Query('page') page: string = '1',
+    @Query('limit') limit: string = '8'
+  ) {
+    return this.lessonsService.findAllByModule(moduleId, +page, +limit, undefined, true);
+  }
+
   @Get('module/:moduleId')
   @SkipThrottle()
   @UseGuards(AuthRollGuard)
@@ -92,9 +117,11 @@ export class LessonsController {
     @Param('moduleId', ParseIntPipe) moduleId: number,
     @Query('page') page: string = '1',
     @Query('limit') limit: string = '8',
-    @CurrentUser() user: types.JwtPayloadType
+    @Query('summary') summary?: string,
+    @CurrentUser() user?: types.JwtPayloadType
   ) {
-    return this.lessonsService.findAllByModule(moduleId, +page, +limit, user.id);
+    const exclude = summary === 'true' || summary === '1';
+    return this.lessonsService.findAllByModule(moduleId, +page, +limit, user?.id, exclude);
   }
 
   @Get('module/:moduleId/guest')
@@ -103,17 +130,32 @@ export class LessonsController {
   findAllByModuleGuest(
     @Param('moduleId', ParseIntPipe) moduleId: number,
     @Query('page') page: string = '1',
-    @Query('limit') limit: string = '8'
+    @Query('limit') limit: string = '8',
+    @Query('summary') summary?: string
   ) {
-    return this.lessonsService.findAllByModule(moduleId, +page, +limit);
+    const exclude = summary === 'true' || summary === '1';
+    return this.lessonsService.findAllByModule(moduleId, +page, +limit, undefined, exclude);
+  }
+
+  @Get('latest-enrolled/summary')
+  @SkipThrottle()
+  @UseGuards(AuthRollGuard)
+  @userRoles(Role.STUDENT, Role.ADMIN, Role.OWNER)
+  @ApiOperation({ summary: 'جلب أحدث الدروس المشترك بها للصفحة الرئيسية بصيغة خفيفة (بدون وصف ومحتوى)' })
+  findLatestEnrolledLessonsSummary(@CurrentUser() user: types.JwtPayloadType) {
+    return this.lessonsService.findLatestEnrolledLessons(user.id, true);
   }
 
   @Get('latest-enrolled')
   @SkipThrottle()
   @UseGuards(AuthRollGuard)
   @userRoles(Role.STUDENT, Role.ADMIN, Role.OWNER)
-  findLatestEnrolledLessons(@CurrentUser() user: types.JwtPayloadType) {
-    return this.lessonsService.findLatestEnrolledLessons(user.id);
+  findLatestEnrolledLessons(
+    @CurrentUser() user: types.JwtPayloadType,
+    @Query('summary') summary?: string
+  ) {
+    const exclude = summary === 'true' || summary === '1';
+    return this.lessonsService.findLatestEnrolledLessons(user.id, exclude);
   }
 
   /**
@@ -201,6 +243,25 @@ export class LessonsController {
       courseId ? +courseId : undefined,
       moduleId ? +moduleId : undefined,
     );
+  }
+
+  @Get(':id/details')
+  @SkipThrottle()
+  @UseGuards(AuthRollGuard)
+  @userRoles(Role.STUDENT, Role.ADMIN, Role.OWNER)
+  @ApiOperation({ summary: 'جلب تفاصيل الدرس الكاملة (بما فيها الوصف والمحتوى والملفات)' })
+  findOneDetails(
+    @Param('id', ParseIntPipe) id: number,
+    @CurrentUser() user: types.JwtPayloadType
+  ) {
+    return this.lessonsService.findOne(id, user.id);
+  }
+
+  @Get(':id/guest/details')
+  @SkipThrottle()
+  @ApiOperation({ summary: 'جلب تفاصيل الدرس الكاملة للضيوف' })
+  findOneGuestDetails(@Param('id', ParseIntPipe) id: number) {
+    return this.lessonsService.findOne(id);
   }
 
   @Get(':id')

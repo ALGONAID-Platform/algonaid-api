@@ -189,6 +189,8 @@ model Course {
   priceSar              Decimal?   @db.Decimal(10, 2)
   discountedPriceSar    Decimal?   @db.Decimal(10, 2)
 
+  bankAccounts          String?    @db.Text // أرقام الحسابات البنكية ومعلومات الإيداع اليدوي للكورس
+
   courseType        CourseType     @default(RECORDED)
   lessonOrderMode   LessonOrderMode @default(BY_DATE) // خيار طريقة ترتيب الدروس (تاريخ الإنشاء أو الترتيب المخصص)
   scheduleDaysText  String? // أيام وتوقيت المحاضرات للبث المباشر

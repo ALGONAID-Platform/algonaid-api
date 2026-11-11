@@ -97,7 +97,6 @@ export class NotificationsService {
     recipientUserId: number,
     courseTitle: string,
     reviewerUserId?: number,
-    lessonId?: number,
   ) {
     let senderId = reviewerUserId;
     if (!senderId || senderId === recipientUserId) {
@@ -110,7 +109,7 @@ export class NotificationsService {
       senderUserId: senderId,
       message,
       type: 'COURSE_ENROLLMENT',
-      lessonId,
+      lessonId: undefined,
     });
   }
 

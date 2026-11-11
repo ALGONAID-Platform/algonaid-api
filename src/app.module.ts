@@ -44,7 +44,13 @@ const uploadsRoot = fs.existsSync('/usr/src/app/uploads')
     }),
     ServeStaticModule.forRoot({
       rootPath: uploadsRoot,
-      serveStaticOptions: { setHeaders: (res: any) => res.setHeader('X-Content-Type-Options', 'nosniff') },
+      serveStaticOptions: {
+        maxAge: 86400000 * 30,
+        setHeaders: (res: any) => {
+          res.setHeader('X-Content-Type-Options', 'nosniff');
+          res.setHeader('Cache-Control', 'public, max-age=2592000');
+        },
+      },
       serveRoot: '/uploads',
     }),
     JwtModule.registerAsync({

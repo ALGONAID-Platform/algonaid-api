@@ -372,7 +372,7 @@ export class LessonsService {
     };
   }
 
-  async findAllByCourse(courseId: number, page: number = 1, limit: number = 10, userId?: number) {
+  async findAllByCourse(courseId: number, page: number = 1, limit: number = 10, userId?: number, excludeContent: boolean = false) {
     const course = await this.prisma.course.findUnique({
       where: { id: courseId },
       select: { id: true, isPaid: true, instructorId: true, lessonOrderMode: true },
@@ -457,7 +457,7 @@ export class LessonsService {
     });
 
     const mappedLessons = lessons.map((lesson, idx) => {
-      const { exam, assignment, _count, pdfFiles, ...rest } = lesson;
+      const { exam, assignment, _count, pdfFiles, description, content, ...rest } = lesson;
       const isScheduledFuture =
         !isStaff &&
         lesson.scheduledAt &&
@@ -476,8 +476,7 @@ export class LessonsService {
           objectives: lesson.objectives || [],
           moduleId: lesson.moduleId,
           order: effectiveOrder,
-          description: null,
-          content: null,
+          ...(excludeContent ? {} : { description: null, content: null }),
           videoUrl: null,
           recordingVideoUrl: null,
           liveMeetingUrl: null,
@@ -521,8 +520,7 @@ export class LessonsService {
         durationMinutes: lesson.durationMinutes,
         createdAt: lesson.createdAt,
         updatedAt: lesson.updatedAt,
-        description: lesson.description,
-        content: lesson.content,
+        ...(excludeContent ? {} : { description, content }),
         liveMeetingUrl: lesson.liveMeetingUrl,
         videoUrl: lesson.videoUrl,
         recordingVideoUrl: lesson.recordingVideoUrl,
@@ -824,7 +822,7 @@ export class LessonsService {
     };
   }
 
-  async findAllByModule(moduleId: number, page: number = 1, limit: number = 8, userId?: number) {
+  async findAllByModule(moduleId: number, page: number = 1, limit: number = 8, userId?: number, excludeContent: boolean = false) {
     const module = await this.prisma.module.findUnique({
       where: { id: moduleId },
       include: {
@@ -925,7 +923,7 @@ export class LessonsService {
     });
 
     const mappedLessons = lessons.map((lesson, idx) => {
-      const { exam, assignment, _count, pdfFiles, ...rest } = lesson;
+      const { exam, assignment, _count, pdfFiles, description, content, ...rest } = lesson;
 
       // الدرس مجدول في المستقبل ولم يقم الأدمن بفتحه يدوياً عبر بدء البث (LIVE_NOW أو COMPLETED)
       const isScheduledFuture =
@@ -947,8 +945,7 @@ export class LessonsService {
           objectives: lesson.objectives || [],
           moduleId: lesson.moduleId,
           order: effectiveOrder,
-          description: null,
-          content: null,
+          ...(excludeContent ? {} : { description: null, content: null }),
           videoUrl: null,
           recordingVideoUrl: null,
           liveMeetingUrl: null,
@@ -992,8 +989,7 @@ export class LessonsService {
         durationMinutes: lesson.durationMinutes,
         createdAt: lesson.createdAt,
         updatedAt: lesson.updatedAt,
-        description: lesson.description,
-        content: lesson.content,
+        ...(excludeContent ? {} : { description, content }),
         liveMeetingUrl: lesson.liveMeetingUrl,
         videoUrl: lesson.videoUrl,
         recordingVideoUrl: lesson.recordingVideoUrl,
@@ -1025,7 +1021,7 @@ export class LessonsService {
     };
   }
 
-  async findLatestEnrolledLessons(userId: number) {
+  async findLatestEnrolledLessons(userId: number, excludeContent: boolean = false) {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
       include: { studentProfile: true }
@@ -1085,9 +1081,10 @@ export class LessonsService {
     });
 
     const mappedLessons = lessons.map(lesson => {
-      const { exam, _count, module, ...rest } = lesson;
+      const { exam, _count, module, description, content, ...rest } = lesson;
       return {
         ...rest,
+        ...(excludeContent ? {} : { description, content }),
         commentsCount: _count.comments,
         hasTest: !!exam,
         moduleName: module.title,
