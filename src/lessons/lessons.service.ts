@@ -476,7 +476,7 @@ export class LessonsService {
           objectives: lesson.objectives || [],
           moduleId: lesson.moduleId,
           order: effectiveOrder,
-          ...(excludeContent ? {} : { description: null, content: null }),
+          ...(excludeContent ? { description: null } : { description: null, content: null }),
           videoUrl: null,
           recordingVideoUrl: null,
           liveMeetingUrl: null,
@@ -512,6 +512,11 @@ export class LessonsService {
         ? rawPdfFiles.map(f => ({ id: f.id, title: f.title, url: f.url, order: f.order }))
         : (lesson.pdfUrl ? [{ id: 0, title: 'ملف الدرس الأساسي', url: lesson.pdfUrl, order: 0 }] : []);
 
+      const hasRealDescription = Boolean(
+        (description && description.trim().length > 0) ||
+        (content && content.trim().length > 0)
+      );
+
       return {
         ...rest,
         order: effectiveOrder,
@@ -520,7 +525,9 @@ export class LessonsService {
         durationMinutes: lesson.durationMinutes,
         createdAt: lesson.createdAt,
         updatedAt: lesson.updatedAt,
-        ...(excludeContent ? {} : { description, content }),
+        ...(excludeContent
+          ? { description: hasRealDescription ? 'وصف' : null }
+          : { description, content }),
         liveMeetingUrl: lesson.liveMeetingUrl,
         videoUrl: lesson.videoUrl,
         recordingVideoUrl: lesson.recordingVideoUrl,
@@ -788,7 +795,9 @@ export class LessonsService {
         durationMinutes: lesson.durationMinutes,
         createdAt: lesson.createdAt,
         updatedAt: lesson.updatedAt,
-        description: params.excludeDescription ? undefined : lesson.description,
+        description: params.excludeDescription
+          ? (Boolean((lesson.description && lesson.description.trim().length > 0) || (lesson.content && lesson.content.trim().length > 0)) ? 'وصف' : null)
+          : lesson.description,
         content: params.excludeDescription ? undefined : lesson.content,
         liveMeetingUrl: lesson.liveMeetingUrl,
         videoUrl: lesson.videoUrl,
@@ -945,7 +954,7 @@ export class LessonsService {
           objectives: lesson.objectives || [],
           moduleId: lesson.moduleId,
           order: effectiveOrder,
-          ...(excludeContent ? {} : { description: null, content: null }),
+          ...(excludeContent ? { description: null } : { description: null, content: null }),
           videoUrl: null,
           recordingVideoUrl: null,
           liveMeetingUrl: null,
@@ -981,6 +990,11 @@ export class LessonsService {
         ? rawPdfFiles.map(f => ({ id: f.id, title: f.title, url: f.url, order: f.order }))
         : (lesson.pdfUrl ? [{ id: 0, title: 'ملف الدرس الأساسي', url: lesson.pdfUrl, order: 0 }] : []);
 
+      const hasRealDescription = Boolean(
+        (description && description.trim().length > 0) ||
+        (content && content.trim().length > 0)
+      );
+
       return {
         ...rest,
         order: effectiveOrder,
@@ -989,7 +1003,9 @@ export class LessonsService {
         durationMinutes: lesson.durationMinutes,
         createdAt: lesson.createdAt,
         updatedAt: lesson.updatedAt,
-        ...(excludeContent ? {} : { description, content }),
+        ...(excludeContent
+          ? { description: hasRealDescription ? 'وصف' : null }
+          : { description, content }),
         liveMeetingUrl: lesson.liveMeetingUrl,
         videoUrl: lesson.videoUrl,
         recordingVideoUrl: lesson.recordingVideoUrl,
@@ -1082,9 +1098,15 @@ export class LessonsService {
 
     const mappedLessons = lessons.map(lesson => {
       const { exam, _count, module, description, content, ...rest } = lesson;
+      const hasRealDescription = Boolean(
+        (description && description.trim().length > 0) ||
+        (content && content.trim().length > 0)
+      );
       return {
         ...rest,
-        ...(excludeContent ? {} : { description, content }),
+        ...(excludeContent
+          ? { description: hasRealDescription ? 'وصف' : null }
+          : { description, content }),
         commentsCount: _count.comments,
         hasTest: !!exam,
         moduleName: module.title,
