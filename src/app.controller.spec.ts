@@ -3,6 +3,7 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { PrismaService } from './prisma/prisma.service';
 import { UploadcareStorageService } from './utils/uploadcare-storage.service';
+import { AuthRollGuard } from './auth/guards/auth-roll.guard';
 
 describe('AppController', () => {
   let appController: AppController;
@@ -15,7 +16,10 @@ describe('AppController', () => {
         { provide: PrismaService, useValue: {} },
         { provide: UploadcareStorageService, useValue: {} },
       ],
-    }).compile();
+    })
+      .overrideGuard(AuthRollGuard)
+      .useValue({ canActivate: () => true })
+      .compile();
 
     appController = app.get<AppController>(AppController);
   });

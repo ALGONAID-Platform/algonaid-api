@@ -14,6 +14,7 @@ import { UpdateCourseDto } from './dto/update-course.dto';
 import { ConvertToRecordedDto } from './dto/convert-to-recorded.dto';
 
 import { CoursesEvaluationService } from './courses-evaluation.service';
+import { GradesService } from 'src/grades/grades.service';
 
 @ApiTags('courses')
 @ApiBearerAuth('JWT-auth')
@@ -22,6 +23,7 @@ export class CoursesController {
   constructor(
     private readonly coursesService: CoursesService,
     private readonly coursesEvaluationService: CoursesEvaluationService,
+    private readonly gradesService: GradesService,
   ) { }
 
   @Post()
@@ -155,6 +157,32 @@ export class CoursesController {
     @CurrentUser() user: types.JwtPayloadType,
   ) {
     return this.coursesEvaluationService.getMyEvaluation(id, user.id);
+  }
+
+  @Get(':id/students/:studentId/grades')
+  @SkipThrottle()
+  @UseGuards(AuthRollGuard)
+  @userRoles(Role.STUDENT, Role.ADMIN, Role.OWNER)
+  @ApiOperation({ summary: 'Get detailed performance and grades table for a student in this course' })
+  getStudentCourseGrades(
+    @Param('id', ParseIntPipe) id: number,
+    @Param('studentId', ParseIntPipe) studentId: number,
+    @CurrentUser() user: types.JwtPayloadType,
+  ) {
+    return this.gradesService.getStudentCourseGrades(id, studentId, user.id, user.role);
+  }
+
+  @Get(':id/students/:studentId/evaluation')
+  @SkipThrottle()
+  @UseGuards(AuthRollGuard)
+  @userRoles(Role.STUDENT, Role.ADMIN, Role.OWNER)
+  @ApiOperation({ summary: 'Alias to get detailed performance and grades table for a student in this course' })
+  getStudentCourseEvaluation(
+    @Param('id', ParseIntPipe) id: number,
+    @Param('studentId', ParseIntPipe) studentId: number,
+    @CurrentUser() user: types.JwtPayloadType,
+  ) {
+    return this.gradesService.getStudentCourseGrades(id, studentId, user.id, user.role);
   }
 
   @Post(':id/certificate/claim')

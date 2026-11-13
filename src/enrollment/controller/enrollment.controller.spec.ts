@@ -1,5 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { EnrollmentController } from './enrollment.controller';
+import { EnrollmentService } from '../service/enrollment.service';
+import { AuthRollGuard } from 'src/auth/guards/auth-roll.guard';
 
 describe('EnrollmentController', () => {
   let controller: EnrollmentController;
@@ -7,7 +9,13 @@ describe('EnrollmentController', () => {
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       controllers: [EnrollmentController],
-    }).compile();
+      providers: [
+        { provide: EnrollmentService, useValue: {} },
+      ],
+    })
+      .overrideGuard(AuthRollGuard)
+      .useValue({ canActivate: () => true })
+      .compile();
 
     controller = module.get<EnrollmentController>(EnrollmentController);
   });

@@ -73,8 +73,8 @@ export class CoursesService {
                     ...(!isOwner && { status: 'PUBLISHED' }),
                   },
                   orderBy: [
-                    { dayNumber: 'asc' },
                     { order: 'asc' },
+                    { dayNumber: 'asc' },
                     { createdAt: 'asc' },
                     { id: 'asc' },
                   ],

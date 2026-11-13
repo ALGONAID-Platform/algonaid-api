@@ -28,6 +28,7 @@ import { AssignmentsModule } from './assignments/assignments.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { CertificatesModule } from './certificates/certificates.module';
 import { BackupModule } from './backup/backup.module';
+import { GradesModule } from './grades/grades.module';
 
 import * as fs from 'fs';
 
@@ -80,6 +81,7 @@ const uploadsRoot = fs.existsSync('/usr/src/app/uploads')
     NotificationsModule,
     CertificatesModule,
     BackupModule,
+    GradesModule,
     ThrottlerModule.forRoot([{
       ttl: 60000,
       limit: 1000,

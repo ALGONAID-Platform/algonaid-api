@@ -119,13 +119,10 @@ export class ModulesService {
     return modules.map((mod) => {
       const { lessons, course, _count, ...rest } = mod;
 
-      const isOrderByOrder = (course as any)?.lessonOrderMode === 'BY_ORDER';
       const sortedLessons = [...lessons].sort((a, b) => {
-        if (isOrderByOrder) {
-          const orderA = a.order ?? 0;
-          const orderB = b.order ?? 0;
-          if (orderA !== orderB) return orderA - orderB;
-        }
+        const orderA = a.order ?? 0;
+        const orderB = b.order ?? 0;
+        if (orderA !== orderB) return orderA - orderB;
         const diff = new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
         if (diff !== 0) return diff;
         return a.id - b.id;
@@ -154,7 +151,7 @@ export class ModulesService {
 
         const isFreePreview = Boolean(lesson.isFreePreview);
         const shouldMask = !isExempt && isUnenrolledPaid && !isFreePreview;
-        const effectiveOrder = idx + 1;
+        const effectiveOrder = (lesson.order !== undefined && lesson.order !== null && lesson.order !== 0) ? lesson.order : (idx + 1);
 
         const rawPdfFiles = (pdfFiles as any[]) || [];
         const primaryPdf = rawPdfFiles.length > 0 ? rawPdfFiles[0].url : lesson.pdfUrl;
@@ -315,21 +312,19 @@ export class ModulesService {
       throw new NotFoundException(MESSAGES.MODULES.MODULE_NOT_FOUND(id));
     }
 
-    const isOrderByOrder = (module.course as any)?.lessonOrderMode === 'BY_ORDER';
     if (module.lessons && module.lessons.length > 0) {
       module.lessons.sort((a, b) => {
-        if (isOrderByOrder) {
-          const orderA = a.order ?? 0;
-          const orderB = b.order ?? 0;
-          if (orderA !== orderB) return orderA - orderB;
-        }
+        const orderA = a.order ?? 0;
+        const orderB = b.order ?? 0;
+        if (orderA !== orderB) return orderA - orderB;
         const diff = new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
         if (diff !== 0) return diff;
         return a.id - b.id;
       });
       module.lessons.forEach((l, idx) => {
-        l.order = idx + 1;
-        (l as any).dayNumber = null;
+        if (l.order === undefined || l.order === null || l.order === 0) {
+          l.order = idx + 1;
+        }
       });
     }
 

@@ -66,8 +66,8 @@ export class CoursesEvaluationService {
             lessons: {
               where: { status: 'PUBLISHED' },
               orderBy: [
-                { dayNumber: 'asc' },
                 { order: 'asc' },
+                { dayNumber: 'asc' },
                 { id: 'asc' },
               ],
               include: {
