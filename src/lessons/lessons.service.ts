@@ -1889,6 +1889,9 @@ export class LessonsService {
     let dayIndex = sortedDays.indexOf(testDate.getDay());
     const intervalWeeks = Math.max(1, dto.intervalWeeks || 1);
     const updateDayNum = dto.updateDayNumber !== false;
+    const startDay = (dto.startDayNumber !== undefined && Number(dto.startDayNumber) > 0)
+      ? Number(dto.startDayNumber)
+      : 1;
     const duration = dto.durationMinutes ? Number(dto.durationMinutes) : undefined;
 
     const scheduledUpdates: {
@@ -1924,7 +1927,7 @@ export class LessonsService {
       curD = testDate.getDate();
 
       const scheduledAt = buildDateTime(curY, curM, curD, hours, minutes);
-      const dayNumber = i + 1;
+      const dayNumber = startDay + i;
 
       scheduledUpdates.push({
         id: lesson.id,

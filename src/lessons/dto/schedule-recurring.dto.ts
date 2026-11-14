@@ -72,6 +72,17 @@ export class ScheduleRecurringDto {
 
   @ApiPropertyOptional({
     example: 1,
+    description: 'رقم اليوم للبدء منه في الترقيم التسلسلي (افتراضياً 1 أو رقم الدرس الأول)',
+    default: 1,
+  })
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  @Type(() => Number)
+  startDayNumber?: number;
+
+  @ApiPropertyOptional({
+    example: 1,
     description: 'تكرار كل عدد من الأسابيع (افتراضياً 1 أي كل أسبوع)',
     default: 1,
   })
