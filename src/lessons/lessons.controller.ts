@@ -12,6 +12,7 @@ import { UpdateLessonDto } from './dto/update-lesson.dto';
 import { UpdateLiveStatusDto } from './dto/update-live-status.dto';
 import { CreateLessonPdfDto } from './dto/create-lesson-pdf.dto';
 import { ReorderLessonsDto } from './dto/reorder-lessons.dto';
+import { ScheduleRecurringDto } from './dto/schedule-recurring.dto';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { pdfFileSizeLimit } from 'src/utils/conistants';
 import { SwaggerCreateLesson, SwaggerGetAllLessonsByModule, SwaggerGetLesson, SwaggerUpdateLesson, SwaggerDeleteLesson } from './decorators/swagger.decorator';
@@ -304,6 +305,41 @@ export class LessonsController {
     @CurrentUser() user: types.JwtPayloadType,
   ) {
     return this.lessonsService.reorderLessons(dto.lessonIds, user.id);
+  }
+
+  @Post('course/:courseId/schedule-recurring')
+  @ApiOperation({ summary: 'جدولة دروس المقرر بنمط أسبوعي منتظم' })
+  @UseGuards(AuthRollGuard)
+  @userRoles(Role.ADMIN, Role.OWNER)
+  scheduleRecurringLessonsByCourse(
+    @Param('courseId', ParseIntPipe) courseId: number,
+    @Body() dto: ScheduleRecurringDto,
+    @CurrentUser() user: types.JwtPayloadType,
+  ) {
+    return this.lessonsService.scheduleRecurringLessons(dto, user.id, courseId);
+  }
+
+  @Patch('course/:courseId/schedule-recurring')
+  @ApiOperation({ summary: 'جدولة دروس المقرر بنمط أسبوعي منتظم (PATCH)' })
+  @UseGuards(AuthRollGuard)
+  @userRoles(Role.ADMIN, Role.OWNER)
+  scheduleRecurringLessonsByCoursePatch(
+    @Param('courseId', ParseIntPipe) courseId: number,
+    @Body() dto: ScheduleRecurringDto,
+    @CurrentUser() user: types.JwtPayloadType,
+  ) {
+    return this.lessonsService.scheduleRecurringLessons(dto, user.id, courseId);
+  }
+
+  @Post('schedule-recurring')
+  @ApiOperation({ summary: 'جدولة الدروس بنمط أسبوعي منتظم' })
+  @UseGuards(AuthRollGuard)
+  @userRoles(Role.ADMIN, Role.OWNER)
+  scheduleRecurringLessons(
+    @Body() dto: ScheduleRecurringDto,
+    @CurrentUser() user: types.JwtPayloadType,
+  ) {
+    return this.lessonsService.scheduleRecurringLessons(dto, user.id);
   }
 
   @Patch(':id/live-status')

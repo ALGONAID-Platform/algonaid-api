@@ -4,6 +4,7 @@ import { CreateLessonDto } from './dto/create-lesson.dto';
 import { UpdateLessonDto } from './dto/update-lesson.dto';
 import { UpdateLiveStatusDto } from './dto/update-live-status.dto';
 import { CreateLessonPdfDto } from './dto/create-lesson-pdf.dto';
+import { ScheduleRecurringDto } from './dto/schedule-recurring.dto';
 import { MESSAGES } from 'src/utils/messages';
 import { EnrollmentStatus, LessonOrderMode, LessonStatus, LiveStatus, Role } from '@prisma/client';
 import { NotificationsService } from 'src/notifications/notifications.service';
@@ -1754,5 +1755,209 @@ export class LessonsService {
     });
 
     return lessons.map((l) => ({ id: l.id, title: l.title }));
+  }
+
+  /**
+   * جدولة الدروس بنمط أسبوعي متكرر
+   * تقوم بتوزيع تواريخ الدروس على أيام أسبوعية محددة (مثل السبت والأحد والاثنين أو الثلاثاء والخميس والسبت)
+   * بدءاً من تاريخ محدد مع توقيت موحد لجميع الدروس.
+   */
+  async scheduleRecurringLessons(
+    dto: ScheduleRecurringDto,
+    userId: number,
+    courseIdParam?: number,
+  ) {
+    const courseId = dto.courseId || courseIdParam;
+    if (!courseId) {
+      throw new BadRequestException('معرف الكورس مطلوب لجدولة الدروس');
+    }
+
+    const course = await this.prisma.course.findUnique({
+      where: { id: courseId },
+      include: {
+        teacher: true,
+      },
+    });
+
+    if (!course) {
+      throw new NotFoundException('الكورس المحدد غير موجود');
+    }
+
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      include: { teacherProfile: true },
+    });
+
+    const isOwnerOrAdmin = user?.role === Role.OWNER || user?.role === Role.ADMIN;
+    const isInstructor = user?.teacherProfile && course.instructorId === user.teacherProfile.id;
+    if (!isOwnerOrAdmin && !isInstructor) {
+      throw new ForbiddenException('غير مصرح لك بجدولة دروس هذا المقرر');
+    }
+
+    // تطبيع أيام الأسبوع إلى مصفوفة أرقام [0-6] فريدة
+    const normalizeDay = (val: number | string): number => {
+      if (typeof val === 'number') {
+        const n = Math.floor(val);
+        return n === 7 ? 0 : ((n % 7) + 7) % 7;
+      }
+      const s = String(val).trim().toLowerCase();
+      if (!isNaN(Number(s))) {
+        const n = Math.floor(Number(s));
+        return n === 7 ? 0 : ((n % 7) + 7) % 7;
+      }
+      if (s.includes('سبت') || s.startsWith('sat')) return 6;
+      if (s.includes('أحد') || s.includes('احد') || s.startsWith('sun')) return 0;
+      if (s.includes('اثنين') || s.includes('إثنين') || s.startsWith('mon')) return 1;
+      if (s.includes('ثلاث') || s.startsWith('tue')) return 2;
+      if (s.includes('أربع') || s.includes('اربع') || s.startsWith('wed')) return 3;
+      if (s.includes('خميس') || s.startsWith('thu')) return 4;
+      if (s.includes('جمع') || s.startsWith('fri')) return 5;
+      throw new BadRequestException(`يوم غير معروف: ${val}`);
+    };
+
+    const targetDaysRaw = Array.from(new Set(dto.daysOfWeek.map(normalizeDay)));
+    if (targetDaysRaw.length === 0) {
+      throw new BadRequestException('يجب تحديد يوم واحد على الأقل للتدريس');
+    }
+
+    // ترتيب الأيام بحسب ترتيب الأسبوع (السبت 6، الأحد 0، الاثنين 1، الثلاثاء 2، الأربعاء 3، الخميس 4، الجمعة 5)
+    const weekOrder = [6, 0, 1, 2, 3, 4, 5];
+    const sortedDays = [...targetDaysRaw].sort(
+      (a, b) => weekOrder.indexOf(a) - weekOrder.indexOf(b),
+    );
+
+    // جلب الدروس المستهدفة
+    let lessons: { id: number; title: string; order: number }[] = [];
+    if (dto.lessonIds && Array.isArray(dto.lessonIds) && dto.lessonIds.length > 0) {
+      const fetched = await this.prisma.lesson.findMany({
+        where: {
+          id: { in: dto.lessonIds },
+          module: { courseId },
+        },
+        select: { id: true, title: true, order: true },
+      });
+      // الحفاظ على الترتيب المرسل في lessonIds
+      const fetchedMap = new Map(fetched.map((l) => [l.id, l]));
+      lessons = dto.lessonIds
+        .map((id) => fetchedMap.get(id))
+        .filter((l): l is { id: number; title: string; order: number } => Boolean(l));
+    } else {
+      lessons = await this.prisma.lesson.findMany({
+        where: { module: { courseId } },
+        select: { id: true, title: true, order: true },
+        orderBy: [{ order: 'asc' }, { createdAt: 'asc' }, { id: 'asc' }],
+      });
+    }
+
+    if (lessons.length === 0) {
+      throw new NotFoundException('لا توجد دروس لجدولتها في هذا المقرر');
+    }
+
+    // تحليل الوقت وتاريخ البدء
+    const [hours, minutes] = dto.time.split(':').map(Number);
+    if (isNaN(hours) || isNaN(minutes) || hours < 0 || hours > 23 || minutes < 0 || minutes > 59) {
+      throw new BadRequestException('تنسيق الوقت غير صحيح. يرجى استخدام HH:mm (مثال 18:00)');
+    }
+
+    const dateParts = dto.startDate.split('T')[0].split('-').map(Number);
+    if (dateParts.length < 3 || dateParts.some(isNaN)) {
+      throw new BadRequestException('تنسيق تاريخ البدء غير صحيح. يرجى استخدام YYYY-MM-DD');
+    }
+    const [year, month, day] = dateParts;
+
+    const tzOffsetMinutes = dto.timezoneOffset !== undefined ? dto.timezoneOffset : 0;
+
+    const buildDateTime = (y: number, m: number, d: number, h: number, min: number): Date => {
+      if (dto.timezoneOffset !== undefined) {
+        const utcMs = Date.UTC(y, m - 1, d, h, min, 0, 0) + tzOffsetMinutes * 60 * 1000;
+        return new Date(utcMs);
+      }
+      return new Date(y, m - 1, d, h, min, 0, 0);
+    };
+
+    // التقدم للعثور على أول يوم يطابق أول يوم تدريس بعد أو في تاريخ البدء
+    let curY = year;
+    let curM = month;
+    let curD = day;
+
+    let testDate = new Date(curY, curM - 1, curD, 12, 0, 0);
+    while (!sortedDays.includes(testDate.getDay())) {
+      testDate.setDate(testDate.getDate() + 1);
+    }
+
+    // معرفة مؤشر اليوم الحالي في sortedDays
+    let dayIndex = sortedDays.indexOf(testDate.getDay());
+    const intervalWeeks = Math.max(1, dto.intervalWeeks || 1);
+    const updateDayNum = dto.updateDayNumber !== false;
+    const duration = dto.durationMinutes ? Number(dto.durationMinutes) : undefined;
+
+    const scheduledUpdates: {
+      id: number;
+      title: string;
+      order: number;
+      dayNumber: number;
+      scheduledAt: Date;
+      durationMinutes?: number;
+    }[] = [];
+
+    for (let i = 0; i < lessons.length; i++) {
+      const lesson = lessons[i];
+      if (i > 0) {
+        const prevIndex = dayIndex;
+        dayIndex = (dayIndex + 1) % sortedDays.length;
+        const targetDayOfWeek = sortedDays[dayIndex];
+
+        // التقدم يوماً بيوم حتى نصل لليوم المطلوب
+        testDate.setDate(testDate.getDate() + 1);
+        while (testDate.getDay() !== targetDayOfWeek) {
+          testDate.setDate(testDate.getDate() + 1);
+        }
+
+        // إذا بدأت دورة أسبوعية جديدة وكان intervalWeeks > 1، نضيف أسابيع الإزاحة
+        if (dayIndex === 0 && prevIndex === sortedDays.length - 1 && intervalWeeks > 1) {
+          testDate.setDate(testDate.getDate() + (intervalWeeks - 1) * 7);
+        }
+      }
+
+      curY = testDate.getFullYear();
+      curM = testDate.getMonth() + 1;
+      curD = testDate.getDate();
+
+      const scheduledAt = buildDateTime(curY, curM, curD, hours, minutes);
+      const dayNumber = i + 1;
+
+      scheduledUpdates.push({
+        id: lesson.id,
+        title: lesson.title,
+        order: lesson.order,
+        dayNumber,
+        scheduledAt,
+        ...(duration ? { durationMinutes: duration } : {}),
+      });
+    }
+
+    // تحديث قاعدة البيانات في Transaction
+    await this.prisma.$transaction(
+      scheduledUpdates.map((item) =>
+        this.prisma.lesson.update({
+          where: { id: item.id },
+          data: {
+            scheduledAt: item.scheduledAt,
+            ...(updateDayNum ? { dayNumber: item.dayNumber } : {}),
+            ...(item.durationMinutes ? { durationMinutes: item.durationMinutes } : {}),
+          },
+        }),
+      ),
+    );
+
+    return {
+      success: true,
+      message: `تمت جدولة ${scheduledUpdates.length} درساً بنجاح بنمط أسبوعي منتظم`,
+      totalScheduled: scheduledUpdates.length,
+      daysOfWeek: sortedDays,
+      time: dto.time,
+      startDate: dto.startDate,
+      lessons: scheduledUpdates,
+    };
   }
 }
