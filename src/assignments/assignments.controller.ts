@@ -28,6 +28,7 @@ import { CreateAssignmentDto } from './dto/create-assignment.dto';
 import { UpdateAssignmentDto } from './dto/update-assignment.dto';
 import { SubmitAssignmentDto } from './dto/submit-assignment.dto';
 import { GradeSubmissionDto } from './dto/grade-submission.dto';
+import { BulkGradeSubmissionsDto } from './dto/bulk-grade-submission.dto';
 import { AuthRollGuard } from 'src/auth/guards/auth-roll.guard';
 import { VerifiedOnlyGuard } from 'src/auth/guards/verified-only.guard';
 import { userRoles } from 'src/auth/decorators/user_roll.decorator';
@@ -170,6 +171,16 @@ export class AssignmentsController {
       +limit,
       status,
     );
+  }
+
+  @Post('submissions/bulk-grade')
+  @userRoles(Role.ADMIN, Role.OWNER)
+  @ApiOperation({ summary: 'تقييم والرد على عدة تسليمات دفعة واحدة (إرسال جماعي أو مخصص)' })
+  bulkGradeSubmissions(
+    @Body() dto: BulkGradeSubmissionsDto,
+    @CurrentUser() user: types.JwtPayloadType,
+  ) {
+    return this.assignmentsService.bulkGradeSubmissions(user.id, user.role, dto);
   }
 
   @Get('submissions/:submissionId')

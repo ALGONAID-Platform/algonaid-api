@@ -11,6 +11,7 @@ import { CreateAssignmentDto } from './dto/create-assignment.dto';
 import { UpdateAssignmentDto } from './dto/update-assignment.dto';
 import { SubmitAssignmentDto } from './dto/submit-assignment.dto';
 import { GradeSubmissionDto } from './dto/grade-submission.dto';
+import { BulkGradeSubmissionsDto } from './dto/bulk-grade-submission.dto';
 import { Role, SubmissionStatus, AssignmentType } from '@prisma/client';
 import { NotificationsService } from 'src/notifications/notifications.service';
 
@@ -804,6 +805,168 @@ export class AssignmentsService {
     }
 
     return gradedSubmission;
+  }
+
+  /**
+   * تقييم والرد على عدة تسليمات دفعة واحدة (إرسال جماعي أو مخصص)
+   */
+  async bulkGradeSubmissions(
+    userId: number,
+    role: Role,
+    dto: BulkGradeSubmissionsDto,
+  ) {
+    const itemMap = new Map<number, any>();
+    if (dto.items && Array.isArray(dto.items)) {
+      for (const item of dto.items) {
+        if (item.submissionId) {
+          itemMap.set(Number(item.submissionId), item);
+        }
+      }
+    }
+
+    const idSet = new Set<number>();
+    if (dto.submissionIds && Array.isArray(dto.submissionIds)) {
+      for (const id of dto.submissionIds) {
+        if (id) idSet.add(Number(id));
+      }
+    }
+    for (const id of itemMap.keys()) {
+      idSet.add(id);
+    }
+
+    const submissionIds = Array.from(idSet);
+    if (submissionIds.length === 0) {
+      throw new BadRequestException('يرجى تحديد تسليم واحد على الأقل للرد أو التقييم');
+    }
+
+    const submissions = await this.prisma.assignmentSubmission.findMany({
+      where: { id: { in: submissionIds } },
+      include: {
+        assignment: {
+          include: {
+            lesson: {
+              include: {
+                module: { include: { course: true } },
+              },
+            },
+          },
+        },
+        student: {
+          include: {
+            user: { select: { id: true, name: true, email: true, avatar: true } },
+          },
+        },
+        gradedBy: {
+          select: { id: true, name: true, avatar: true },
+        },
+      },
+    });
+
+    if (submissions.length === 0) {
+      throw new NotFoundException('لم يتم العثور على أي من التسليمات المحددة');
+    }
+
+    const checkedCourses = new Set<number>();
+    for (const sub of submissions) {
+      const course = sub.assignment.lesson.module.course;
+      if (!checkedCourses.has(course.id)) {
+        await this.checkTeacherPermission(
+          course.id,
+          course.instructorId,
+          userId,
+          role,
+        );
+        checkedCourses.add(course.id);
+      }
+    }
+
+    const updatedSubmissions: any[] = [];
+    const now = new Date();
+
+    for (const sub of submissions) {
+      const item = itemMap.get(sub.id);
+      const score = item?.score !== undefined
+        ? item.score
+        : dto.commonScore !== undefined
+          ? dto.commonScore
+          : sub.score !== null && sub.score !== undefined
+            ? sub.score
+            : sub.assignment.maxScore;
+
+      if (score > sub.assignment.maxScore) {
+        throw new BadRequestException(
+          `الدرجة (${score}) أكبر من الدرجة الكلية للتكليف "${sub.assignment.title}" (${sub.assignment.maxScore})`,
+        );
+      }
+
+      const feedback = item?.feedback !== undefined
+        ? item.feedback
+        : dto.commonFeedback !== undefined
+          ? dto.commonFeedback
+          : sub.feedback;
+
+      const feedbackImageUrl = item?.feedbackImageUrl !== undefined
+        ? item.feedbackImageUrl
+        : dto.commonFeedbackImageUrl !== undefined
+          ? dto.commonFeedbackImageUrl
+          : sub.feedbackImageUrl;
+
+      const status = item?.status !== undefined
+        ? item.status
+        : dto.commonStatus !== undefined
+          ? dto.commonStatus
+          : (sub.status === SubmissionStatus.RESUBMISSION_REQUESTED ? SubmissionStatus.RESUBMISSION_REQUESTED : SubmissionStatus.GRADED);
+
+      const updated = await this.prisma.assignmentSubmission.update({
+        where: { id: sub.id },
+        data: {
+          score,
+          feedback,
+          feedbackImageUrl,
+          status,
+          gradedAt: now,
+          gradedById: userId,
+        },
+        include: {
+          assignment: true,
+          student: {
+            include: {
+              user: { select: { id: true, name: true, email: true, avatar: true } },
+            },
+          },
+          gradedBy: {
+            select: { id: true, name: true, avatar: true },
+          },
+        },
+      });
+
+      updatedSubmissions.push(updated);
+
+      if (updated.student?.user?.id) {
+        const teacherName = updated.gradedBy?.name || 'المعلم';
+        try {
+          await this.notificationsService.notifyAssignmentFeedback(
+            updated.student.user.id,
+            userId,
+            teacherName,
+            updated.assignment.title,
+            score,
+            updated.assignment.maxScore,
+            feedback,
+            sub.assignment.lessonId,
+          );
+        } catch (notifErr) {
+          this.logger.warn(`Failed to send notification for submission ${sub.id}: ${notifErr}`);
+        }
+      }
+    }
+
+    return {
+      success: true,
+      message: `تم رصد التقييم والرد على ${updatedSubmissions.length} تسليم بنجاح`,
+      count: updatedSubmissions.length,
+      submissions: updatedSubmissions,
+    };
   }
 
   /**
